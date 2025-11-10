@@ -49,11 +49,12 @@ body {
   background: #4ecdc4;
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
   transition: all 0.2s;
+  min-width: 40px;
 }
 .calendar-nav-btn:hover {
   background: #45b7aa;
@@ -165,16 +166,25 @@ body {
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 20px;
   padding-bottom: 15px;
   border-bottom: 3px solid #4ecdc4;
   flex-wrap: nowrap;
   gap: 5px;
+  position: relative;
 }
 .header-center {
   text-align: center;
   flex: 1;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.header-center.collapsed {
+  transform: scale(0.8);
+}
+.header-center.collapsed .frase-motivacional {
+  display: none;
 }
 .header h1 {
   color: #2d5a27;
@@ -191,11 +201,17 @@ body {
   opacity: 0.9;
   cursor: pointer;
   transition: all 0.3s ease;
+  max-height: 50px;
+  overflow: hidden;
 }
-
 .frase-motivacional:hover {
   opacity: 1;
   transform: scale(1.02);
+}
+.frase-motivacional.hidden {
+  max-height: 0;
+  margin: 0;
+  opacity: 0;
 }
 
 .fecha-actual {
@@ -543,19 +559,24 @@ section h3 {
 /* Control de pantalla activa - Solo móvil/tablet */
 .control-pantalla {
   position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 0 0 12px 12px;
-  padding: 8px 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  top: 10px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  padding: 6px 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   z-index: 999;
   display: none;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   backdrop-filter: blur(10px);
-  border-top: none;
+  transition: opacity 0.3s ease;
+}
+.control-pantalla.auto-hide {
+  opacity: 0.3;
+}
+.control-pantalla:hover {
+  opacity: 1;
 }
 .btn-pantalla {
   background: #4ecdc4;
@@ -651,6 +672,9 @@ section h3 {
   .control-pantalla {
     display: flex;
   }
+  .header-center {
+    max-width: 60%;
+  }
 }
 
 @media (max-width: 768px) {
@@ -663,16 +687,19 @@ section h3 {
     padding: 5px 6px;
   }
   .control-pantalla {
-    padding: 6px 10px;
-    gap: 6px;
+    padding: 4px 6px;
+    gap: 4px;
   }
   .btn-pantalla {
-    padding: 6px 8px;
-    font-size: 10px;
-    min-width: 50px;
+    padding: 4px 6px;
+    font-size: 9px;
+    min-width: 40px;
   }
   .slider-tiempo {
-    width: 60px;
+    width: 50px;
+  }
+  .tiempo-label {
+    font-size: 9px;
   }
 }
 
@@ -878,6 +905,34 @@ body.modo-oscuro {
   margin-bottom: 15px;
   text-align: center;
 }
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  border-left: 4px solid #4ecdc4;
+  max-width: 300px;
+  font-size: 14px;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+.toast-notification.show {
+  transform: translateX(0);
+}
+.toast-notification.success {
+  border-left-color: #4caf50;
+}
+.toast-notification.info {
+  border-left-color: #2196f3;
+}
+.toast-notification.error {
+  border-left-color: #f44336;
+}
 .alert-success {
   background: #d4edda;
   color: #155724;
@@ -965,14 +1020,21 @@ input[type="file"] {
   }
 }
 
+.calendar-btn {
+  min-width: 30px !important;
+  min-height: 30px !important;
+  border-radius: 6px !important;
+}
+
 /* MÓVIL - Pantallas táctiles */
 @media (max-width: 768px) and (pointer: coarse) {
   body { font-size: 16px; padding: 5px; }
   .container { padding: 15px; border-radius: 15px; margin-bottom: 20px; }
-  .header { flex-direction: column; gap: 10px; text-align: center; }
-  .header h1 { font-size: 24px; }
-  .fecha-actual { font-size: 14px; }
-  .boton-guardar, .boton-cargar { padding: 12px 16px; font-size: 14px; min-height: 44px; }
+  .header { flex-direction: row; gap: 5px; text-align: center; min-height: 60px; }
+  .header h1 { font-size: 20px; }
+  .fecha-actual { font-size: 12px; }
+  .frase-motivacional { font-size: 12px; }
+  .boton-guardar, .boton-cargar { padding: 8px 12px; font-size: 12px; min-height: 36px; }
   .tarea-item { padding: 12px; margin-bottom: 8px; min-height: 50px; }
   .tarea-simbolo { font-size: 20px; min-width: 35px; }
   .tarea-texto { font-size: 14px; line-height: 1.3; }
@@ -982,14 +1044,16 @@ input[type="file"] {
   .modal-content { width: 95%; margin: 5% auto; padding: 20px; border-radius: 15px; }
   .form-group input, .form-group textarea { padding: 12px; font-size: 14px; }
   .modal-botones button { padding: 14px; font-size: 14px; min-height: 44px; }
-  .calendar-day { min-height: 50px; padding: 4px; }
-  .calendar-nav-btn { padding: 10px 16px; font-size: 14px; }
+  .calendar-day { min-height: 40px; padding: 3px; }
+  .calendar-nav-btn { padding: 6px 10px; font-size: 12px; min-width: 35px; }
   #notas-texto { min-height: 60px; padding: 12px; font-size: 14px; }
   .subtarea-item { padding: 8px 12px !important; }
   .boton-subtarea { padding: 6px 10px !important; font-size: 11px !important; }
   .contenedor-dos-columnas { gap: 15px; }
   .filtros-grid { grid-template-columns: 1fr; gap: 8px; }
   .filtro-select { font-size: 12px; padding: 6px; }
+  #btn-config { padding: 4px 8px !important; font-size: 10px !important; }
+  .calendar-btn { padding: 3px 6px !important; font-size: 9px !important; min-width: 25px !important; min-height: 25px !important; }
 }
 
 /* Estilos para tamaños de letra */
@@ -1355,10 +1419,10 @@ input[type="file"] {
       <section>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
           <h3 style="margin: 0;">📅 Calendario</h3>
-          <div style="display: flex; gap: 5px;">
-            <button onclick="abrirModalNuevaCita()" class="boton-cargar" style="padding: 6px 12px; font-size: 12px; background: #4ecdc4; color: white;">➕ Nueva Cita</button>
-            <button onclick="abrirModalCitasRelativas()" class="boton-cargar" style="padding: 6px 12px; font-size: 12px; background: #9c27b0; color: white;">Grupo de Citas</button>
-            <button onclick="abrirCalendario()" class="boton-cargar" style="padding: 6px 12px; font-size: 12px; background: #ff9800; color: white;">📅 Calendario</button>
+          <div style="display: flex; gap: 3px; flex-wrap: wrap;">
+            <button onclick="abrirModalNuevaCita()" class="boton-cargar calendar-btn" style="padding: 4px 8px; font-size: 10px; background: #4ecdc4; color: white;">➕</button>
+            <button onclick="abrirModalCitasRelativas()" class="boton-cargar calendar-btn" style="padding: 4px 8px; font-size: 10px; background: #9c27b0; color: white;">📅+</button>
+            <button onclick="abrirCalendario()" class="boton-cargar calendar-btn" style="padding: 4px 8px; font-size: 10px; background: #ff9800; color: white;">📅</button>
           </div>
         </div>
         <div id="citas-panel" style="max-height:200px;overflow-y:auto;"></div>
@@ -1374,9 +1438,9 @@ input[type="file"] {
       <section class="drop-zone" data-target="tareas">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
           <h3 style="margin: 0;">✅ Lista para hacer</h3>
-          <div style="display: flex; gap: 5px;">
-            <button id="btn-largo-plazo" onclick="toggleLargoPlazo()" class="boton-cargar" style="padding: 6px 12px; font-size: 12px; background: #a8e6cf;">Próximos 15 días</button>
-            <button onclick="abrirCalendarioTareas()" class="boton-cargar" style="padding: 6px 12px; font-size: 12px; background: #ff9800; color: white;">📅 Vista Tareas</button>
+          <div style="display: flex; gap: 3px; flex-wrap: wrap;">
+            <button id="btn-largo-plazo" onclick="toggleLargoPlazo()" class="boton-cargar calendar-btn" style="padding: 4px 8px; font-size: 9px; background: #a8e6cf;">15d</button>
+            <button onclick="abrirCalendarioTareas()" class="boton-cargar calendar-btn" style="padding: 4px 8px; font-size: 10px; background: #ff9800; color: white;">📅</button>
           </div>
         </div>
         
@@ -2864,6 +2928,26 @@ document.addEventListener('DOMContentLoaded', () => {
   // Inicializar control de pantalla
   actualizarTiempo();
   
+  // Auto-hide control de pantalla en móvil
+  if (isMobile()) {
+    let hideTimer;
+    const controlPantalla = document.querySelector('.control-pantalla');
+    
+    const showControl = () => {
+      if (controlPantalla) {
+        controlPantalla.classList.remove('auto-hide');
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(() => {
+          controlPantalla.classList.add('auto-hide');
+        }, 3000);
+      }
+    };
+    
+    // Mostrar al tocar la pantalla
+    document.addEventListener('touchstart', showControl);
+    showControl(); // Mostrar inicialmente
+  }
+  
   // Cargar configuración visual guardada
   cargarConfigVisual();
   
@@ -3013,6 +3097,27 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Configurar auto-capitalización
   setupAutoCapitalize();
+  
+  // Configurar header colapsable en móvil
+  if (isMobile()) {
+    const headerCenter = document.querySelector('.header-center');
+    let headerTimer;
+    
+    const collapseHeader = () => {
+      headerCenter.classList.add('collapsed');
+    };
+    
+    const expandHeader = () => {
+      headerCenter.classList.remove('collapsed');
+      clearTimeout(headerTimer);
+      headerTimer = setTimeout(collapseHeader, 5000);
+    };
+    
+    headerCenter.addEventListener('click', expandHeader);
+    
+    // Auto-colapsar después de 5 segundos
+    headerTimer = setTimeout(collapseHeader, 5000);
+  }
   
   // Iniciar auto-guardado optimizado cada minuto
   setInterval(() => {
@@ -4591,14 +4696,24 @@ function escapeXml(text) {
 }
 
 function mostrarAlerta(mensaje, tipo) {
-  const alertas = document.getElementById('alertas');
-  const div = document.createElement('div');
-  div.className = `alert alert-${tipo}`;
-  div.textContent = mensaje;
-  alertas.appendChild(div);
+  // Crear toast notification
+  const toast = document.createElement('div');
+  toast.className = `toast-notification ${tipo}`;
+  toast.textContent = mensaje;
   
+  document.body.appendChild(toast);
+  
+  // Mostrar con animación
   setTimeout(() => {
-    div.remove();
+    toast.classList.add('show');
+  }, 100);
+  
+  // Ocultar y eliminar
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
   }, 3000);
 }
 
