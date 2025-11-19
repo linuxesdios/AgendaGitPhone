@@ -322,6 +322,7 @@ function cambiarEstadoCritica(index) {
     if (tarea.persona) {
       tarea.estado = 'completada';
       tarea.completada = true;
+      guardarTareaCompletada(tarea, true);
       mostrarCelebracion();
     } else {
       tarea.estado = 'programada';
@@ -330,6 +331,7 @@ function cambiarEstadoCritica(index) {
   } else if (tarea.estado === 'programada') {
     tarea.estado = 'completada';
     tarea.completada = true;
+    guardarTareaCompletada(tarea, true);
     mostrarCelebracion();
   } else {
     tarea.estado = 'pendiente';
@@ -356,6 +358,7 @@ function cambiarEstadoTarea(index) {
     if (tarea.persona) {
       tarea.estado = 'completada';
       tarea.completada = true;
+      guardarTareaCompletada(tarea, false);
       mostrarCelebracion();
     } else {
       tarea.estado = 'programada';
@@ -364,6 +367,7 @@ function cambiarEstadoTarea(index) {
   } else if (tarea.estado === 'programada') {
     tarea.estado = 'completada';
     tarea.completada = true;
+    guardarTareaCompletada(tarea, false);
     mostrarCelebracion();
   } else {
     tarea.estado = 'pendiente';

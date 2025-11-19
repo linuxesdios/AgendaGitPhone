@@ -19,11 +19,12 @@
       <span style="font-size: 40px; color: #2d5a27;">📋</span>
     </div>
     <div class="header-center">
-      <h1 id="titulo-agenda">🧠 Agenda de Pablo 🚆</h1>
+      <h1 id="titulo-agenda">🧠 Agenda de Pablo 😊</h1>
       <div class="frase-motivacional" id="frase-motivacional" onclick="cambiarFraseMotivacional()" title="Haz clic para cambiar la frase">"El éxito es la suma de pequeños esfuerzos repetidos día tras día"</div>
       <div class="fecha-actual" id="fecha-actual"></div>
     </div>
-    <div style="display: flex; flex-direction: column; align-items: flex-end; width:120px;">
+    <div style="display: flex; flex-direction: column; align-items: flex-end; width:120px; gap:5px;">
+      <button id="btn-progreso" class="boton-cargar tooltip" onclick="mostrarDashboardMotivacional()" style="padding:6px 12px;font-size:12px;" data-tooltip="Mi Progreso">📊</button>
       <button id="btn-config" class="boton-cargar tooltip" onclick="toggleConfigFloating()" style="padding:6px 12px;font-size:12px;" data-tooltip="Configuración">⚙️</button>
     </div>
   </div>
@@ -313,12 +314,7 @@
       <input type="text" id="nueva-cita-desc" placeholder="¿Qué hacer?">
     </div>
     
-    <div class="form-group">
-      <label style="display:flex;align-items:center;gap:10px;">
-        <input type="checkbox" id="nueva-cita-google" checked>
-        <span>📅 Añadir a Google Calendar</span>
-      </label>
-    </div>
+
     
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;">
       <div>
@@ -398,52 +394,18 @@
       <div id="extendsclass-status" style="margin-top:10px;font-size:13px;display:none;"></div>
     </div>
     
-    <!-- Contenido Google Calendar -->
-    <div id="tab-google" class="tab-content">
-      <div style="padding:20px;text-align:center;">
-        <h3>📅 Google Calendar</h3>
-        <div style="background:#fff3cd;border:1px solid #ffeaa7;padding:15px;border-radius:8px;margin-bottom:15px;">
-          <h4 style="margin:0 0 10px 0;color:#856404;">⚠️ Configuración Requerida</h4>
-          <p style="font-size:12px;color:#856404;margin:0;">
-            Necesitas crear tu propio proyecto en Google Cloud Console y configurar OAuth 2.0 con tu dominio autorizado.
-          </p>
-        </div>
-        <div class="form-group">
-          <label>API Key:</label>
-          <input type="text" id="google-apikey" placeholder="Tu API Key de Google Cloud">
-        </div>
-        <div class="form-group">
-          <label>Client ID:</label>
-          <input type="text" id="google-clientid" placeholder="Tu-Client-ID.apps.googleusercontent.com">
-        </div>
-        <button class="btn-primario" onclick="guardarConfigGoogleCalendar()">Guardar Config</button>
-        <button class="btn-secundario" onclick="conectarGoogleCalendar()">Conectar a Google</button>
-        <div style="margin-top:15px;font-size:11px;color:#666;">
-          <p><strong>Configuración para tu dominio:</strong></p>
-          <div style="background:#f8f9fa;padding:10px;border-radius:4px;margin:10px 0;">
-            <strong style="color:#d73502;">⚠️ AGREGAR A OAUTH:</strong><br>
-            <code style="font-size:10px;">https://linuxesdios.github.io/AgendaGitSyncro/agenda.html</code><br>
-            <small style="color:#666;">También agregar: https://linuxesdios.github.io</small>
-          </div>
-          <ol style="text-align:left;display:inline-block;font-size:10px;">
-            <li>Ve a <strong>console.cloud.google.com</strong></li>
-            <li>Crea proyecto → Habilita <strong>Google Calendar API</strong></li>
-            <li>Credenciales → <strong>OAuth 2.0</strong> → Aplicación web</li>
-            <li>Orígenes autorizados: <strong>https://linuxesdios.github.io</strong></li>
-            <li>Copia <strong>API Key</strong> y <strong>Client ID</strong> aquí</li>
-          </ol>
-        </div>
-      </div>
-    </div>
+
     
     <!-- Contenido Visual -->
     <div id="tab-visual" class="tab-content">
       <div style="padding:20px;">
         <h3>🎨 Configuración Visual</h3>
         <div class="form-group">
-          <label>Tema:</label>
+          <label>Tema de color:</label>
           <select id="config-tema-select">
-            <option value="claro">Claro</option>
+            <option value="verde">Verde suave</option>
+            <option value="azul">Azul suave</option>
+            <option value="amarillo">Amarillo suave</option>
             <option value="oscuro">Oscuro</option>
           </select>
         </div>
@@ -451,6 +413,21 @@
           <label>Nombre:</label>
           <input type="text" id="config-nombre-input" placeholder="Pablo">
         </div>
+        
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:10px;">
+            <input type="checkbox" id="config-popup-celebracion" onchange="guardarConfigVisualPanel()">
+            <span>🎉 Mostrar popup al completar tareas</span>
+          </label>
+          <small style="color:#666;font-size:12px;">Mostrar frases motivacionales al completar tareas</small>
+        </div>
+        
+        <div class="form-group">
+          <label>Frases motivacionales personalizadas:</label>
+          <textarea id="config-frases-motivacionales" placeholder="Escribe una frase por línea...&#10;¡Excelente trabajo!&#10;¡Sigue así!&#10;¡Genial!" style="min-height:80px;resize:vertical;"></textarea>
+          <small style="color:#666;font-size:12px;">Una frase por línea. Se mostrarán aleatoriamente al completar tareas</small>
+        </div>
+        
         <button class="btn-primario" onclick="guardarConfigVisualPanel()">Aplicar</button>
       </div>
     </div>
@@ -480,6 +457,36 @@
           </label>
           <small style="color:#666;font-size:12px;">Capitalizar automáticamente la primera letra</small>
         </div>
+        
+        <hr style="margin:20px 0;border:1px solid #eee;">
+        <h4>🔔 Notificaciones de Citas</h4>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:10px;">
+            <input type="checkbox" id="config-notificaciones-activas" onchange="guardarConfigFuncionales()">
+            <span>Activar notificaciones</span>
+          </label>
+          <small style="color:#666;font-size:12px;">Recibir notificaciones antes de las citas</small>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:10px;">
+            <input type="checkbox" id="config-notif-1-dia" onchange="guardarConfigFuncionales()">
+            <span>1 día antes</span>
+          </label>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:10px;">
+            <input type="checkbox" id="config-notif-2-horas" onchange="guardarConfigFuncionales()">
+            <span>2 horas antes</span>
+          </label>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:10px;">
+            <input type="checkbox" id="config-notif-30-min" onchange="guardarConfigFuncionales()">
+            <span>30 minutos antes</span>
+          </label>
+        </div>
+        
+
       </div>
     </div>
     
@@ -496,11 +503,14 @@
         <button class="btn-secundario" onclick="hacerCopia()">📋 Copiar JSON</button>
         <button class="btn-secundario" onclick="crearBackupManual()">💾 Descargar</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+      <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:15px;">
         <button class="btn-secundario" onclick="restaurarBackup()">📥 Importar JSON</button>
       </div>
+      <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:15px;">
+        <button class="btn-secundario" onclick="mostrarDashboardMotivacional()">📊 Mi Progreso</button>
+      </div>
       <div style="display:grid;grid-template-columns:1fr;gap:10px;">
-        <button class="btn-primario" onclick="activarNotificaciones()">🔔 Activar Notificaciones</button>
+        <button class="btn-primario" onclick="solicitarPermisoNotificaciones()">🔔 Solicitar Permisos</button>
       </div>
     </div>
     

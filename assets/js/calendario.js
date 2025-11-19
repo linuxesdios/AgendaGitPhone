@@ -377,7 +377,6 @@ function guardarNuevaCita() {
   const descripcion = document.getElementById('nueva-cita-desc').value.trim();
   const hora = document.getElementById('nueva-cita-hora').value;
   const minutos = document.getElementById('nueva-cita-minutos').value;
-  const addToGoogle = document.getElementById('nueva-cita-google')?.checked || false;
   
   if (!fecha) {
     alert('Por favor, selecciona una fecha');
@@ -392,16 +391,14 @@ function guardarNuevaCita() {
   const citaCompleta = `${hora}:${minutos} - ${descripcion}`;
   appState.agenda.citas.push({ fecha, nombre: citaCompleta });
   
-  // Crear evento en Google Calendar si está marcado
-  if (addToGoogle) {
-    crearEventoGoogleCalendar(descripcion, fecha + 'T' + hora + ':' + minutos + ':00');
-  }
-  
   cerrarModal('modal-nueva-cita');
   renderCalendar();
   renderAllAppointmentsList();
   renderCitasPanel();
   guardarJSON(true);
+  
+  // Programar notificaciones para esta nueva cita
+  programarNotificacionesCita({ fecha, nombre: citaCompleta });
   
   mostrarAlerta('📅 Cita añadida correctamente', 'success');
 }
@@ -559,9 +556,13 @@ function crearCitaPeriodica() {
   while (fechaActual <= fin) {
     const fechaStr = fechaActual.toISOString().slice(0, 10);
     const citaCompleta = `${hora}:${minutos} - ${descripcion}`;
+    const nuevaCita = { fecha: fechaStr, nombre: citaCompleta };
     
-    appState.agenda.citas.push({ fecha: fechaStr, nombre: citaCompleta });
+    appState.agenda.citas.push(nuevaCita);
     citasCreadas.push(fechaStr);
+    
+    // Programar notificaciones para cada cita creada
+    programarNotificacionesCita(nuevaCita);
     
     // Calcular siguiente fecha según frecuencia
     switch (frecuencia) {
@@ -698,6 +699,8 @@ function guardarCitasRelativas() {
   
   citasRelativasTemp.forEach(cita => {
     appState.agenda.citas.push(cita);
+    // Programar notificaciones para cada cita
+    programarNotificacionesCita(cita);
   });
   
   cerrarModal('modal-citas-relativas');
@@ -708,6 +711,66 @@ function guardarCitasRelativas() {
   
   mostrarAlerta(`📅 ${citasRelativasTemp.length} citas guardadas`, 'success');
   citasRelativasTemp = [];
+}
+
+// ========== PROGRAMACIÓN DE NOTIFICACIONES ==========
+function programarNotificacionesCita(cita) {
+  const config = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
+  
+  if (!config.notificacionesActivas || Notification.permission !== 'granted') {
+    return;
+  }
+  
+  const fechaCita = parsearFechaCita(cita);
+  if (!fechaCita) return;
+  
+  const ahora = new Date();
+  const tiempoHastaCita = fechaCita.getTime() - ahora.getTime();
+  
+  // Solo programar si la cita es en el futuro
+  if (tiempoHastaCita <= 0) return;
+  
+  const descripcion = cita.nombre.split(' - ')[1] || cita.nombre;
+  
+  // Programar notificación 1 día antes
+  if (config.notif1Dia && tiempoHastaCita > 24 * 60 * 60 * 1000) {
+    const tiempo1Dia = tiempoHastaCita - (24 * 60 * 60 * 1000);
+    setTimeout(() => {
+      if (Notification.permission === 'granted') {
+        new Notification('🔔 Recordatorio: Cita mañana', {
+          body: `${descripcion}\nMañana a las ${cita.nombre.split(' - ')[0]}`,
+          icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📅</text></svg>'
+        });
+      }
+    }, tiempo1Dia);
+  }
+  
+  // Programar notificación 2 horas antes
+  if (config.notif2Horas && tiempoHastaCita > 2 * 60 * 60 * 1000) {
+    const tiempo2Horas = tiempoHastaCita - (2 * 60 * 60 * 1000);
+    setTimeout(() => {
+      if (Notification.permission === 'granted') {
+        new Notification('⏰ Recordatorio: Cita en 2 horas', {
+          body: `${descripcion}\nHoy a las ${cita.nombre.split(' - ')[0]}`,
+          icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⏰</text></svg>'
+        });
+      }
+    }, tiempo2Horas);
+  }
+  
+  // Programar notificación 30 minutos antes
+  if (config.notif30Min && tiempoHastaCita > 30 * 60 * 1000) {
+    const tiempo30Min = tiempoHastaCita - (30 * 60 * 1000);
+    setTimeout(() => {
+      if (Notification.permission === 'granted') {
+        new Notification('🚨 ¡Cita en 30 minutos!', {
+          body: `${descripcion}\nA las ${cita.nombre.split(' - ')[0]}`,
+          icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🚨</text></svg>',
+          requireInteraction: true
+        });
+      }
+    }, tiempo30Min);
+  }
 }
 
 // Hacer funciones disponibles globalmente
@@ -736,3 +799,4 @@ window.actualizarPreviewFecha = actualizarPreviewFecha;
 window.agregarCitaRelativa = agregarCitaRelativa;
 window.eliminarCitaRelativa = eliminarCitaRelativa;
 window.guardarCitasRelativas = guardarCitasRelativas;
+window.programarNotificacionesCita = programarNotificacionesCita;

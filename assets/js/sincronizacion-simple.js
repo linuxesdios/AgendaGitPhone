@@ -203,25 +203,24 @@ function mostrarStatusFirebase(mensaje, tipo) {
 function cargarConfiguracionesModal() {
   const visualConfig = JSON.parse(localStorage.getItem('config-visual') || '{}');
   const firebaseConfig = getFirebaseConfig();
-  const googleConfig = getGoogleCalendarConfig();
   
   const temaEl = document.getElementById('config-tema-select');
   const nombreEl = document.getElementById('config-nombre-input');
+  const frasesEl = document.getElementById('config-frases-motivacionales');
+  const popupCelebracionEl = document.getElementById('config-popup-celebracion');
   const apiKeyEl = document.getElementById('firebase-apikey');
   const projectIdEl = document.getElementById('firebase-projectid');
   const messagingSenderIdEl = document.getElementById('firebase-messagingsenderid');
   const appIdEl = document.getElementById('firebase-appid');
-  const googleApiKeyEl = document.getElementById('google-apikey');
-  const googleClientIdEl = document.getElementById('google-clientid');
 
-  if (temaEl) temaEl.value = visualConfig.tema || 'claro';
+  if (temaEl) temaEl.value = visualConfig.tema || 'verde';
   if (nombreEl) nombreEl.value = visualConfig.nombre || 'Pablo';
+  if (frasesEl) frasesEl.value = (visualConfig.frases || []).join('\n');
+  if (popupCelebracionEl) popupCelebracionEl.checked = visualConfig.popupCelebracion !== false;
   if (apiKeyEl) apiKeyEl.value = firebaseConfig.apiKey || '';
   if (projectIdEl) projectIdEl.value = firebaseConfig.projectId || '';
   if (messagingSenderIdEl) messagingSenderIdEl.value = firebaseConfig.messagingSenderId || '';
   if (appIdEl) appIdEl.value = firebaseConfig.appId || '';
-  if (googleApiKeyEl) googleApiKeyEl.value = googleConfig.apiKey || '';
-  if (googleClientIdEl) googleClientIdEl.value = googleConfig.clientId || '';
   
   // Cargar configuraciones funcionales
   cargarConfigFuncionales();
@@ -243,9 +242,8 @@ function cambiarFraseMotivacional() {
 
 function cargarConfigVisual() {
   const config = JSON.parse(localStorage.getItem('config-visual') || '{}');
-  if (config.tema === 'oscuro') {
-    document.body.classList.add('modo-oscuro');
-  }
+  const tema = config.tema || 'verde';
+  document.body.classList.add('tema-' + tema);
 }
 
 function toggleConfigFloating() {
@@ -280,22 +278,27 @@ function switchTab(tabName) {
 }
 
 function guardarConfigVisualPanel() {
-  const tema = document.getElementById('config-tema-select')?.value || 'claro';
+  const tema = document.getElementById('config-tema-select')?.value || 'verde';
   const nombre = document.getElementById('config-nombre-input')?.value || 'Pablo';
+  const frasesTexto = document.getElementById('config-frases-motivacionales')?.value || '';
+  const popupCelebracion = document.getElementById('config-popup-celebracion')?.checked || false;
   
-  const config = { tema, nombre };
+  // Procesar frases (una por línea, filtrar vacías)
+  const frases = frasesTexto.split('\n')
+    .map(f => f.trim())
+    .filter(f => f.length > 0);
+  
+  const config = { tema, nombre, frases, popupCelebracion };
   localStorage.setItem('config-visual', JSON.stringify(config));
   
   // Aplicar tema
-  document.body.classList.remove('modo-oscuro');
-  if (tema === 'oscuro') {
-    document.body.classList.add('modo-oscuro');
-  }
+  document.body.classList.remove('modo-oscuro', 'tema-verde', 'tema-azul', 'tema-amarillo');
+  document.body.classList.add('tema-' + tema);
   
   // Actualizar título
   const titulo = document.getElementById('titulo-agenda');
   if (titulo) {
-    titulo.textContent = '🧠 Agenda de ' + nombre + ' 🚆';
+    titulo.textContent = '🧠 Agenda de ' + nombre + ' 😊';
   }
   
   mostrarAlerta('✅ Configuración visual aplicada', 'success');
@@ -316,10 +319,23 @@ function guardarConfigFuncionales() {
   const config = {
     fechaObligatoria: document.getElementById('config-fecha-obligatoria')?.checked || false,
     confirmacionBorrar: document.getElementById('config-confirmacion-borrar')?.checked || false,
-    autoMayuscula: document.getElementById('config-auto-mayuscula')?.checked || false
+    autoMayuscula: document.getElementById('config-auto-mayuscula')?.checked || false,
+    notificacionesActivas: document.getElementById('config-notificaciones-activas')?.checked || false,
+    notif1Dia: document.getElementById('config-notif-1-dia')?.checked || false,
+    notif2Horas: document.getElementById('config-notif-2-horas')?.checked || false,
+    notif30Min: document.getElementById('config-notif-30-min')?.checked || false,
+    popupCelebracion: document.getElementById('config-popup-celebracion')?.checked || false
   };
   
   localStorage.setItem('config-funcionales', JSON.stringify(config));
+  
+  // Reiniciar el sistema de notificaciones si está activo
+  if (config.notificacionesActivas) {
+    iniciarSistemaNotificaciones();
+  } else {
+    detenerSistemaNotificaciones();
+  }
+  
   mostrarAlerta('✅ Configuración funcional guardada', 'success');
 }
 
@@ -329,10 +345,20 @@ function cargarConfigFuncionales() {
   const fechaObligatoriaEl = document.getElementById('config-fecha-obligatoria');
   const confirmacionBorrarEl = document.getElementById('config-confirmacion-borrar');
   const autoMayusculaEl = document.getElementById('config-auto-mayuscula');
+  const notificacionesActivasEl = document.getElementById('config-notificaciones-activas');
+  const notif1DiaEl = document.getElementById('config-notif-1-dia');
+  const notif2HorasEl = document.getElementById('config-notif-2-horas');
+  const notif30MinEl = document.getElementById('config-notif-30-min');
+  const popupCelebracionEl = document.getElementById('config-popup-celebracion');
   
   if (fechaObligatoriaEl) fechaObligatoriaEl.checked = config.fechaObligatoria || false;
   if (confirmacionBorrarEl) confirmacionBorrarEl.checked = config.confirmacionBorrar !== false; // Por defecto true
   if (autoMayusculaEl) autoMayusculaEl.checked = config.autoMayuscula !== false; // Por defecto true
+  if (notificacionesActivasEl) notificacionesActivasEl.checked = config.notificacionesActivas || false;
+  if (notif1DiaEl) notif1DiaEl.checked = config.notif1Dia !== false; // Por defecto true
+  if (notif2HorasEl) notif2HorasEl.checked = config.notif2Horas !== false; // Por defecto true
+  if (notif30MinEl) notif30MinEl.checked = config.notif30Min !== false; // Por defecto true
+  if (popupCelebracionEl) popupCelebracionEl.checked = config.popupCelebracion !== false; // Por defecto true
 }
 
 function verHistorial() {
@@ -360,6 +386,363 @@ function hacerCopia() {
     document.execCommand('copy');
     document.body.removeChild(textarea);
     mostrarAlerta('📋 JSON copiado (fallback)', 'success');
+  });
+}
+
+function abrirHistoricoTareas() {
+  const total = appState.agenda.tareas.length + appState.agenda.tareas_criticas.length;
+  const completadas = appState.agenda.tareas.filter(t => t.completada).length + 
+                     appState.agenda.tareas_criticas.filter(t => t.completada).length;
+  const pendientes = total - completadas;
+  
+  mostrarAlerta(`📊 Total: ${total} | Completadas: ${completadas} | Pendientes: ${pendientes}`, 'info');
+}
+
+// ========== HISTORIAL Y CELEBRACIONES ==========
+function guardarTareaCompletada(tarea, esCritica = false) {
+  const historial = JSON.parse(localStorage.getItem('historial-tareas') || '[]');
+  const fecha = new Date().toISOString().slice(0, 10);
+  const hora = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  
+  const tareaHistorial = {
+    id: Date.now(),
+    texto: tarea.titulo || tarea.texto,
+    fecha: fecha,
+    hora: hora,
+    esCritica: esCritica,
+    fechaLimite: tarea.fecha_fin || null
+  };
+  
+  historial.push(tareaHistorial);
+  
+  // Mantener solo últimos 1000 registros
+  if (historial.length > 1000) {
+    historial.splice(0, historial.length - 1000);
+  }
+  
+  localStorage.setItem('historial-tareas', JSON.stringify(historial));
+  
+  // Mostrar popup de celebración
+  mostrarPopupCelebracion();
+}
+
+function mostrarPopupCelebracion() {
+  // Verificar si los popups están activados
+  const visualConfig = JSON.parse(localStorage.getItem('config-visual') || '{}');
+  if (visualConfig.popupCelebracion === false) {
+    return;
+  }
+  
+  // Obtener frases personalizadas
+  const frasesPersonalizadas = visualConfig.frases || [];
+  
+  const frasesDefault = [
+    "¡Excelente trabajo! 🎉",
+    "¡Una tarea menos! 💪",
+    "¡Sigue así! ⭐",
+    "¡Genial! 🚀",
+    "¡Bien hecho! 👏",
+    "¡Progreso! 📈",
+    "¡Fantástico! ✨",
+    "¡Increíble! 🌟",
+    "¡Vas muy bien! 🎯",
+    "¡Imparable! 🔥"
+  ];
+  
+  // Usar frases personalizadas si existen, sino usar las por defecto
+  const frases = frasesPersonalizadas.length > 0 ? frasesPersonalizadas : frasesDefault;
+  const frase = frases[Math.floor(Math.random() * frases.length)];
+  
+  // Crear overlay transparente como el dashboard
+  const overlay = document.createElement('div');
+  overlay.className = 'dashboard-overlay';
+  overlay.innerHTML = `<div class="dashboard-content celebration-style">${frase}</div>`;
+  
+  document.body.appendChild(overlay);
+  
+  // Mostrar inmediatamente
+  overlay.classList.add('show');
+  
+  // Remover después de 1 segundo
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    setTimeout(() => overlay.remove(), 300);
+  }, 1000);
+}
+
+function mostrarResumenHoy() {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const historial = JSON.parse(localStorage.getItem('historial-tareas') || '[]');
+  const tareasHoy = historial.filter(t => t.fecha === hoy);
+  
+  const totalHoy = appState.agenda.tareas.length + appState.agenda.tareas_criticas.length;
+  const completadasHoy = tareasHoy.length;
+  const pendientesHoy = totalHoy - appState.agenda.tareas.filter(t => t.completada).length - appState.agenda.tareas_criticas.filter(t => t.completada).length;
+  
+  let resumen = `📅 RESUMEN DE HOY (${hoy})\n\n`;
+  resumen += `✅ Completadas: ${completadasHoy}\n`;
+  resumen += `⏳ Pendientes: ${pendientesHoy}\n`;
+  resumen += `📊 Total: ${totalHoy}\n\n`;
+  
+  if (tareasHoy.length > 0) {
+    resumen += "TAREAS COMPLETADAS HOY:\n";
+    tareasHoy.forEach((t, i) => {
+      resumen += `${i + 1}. ${t.texto} (${t.hora})${t.esCritica ? ' 🚨' : ''}\n`;
+    });
+  }
+  
+  const popup = window.open('', '_blank', 'width=600,height=500');
+  popup.document.write(`
+    <html><head><title>Resumen de Hoy</title></head>
+    <body style="font-family:monospace;padding:20px;background:#f5f5f5;">
+      <pre style="background:white;padding:20px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">${resumen}</pre>
+    </body></html>
+  `);
+}
+
+function mostrarDashboardMotivacional() {
+  const historial = JSON.parse(localStorage.getItem('historial-tareas') || '[]');
+  const hoy = new Date();
+  const hace7Dias = new Date();
+  hace7Dias.setDate(hoy.getDate() - 7);
+  
+  // Datos de hoy
+  const hoyStr = hoy.toISOString().slice(0, 10);
+  const tareasHoy = historial.filter(t => t.fecha === hoyStr);
+  const totalActual = appState.agenda.tareas.length + appState.agenda.tareas_criticas.length;
+  const completadasActuales = appState.agenda.tareas.filter(t => t.completada).length + appState.agenda.tareas_criticas.filter(t => t.completada).length;
+  const pendientesHoy = totalActual - completadasActuales;
+  
+  // Datos semanales
+  const tareasSemana = historial.filter(t => {
+    const fechaTarea = new Date(t.fecha + 'T00:00:00');
+    return fechaTarea >= hace7Dias && fechaTarea <= hoy;
+  });
+  
+  // Crear gráfico visual simple
+  const completadasSemana = tareasSemana.length;
+  const criticasSemana = tareasSemana.filter(t => t.esCritica).length;
+  const promedioDiario = Math.round(completadasSemana / 7 * 10) / 10;
+  
+  // Barra de progreso visual
+  const porcentajeHoy = totalActual > 0 ? Math.round((tareasHoy.length / totalActual) * 100) : 0;
+  const barraProgreso = '█'.repeat(Math.floor(porcentajeHoy / 5)) + '░'.repeat(20 - Math.floor(porcentajeHoy / 5));
+  
+  // Mensaje motivacional
+  let mensaje = '';
+  if (tareasHoy.length >= 5) mensaje = '🎆 ¡Eres imparable hoy!';
+  else if (tareasHoy.length >= 3) mensaje = '🚀 ¡Excelente ritmo!';
+  else if (tareasHoy.length >= 1) mensaje = '🌟 ¡Buen comienzo!';
+  else mensaje = '💪 ¡Es hora de brillar!';
+  
+  const dashboard = `🎆 MI PROGRESO SEMANAL
+
+${mensaje}
+
+📅 HOY (${hoyStr})
+✅ Completadas: ${tareasHoy.length}
+⏳ Pendientes: ${pendientesHoy}
+📊 Progreso: [${barraProgreso}] ${porcentajeHoy}%
+
+📈 ESTA SEMANA
+✨ Total logradas: ${completadasSemana}
+🚨 Críticas resueltas: ${criticasSemana}
+🎯 Promedio diario: ${promedioDiario}
+
+🏆 RACHA DE ÉXITO
+${completadasSemana > 10 ? '🔥 ¡Racha de fuego!' : completadasSemana > 5 ? '⭐ ¡Muy bien!' : '🌱 ¡Creciendo!'}
+
+📝 ÚLTIMAS TAREAS COMPLETADAS:
+${tareasHoy.slice(-3).map((t, i) => `${i + 1}. ${t.texto} (${t.hora})${t.esCritica ? ' 🚨' : ''}`).join('\n') || 'Aún no hay tareas completadas hoy'}`;
+  
+  // Crear overlay transparente
+  const overlay = document.createElement('div');
+  overlay.className = 'dashboard-overlay';
+  overlay.innerHTML = `<div class="dashboard-content"><pre>${dashboard}</pre></div>`;
+  
+  document.body.appendChild(overlay);
+  
+  // Mostrar inmediatamente
+  overlay.classList.add('show');
+  
+  // Cerrar al hacer clic
+  overlay.addEventListener('click', () => {
+    overlay.classList.remove('show');
+    setTimeout(() => overlay.remove(), 300);
+  });
+}
+
+// ========== SISTEMA DE NOTIFICACIONES ==========
+let intervalosNotificaciones = [];
+
+function solicitarPermisoNotificaciones() {
+  if (!('Notification' in window)) {
+    mostrarAlerta('❌ Tu navegador no soporta notificaciones', 'error');
+    return;
+  }
+  
+  if (Notification.permission === 'granted') {
+    mostrarAlerta('✅ Permisos ya concedidos', 'success');
+    iniciarSistemaNotificaciones();
+    return;
+  }
+  
+  if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        mostrarAlerta('✅ Permisos concedidos', 'success');
+        iniciarSistemaNotificaciones();
+      } else {
+        mostrarAlerta('❌ Permisos denegados', 'error');
+      }
+    });
+  } else {
+    mostrarAlerta('❌ Permisos denegados previamente', 'error');
+  }
+}
+
+function iniciarSistemaNotificaciones() {
+  const config = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
+  
+  if (!config.notificacionesActivas || Notification.permission !== 'granted') {
+    return;
+  }
+  
+  // Limpiar intervalos anteriores
+  detenerSistemaNotificaciones();
+  
+  // Verificar notificaciones cada minuto
+  const intervalo = setInterval(verificarNotificaciones, 60000);
+  intervalosNotificaciones.push(intervalo);
+  
+  // Verificar inmediatamente
+  verificarNotificaciones();
+  
+  console.log('🔔 Sistema de notificaciones iniciado');
+}
+
+function detenerSistemaNotificaciones() {
+  intervalosNotificaciones.forEach(intervalo => clearInterval(intervalo));
+  intervalosNotificaciones = [];
+  console.log('🔕 Sistema de notificaciones detenido');
+}
+
+function verificarNotificaciones() {
+  const config = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
+  const ahora = new Date();
+  
+  if (!config.notificacionesActivas || !appState.agenda.citas) {
+    return;
+  }
+  
+  appState.agenda.citas.forEach(cita => {
+    const fechaCita = parsearFechaCita(cita);
+    if (!fechaCita) return;
+    
+    const diferenciaMilisegundos = fechaCita.getTime() - ahora.getTime();
+    const diferenciaMinutos = Math.floor(diferenciaMilisegundos / (1000 * 60));
+    
+    // Verificar si necesita notificación
+    const necesitaNotificacion = (
+      (config.notif1Dia && diferenciaMinutos <= 1440 && diferenciaMinutos > 1439) || // 1 día = 1440 min
+      (config.notif2Horas && diferenciaMinutos <= 120 && diferenciaMinutos > 119) || // 2 horas = 120 min
+      (config.notif30Min && diferenciaMinutos <= 30 && diferenciaMinutos > 29) // 30 min
+    );
+    
+    if (necesitaNotificacion && !yaNotificado(cita, diferenciaMinutos)) {
+      enviarNotificacion(cita, diferenciaMinutos);
+      marcarComoNotificado(cita, diferenciaMinutos);
+    }
+  });
+}
+
+function parsearFechaCita(cita) {
+  try {
+    // Extraer hora de la descripción (formato: "HH:MM - Descripción")
+    const partes = cita.nombre.split(' - ');
+    if (partes.length < 2) return null;
+    
+    const hora = partes[0].trim();
+    const [horas, minutos] = hora.split(':').map(n => parseInt(n));
+    
+    if (isNaN(horas) || isNaN(minutos)) return null;
+    
+    const fechaCita = new Date(cita.fecha + 'T00:00:00');
+    fechaCita.setHours(horas, minutos, 0, 0);
+    
+    return fechaCita;
+  } catch (error) {
+    console.error('Error parseando fecha de cita:', error);
+    return null;
+  }
+}
+
+function enviarNotificacion(cita, minutosRestantes) {
+  const descripcion = cita.nombre.split(' - ')[1] || cita.nombre;
+  let tiempoTexto = '';
+  
+  if (minutosRestantes <= 30) {
+    tiempoTexto = '30 minutos';
+  } else if (minutosRestantes <= 120) {
+    tiempoTexto = '2 horas';
+  } else {
+    tiempoTexto = '1 día';
+  }
+  
+  const notification = new Notification('📅 Recordatorio de Cita', {
+    body: `${descripcion}\nEn ${tiempoTexto} - ${cita.fecha}`,
+    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📅</text></svg>',
+    tag: `cita-${cita.fecha}-${cita.nombre}`,
+    requireInteraction: true
+  });
+  
+  // Auto-cerrar después de 10 segundos
+  setTimeout(() => notification.close(), 10000);
+  
+  console.log(`🔔 Notificación enviada: ${descripcion} en ${tiempoTexto}`);
+}
+
+function yaNotificado(cita, minutosRestantes) {
+  const clave = `notif-${cita.fecha}-${cita.nombre}-${Math.floor(minutosRestantes / 30)}`;
+  return localStorage.getItem(clave) === 'true';
+}
+
+function marcarComoNotificado(cita, minutosRestantes) {
+  const clave = `notif-${cita.fecha}-${cita.nombre}-${Math.floor(minutosRestantes / 30)}`;
+  localStorage.setItem(clave, 'true');
+  
+  // Limpiar notificaciones antiguas (más de 7 días)
+  limpiarNotificacionesAntiguas();
+}
+
+function limpiarNotificacionesAntiguas() {
+  const hace7Dias = new Date();
+  hace7Dias.setDate(hace7Dias.getDate() - 7);
+  
+  Object.keys(localStorage).forEach(clave => {
+    if (clave.startsWith('notif-')) {
+      try {
+        const fecha = clave.split('-')[1];
+        const fechaNotif = new Date(fecha + 'T00:00:00');
+        if (fechaNotif < hace7Dias) {
+          localStorage.removeItem(clave);
+        }
+      } catch (error) {
+        // Ignorar errores de parsing
+      }
+    }
+  });
+}
+
+// Iniciar sistema al cargar la página
+if (typeof window !== 'undefined') {
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      const config = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
+      if (config.notificacionesActivas) {
+        iniciarSistemaNotificaciones();
+      }
+    }, 2000);
   });
 }
 
@@ -505,264 +888,7 @@ function iniciarRecordatorios() {
   }, 30 * 60 * 1000); // 30 minutos
 }
 
-let gapi = null;
-let isGoogleCalendarReady = false;
 
-function initGoogleCalendar() {
-  console.log('🔄 Iniciando Google Calendar API...');
-  
-  // Verificar si ya existe el script
-  if (document.querySelector('script[src*="apis.google.com"]')) {
-    console.log('📜 Script de Google API ya existe');
-    if (window.gapi) {
-      setupGoogleAPI();
-    }
-    return;
-  }
-  
-  const script = document.createElement('script');
-  script.src = 'https://apis.google.com/js/api.js';
-  script.async = true;
-  script.defer = true;
-  
-  script.onload = () => {
-    console.log('📜 Script de Google API cargado');
-    setupGoogleAPI();
-  };
-  
-  script.onerror = (error) => {
-    console.error('❌ Error cargando script de Google API:', error);
-    mostrarAlerta('❌ Error cargando Google API', 'error');
-  };
-  
-  document.head.appendChild(script);
-}
-
-function setupGoogleAPI() {
-  if (!window.gapi) {
-    console.error('❌ gapi no disponible');
-    return;
-  }
-  
-  gapi = window.gapi;
-  
-  try {
-    gapi.load('client:auth2', {
-      callback: () => {
-        console.log('📜 Client y Auth2 cargados');
-        initGoogleClient();
-      },
-      onerror: (error) => {
-        console.error('❌ Error cargando client:auth2:', error);
-      }
-    });
-  } catch (error) {
-    console.error('❌ Error en gapi.load:', error);
-  }
-}
-
-function initGoogleClient() {
-  const config = getGoogleCalendarConfig();
-  console.log('🔑 Config obtenida:', { hasApiKey: !!config.apiKey, hasClientId: !!config.clientId });
-  
-  if (!config.apiKey || !config.clientId) {
-    console.log('⚠️ Credenciales faltantes');
-    return;
-  }
-  
-  console.log('✅ Credenciales encontradas, inicializando cliente...');
-  
-  gapi.client.init({
-    apiKey: config.apiKey,
-    clientId: config.clientId,
-    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
-    scope: 'https://www.googleapis.com/auth/calendar'
-  }).then(() => {
-    isGoogleCalendarReady = true;
-    console.log('✅ Google Calendar API lista');
-    mostrarAlerta('✅ Google Calendar inicializado', 'success');
-  }).catch(error => {
-    console.error('❌ Error inicializando Google Calendar:', error);
-    mostrarAlerta('❌ Error en Google Calendar: ' + (error.details || error.error || 'Error desconocido'), 'error');
-  });
-}
-
-function getGoogleCalendarConfig() {
-  const saved = localStorage.getItem('google-calendar-config');
-  if (saved) {
-    return JSON.parse(saved);
-  }
-  return { apiKey: '', clientId: '' };
-}
-
-function guardarConfigGoogleCalendar() {
-  const apiKey = document.getElementById('google-apikey')?.value || '';
-  const clientId = document.getElementById('google-clientid')?.value || '';
-  
-  console.log('💾 Guardando config - API Key:', apiKey.substring(0, 10) + '...', 'Client ID:', clientId.substring(0, 20) + '...');
-  
-  if (!apiKey || !clientId) {
-    console.log('❌ Credenciales incompletas');
-    mostrarAlerta('❌ Completa API Key y Client ID', 'error');
-    return;
-  }
-
-  const config = { apiKey, clientId };
-  localStorage.setItem('google-calendar-config', JSON.stringify(config));
-  console.log('💾 Config guardada en localStorage');
-  
-  initGoogleCalendar();
-  mostrarAlerta('✅ Google Calendar configurado', 'success');
-}
-
-function conectarGoogleCalendar() {
-  console.log('🔗 Conectando a Google Calendar...');
-  console.log('🔍 Estado isGoogleCalendarReady:', isGoogleCalendarReady);
-  console.log('🔍 window.gapi disponible:', !!window.gapi);
-  console.log('🔍 gapi variable local:', !!gapi);
-  
-  // Verificar configuración primero
-  const config = getGoogleCalendarConfig();
-  console.log('🔑 Config actual:', { hasApiKey: !!config.apiKey, hasClientId: !!config.clientId });
-  
-  if (!config.apiKey || !config.clientId) {
-    console.log('❌ Credenciales faltantes');
-    mostrarAlerta('⚠️ Configura Google Calendar primero', 'warning');
-    return;
-  }
-  
-  if (!isGoogleCalendarReady) {
-    console.log('❌ Google Calendar no está listo, inicializando...');
-    mostrarAlerta('⚠️ Inicializando Google Calendar...', 'info');
-    initGoogleCalendar();
-    return;
-  }
-  
-  console.log('✅ Google Calendar listo, verificando auth...');
-  
-  if (!gapi || !gapi.auth2) {
-    console.error('❌ gapi.auth2 no disponible');
-    mostrarAlerta('❌ Error: API no inicializada', 'error');
-    return;
-  }
-  
-  try {
-    const authInstance = gapi.auth2.getAuthInstance();
-    console.log('🔍 AuthInstance obtenida:', !!authInstance);
-    
-    if (!authInstance) {
-      console.error('❌ No se pudo obtener AuthInstance');
-      mostrarAlerta('❌ Error de autenticación', 'error');
-      return;
-    }
-    
-    console.log('🔐 Iniciando proceso de login...');
-    authInstance.signIn().then(() => {
-      console.log('✅ Sesión iniciada correctamente');
-      mostrarAlerta('✅ Conectado a Google Calendar', 'success');
-      localStorage.setItem('google-calendar-connected', 'true');
-    }).catch(error => {
-      console.error('❌ Error en signIn:', error);
-      mostrarAlerta('❌ Error conectando: ' + (error.error || error.message || 'Error desconocido'), 'error');
-    });
-  } catch (error) {
-    console.error('❌ Error general en conectarGoogleCalendar:', error);
-    mostrarAlerta('❌ Error: ' + error.message, 'error');
-  }
-}
-
-function crearEventoGoogleCalendar(titulo, fecha, esUrgente = false) {
-  if (!isGoogleCalendarReady || !gapi.auth2.getAuthInstance().isSignedIn.get()) {
-    return; // Silencioso si no está configurado
-  }
-  
-  const fechaInicio = fecha + 'T' + (esUrgente ? '09:00:00' : '10:00:00');
-  const fechaFin = fecha + 'T' + (esUrgente ? '09:30:00' : '10:30:00');
-  
-  const evento = {
-    summary: (esUrgente ? '🚨 ' : '✅ ') + titulo,
-    start: {
-      dateTime: fechaInicio,
-      timeZone: 'Europe/Madrid'
-    },
-    end: {
-      dateTime: fechaFin,
-      timeZone: 'Europe/Madrid'
-    },
-    description: 'Creado desde Agenda Pablo',
-    reminders: {
-      useDefault: false,
-      overrides: [
-        { method: 'popup', minutes: 60 },
-        { method: 'popup', minutes: 10 }
-      ]
-    }
-  };
-  
-  gapi.client.calendar.events.insert({
-    calendarId: 'primary',
-    resource: evento
-  }).then(() => {
-    console.log('📅 Evento creado en Google Calendar');
-  }).catch(error => {
-    console.error('Error creando evento:', error);
-  });
-}
-
-function exportarGoogleCalendar() {
-  let icsContent = 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Agenda Pablo//ES\n';
-  
-  // Exportar citas
-  appState.agenda.citas.forEach(cita => {
-    if (cita.fecha) {
-      const fechaHora = cita.fecha.replace(/-/g, '') + 'T120000';
-      icsContent += 'BEGIN:VEVENT\n';
-      icsContent += `UID:${cita.id || Date.now()}@agenda-pablo\n`;
-      icsContent += `DTSTART:${fechaHora}\n`;
-      icsContent += `SUMMARY:${cita.nombre || 'Cita'}\n`;
-      icsContent += `DESCRIPTION:Cita desde Agenda Pablo\n`;
-      icsContent += 'END:VEVENT\n';
-    }
-  });
-  
-  // Exportar tareas críticas con fecha
-  appState.agenda.tareas_criticas.forEach(tarea => {
-    if (tarea.fecha_fin) {
-      const fecha = tarea.fecha_fin.replace(/-/g, '') + 'T090000';
-      icsContent += 'BEGIN:VEVENT\n';
-      icsContent += `UID:critica-${tarea.id || Date.now()}@agenda-pablo\n`;
-      icsContent += `DTSTART:${fecha}\n`;
-      icsContent += `SUMMARY:🚨 ${tarea.titulo}\n`;
-      icsContent += `DESCRIPTION:Tarea crítica desde Agenda Pablo\n`;
-      icsContent += 'END:VEVENT\n';
-    }
-  });
-  
-  // Exportar tareas normales con fecha
-  appState.agenda.tareas.forEach(tarea => {
-    if (tarea.fecha_fin) {
-      const fecha = tarea.fecha_fin.replace(/-/g, '') + 'T100000';
-      icsContent += 'BEGIN:VEVENT\n';
-      icsContent += `UID:tarea-${tarea.id || Date.now()}@agenda-pablo\n`;
-      icsContent += `DTSTART:${fecha}\n`;
-      icsContent += `SUMMARY:✅ ${tarea.texto}\n`;
-      icsContent += `DESCRIPTION:Tarea desde Agenda Pablo\n`;
-      icsContent += 'END:VEVENT\n';
-    }
-  });
-  
-  icsContent += 'END:VCALENDAR';
-  
-  const blob = new Blob([icsContent], { type: 'text/calendar' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'agenda-pablo-' + new Date().toISOString().slice(0, 10) + '.ics';
-  a.click();
-  URL.revokeObjectURL(url);
-  
-  mostrarAlerta('📅 Archivo .ics descargado', 'success');
-}
 
 // Inicializar Firebase y sincronización
 document.addEventListener('DOMContentLoaded', () => {
@@ -808,15 +934,10 @@ window.crearBackupManual = crearBackupManual;
 window.activarNotificaciones = activarNotificaciones;
 window.enviarNotificacion = enviarNotificacion;
 window.iniciarRecordatorios = iniciarRecordatorios;
-window.initGoogleCalendar = initGoogleCalendar;
-window.setupGoogleAPI = setupGoogleAPI;
-window.initGoogleClient = initGoogleClient;
-window.getGoogleCalendarConfig = getGoogleCalendarConfig;
-window.guardarConfigGoogleCalendar = guardarConfigGoogleCalendar;
-window.conectarGoogleCalendar = conectarGoogleCalendar;
-window.crearEventoGoogleCalendar = crearEventoGoogleCalendar;
-window.exportarGoogleCalendar = exportarGoogleCalendar;
+
 window.cargarConfiguracionesModal = cargarConfiguracionesModal;
 window.cambiarFraseMotivacional = cambiarFraseMotivacional;
+window.guardarConfigFuncionales = guardarConfigFuncionales;
+window.cargarConfigFuncionales = cargarConfigFuncionales;
 window.guardarConfigExtendsClass = guardarConfigFirebase;
 window.probarConexionExtendsClass = probarConexionFirebase;
