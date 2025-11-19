@@ -472,22 +472,33 @@ section h3 {
 /* ========== NOTAS Y SENTIMIENTOS ========== */
 #notas-texto, #sentimientos-texto {
   width: 100%;
-  min-height: 60px;
-  max-height: 300px;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  padding: 12px;
-  font-family: inherit;
+  height: 80px;
+  min-height: 80px;
+  max-height: 80px;
+  border: 2px solid #e3f2fd;
+  border-radius: 12px;
+  padding: 15px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-size: 14px;
-  resize: vertical;
+  line-height: 1.4;
+  resize: none;
   overflow-y: auto;
   transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 #notas-texto:focus, #sentimientos-texto:focus {
   outline: none;
   border-color: #4ecdc4;
-  box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1);
+  box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1), 0 4px 12px rgba(78, 205, 196, 0.15);
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #ffffff 0%, #f0f8ff 100%);
+}
+
+#notas-texto:hover, #sentimientos-texto:hover {
+  border-color: #a8e6cf;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 /* ========== MODALES ========== */
