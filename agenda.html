@@ -6,10 +6,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🧠 Agenda de Pablo 🚆</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
-<link rel="manifest" href="../manifest.json">
+<link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%234ecdc4' rx='20'/><text x='90' y='120' font-size='100' text-anchor='middle' fill='white'>🧠</text></svg>">
 <meta name="theme-color" content="#4ecdc4">
-<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="assets/css/main.css">
 </head>
 <body>
 
@@ -35,7 +35,6 @@
       <section class="drop-zone" data-target="criticas">
         <h3>🚨 Tareas Críticas 🚨</h3>
         
-        <!-- Filtros para tareas críticas -->
         <div class="filtros-container">
           <button class="filtros-toggle" onclick="toggleFiltros('criticas')">
             <span>🔍 Filtros</span>
@@ -117,7 +116,6 @@
           </div>
         </div>
         
-        <!-- Filtros para tareas normales -->
         <div class="filtros-container">
           <button class="filtros-toggle" onclick="toggleFiltros('tareas')">
             <span>🔍 Filtros</span>
@@ -179,13 +177,10 @@
   <div class="modal-content" style="max-width:1000px;width:95%;max-height:90vh;overflow-y:auto;">
     <h4>📅 Calendario</h4>
     <div style="display:grid;grid-template-columns:250px 1fr;gap:20px;">
-      <!-- Columna izquierda: Todas las citas -->
       <div style="border-right:1px solid #eee;padding-right:15px;">
         <h5 style="margin:0 0 10px 0;color:#2c3e50;">📋 Todas las citas</h5>
         <div id="allAppointmentsList" style="max-height:400px;overflow-y:auto;"></div>
       </div>
-      
-      <!-- Panel principal: Calendario y citas del día -->
       <div>
         <div class="calendar-header">
           <button id="prevMonth" class="calendar-nav-btn">◀</button>
@@ -215,13 +210,10 @@
   <div class="modal-content" style="max-width:1000px;width:95%;max-height:90vh;overflow-y:auto;">
     <h4>📅 Calendario de Tareas</h4>
     <div style="display:grid;grid-template-columns:250px 1fr;gap:20px;">
-      <!-- Columna izquierda: Todas las tareas con fecha -->
       <div style="border-right:1px solid #eee;padding-right:15px;">
         <h5 style="margin:0 0 10px 0;color:#2c3e50;">📝 Todas las tareas</h5>
         <div id="allTasksList" style="max-height:400px;overflow-y:auto;"></div>
       </div>
-      
-      <!-- Panel principal: Calendario y tareas del día -->
       <div>
         <div class="calendar-header">
           <button id="prevMonthTareas" class="calendar-nav-btn">◀</button>
@@ -306,46 +298,6 @@
   </div>
 </div>
 
-<!-- Modal para seleccionar hora -->
-<div id="modal-hora" class="modal">
-  <div class="modal-content" style="max-width:280px;padding:15px;">
-    <h4 style="margin:0 0 10px 0;text-align:center;">🕰️ Seleccionar Hora</h4>
-    <div style="display:flex;gap:8px;align-items:center;justify-content:center;margin:10px 0;">
-      <select id="hora-select" style="padding:6px;border-radius:4px;border:1px solid #ddd;font-size:14px;">
-        <option value="08">08</option>
-        <option value="09">09</option>
-        <option value="10">10</option>
-        <option value="11">11</option>
-        <option value="12">12</option>
-        <option value="13">13</option>
-        <option value="14" selected>14</option>
-        <option value="15">15</option>
-        <option value="16">16</option>
-        <option value="17">17</option>
-        <option value="18">18</option>
-        <option value="19">19</option>
-        <option value="20">20</option>
-        <option value="21">21</option>
-        <option value="22">22</option>
-      </select>
-      <span style="font-size:16px;font-weight:bold;">:</span>
-      <select id="minuto-select" style="padding:6px;border-radius:4px;border:1px solid #ddd;font-size:14px;">
-        <option value="00" selected>00</option>
-        <option value="15">15</option>
-        <option value="30">30</option>
-        <option value="45">45</option>
-      </select>
-    </div>
-    <div style="margin-bottom:10px;">
-      <input type="text" id="cita-descripcion" placeholder="¿Qué hacer?" style="width:100%;padding:8px;border-radius:4px;border:1px solid #ddd;font-size:14px;">
-    </div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn-primario" onclick="confirmarCita()" style="flex:1;padding:8px;font-size:13px;">Añadir</button>
-      <button class="btn-secundario" onclick="cerrarModal('modal-hora')" style="flex:1;padding:8px;font-size:13px;">Cancelar</button>
-    </div>
-  </div>
-</div>
-
 <!-- Modal para nueva cita única -->
 <div id="modal-nueva-cita" class="modal">
   <div class="modal-content" style="max-width:350px;">
@@ -407,23 +359,20 @@
   </div>
 </div>
 
-<!-- Modal de Configuración con Pestañas -->
+<!-- Modal de Configuración -->
 <div id="modal-config" class="modal">
   <div class="modal-content" style="max-width:500px;">
     <h4>⚙️ Configuración</h4>
     
-    <!-- Pestañas -->
     <div class="config-tabs">
-      <button class="config-tab active" onclick="switchTab('github')">🔥 Firebase</button>
+      <button class="config-tab active" onclick="switchTab('firebase')">🔥 Firebase</button>
       <button class="config-tab" onclick="switchTab('google')">📅 Google</button>
       <button class="config-tab" onclick="switchTab('visual')">🎨 Visual</button>
       <button class="config-tab" onclick="switchTab('actions')">⚙️ Acciones</button>
-      <button class="config-tab" onclick="switchTab('options')">🔧 Opciones</button>
-      <button class="config-tab" onclick="switchTab('guide')">📖 Guía</button>
     </div>
     
     <!-- Contenido Firebase -->
-    <div id="tab-github" class="tab-content active">
+    <div id="tab-firebase" class="tab-content active">
       <div style="padding:20px;text-align:center;">
         <h3>🔥 Firebase Firestore</h3>
         <p>Configura Firebase para sincronización en tiempo real.</p>
@@ -453,20 +402,36 @@
     <div id="tab-google" class="tab-content">
       <div style="padding:20px;text-align:center;">
         <h3>📅 Google Calendar</h3>
+        <div style="background:#fff3cd;border:1px solid #ffeaa7;padding:15px;border-radius:8px;margin-bottom:15px;">
+          <h4 style="margin:0 0 10px 0;color:#856404;">⚠️ Configuración Requerida</h4>
+          <p style="font-size:12px;color:#856404;margin:0;">
+            Necesitas crear tu propio proyecto en Google Cloud Console y configurar OAuth 2.0 con tu dominio autorizado.
+          </p>
+        </div>
         <div class="form-group">
           <label>API Key:</label>
-          <input type="text" id="google-apikey" placeholder="AIzaSy..." value="AIzaSyAQmGl6Q7wBzo7TyDMZmDtP5-_zb4LYN4w">
+          <input type="text" id="google-apikey" placeholder="Tu API Key de Google Cloud">
         </div>
         <div class="form-group">
           <label>Client ID:</label>
-          <input type="text" id="google-clientid" placeholder="123-abc.apps.googleusercontent.com" value="675236622928-b3prqphl88u90me7j9tb6ikh0rqmt3jk.apps.googleusercontent.com">
+          <input type="text" id="google-clientid" placeholder="Tu-Client-ID.apps.googleusercontent.com">
         </div>
         <button class="btn-primario" onclick="guardarConfigGoogleCalendar()">Guardar Config</button>
-        <button class="btn-secundario" onclick="testGoogleConnection()">TEST</button>
         <button class="btn-secundario" onclick="conectarGoogleCalendar()">Conectar a Google</button>
-        <p style="font-size:11px;color:#666;margin-top:10px;">
-          Al crear citas, marca el checkbox para añadir a Google Calendar
-        </p>
+        <div style="margin-top:15px;font-size:11px;color:#666;">
+          <p><strong>Configuración para tu dominio:</strong></p>
+          <div style="background:#f8f9fa;padding:10px;border-radius:4px;margin:10px 0;">
+            <strong style="color:#d73502;">⚠️ AGREGAR A OAUTH:</strong><br>
+            <code style="font-size:10px;">https://linuxesdios.github.io/AgendaGitSyncro/agenda.html</code>
+          </div>
+          <ol style="text-align:left;display:inline-block;font-size:10px;">
+            <li>Ve a <strong>console.cloud.google.com</strong></li>
+            <li>Crea proyecto → Habilita <strong>Google Calendar API</strong></li>
+            <li>Credenciales → <strong>OAuth 2.0</strong> → Aplicación web</li>
+            <li>Orígenes autorizados: <strong>https://linuxesdios.github.io</strong></li>
+            <li>Copia <strong>API Key</strong> y <strong>Client ID</strong> aquí</li>
+          </ol>
+        </div>
       </div>
     </div>
     
@@ -482,12 +447,6 @@
       <div class="form-group">
         <label>Nombre:</label>
         <input type="text" id="config-nombre-input" placeholder="Mi Agenda">
-      </div>
-      <div class="form-group">
-        <label>Frases motivacionales (una por línea):</label>
-        <textarea id="config-frases" rows="4" placeholder="El éxito es la suma de pequeños esfuerzos repetidos día tras día
-Cada día es una nueva oportunidad para mejorar
-La disciplina es el puente entre metas y logros"></textarea>
       </div>
       <button class="btn-primario" onclick="guardarConfigVisualPanel()">Aplicar</button>
     </div>
@@ -511,103 +470,10 @@ La disciplina es el puente entre metas y logros"></textarea>
       <div style="display:grid;grid-template-columns:1fr;gap:10px;">
         <button class="btn-primario" onclick="activarNotificaciones()">🔔 Activar Notificaciones</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr;gap:10px;">
-        <button class="btn-secundario" onclick="exportarGoogleCalendar()">📅 Exportar .ics</button>
-      </div>
-    </div>
-    
-    <!-- Contenido Opciones -->
-    <div id="tab-options" class="tab-content">
-      <div class="form-group">
-        <label style="display:flex;align-items:center;gap:10px;">
-          <input type="checkbox" id="config-forzar-fecha" onchange="guardarConfigOpciones()">
-          <span>Forzar fecha al crear tareas</span>
-        </label>
-      </div>
-      <div class="form-group">
-        <label style="display:flex;align-items:center;gap:10px;">
-          <input type="checkbox" id="config-sin-tactil" onchange="guardarConfigOpciones()">
-          <span>Deshabilitar respuesta táctil</span>
-        </label>
-      </div>
-      <div class="form-group">
-        <label style="display:flex;align-items:center;gap:10px;">
-          <input type="checkbox" id="config-mostrar-todo" onchange="guardarConfigOpciones()">
-          <span>Mostrar todas las fechas por defecto</span>
-        </label>
-      </div>
-      <div class="form-group">
-        <label style="display:flex;align-items:center;gap:10px;">
-          <input type="checkbox" id="config-botones-borrar" onchange="guardarConfigOpciones()">
-          <span>Mostrar botones de borrar en tareas</span>
-        </label>
-      </div>
-    </div>
-    
-    <!-- Contenido Guía -->
-    <div id="tab-guide" class="tab-content">
-      <div style="max-height:400px;overflow-y:auto;padding:10px;">
-        <h5>📖 Guía de Uso</h5>
-        <div style="margin-bottom:15px;">
-          <h6>🔴 Símbolos de Estado:</h6>
-          <ul style="font-size:12px;">
-            <li><strong>●</strong> - Tarea pendiente</li>
-            <li><strong>→</strong> - Tarea migrada/delegada</li>
-            <li><strong>&lt;</strong> - Tarea programada</li>
-            <li><strong>✔</strong> - Tarea completada</li>
-          </ul>
-        </div>
-        <div style="margin-bottom:15px;">
-          <h6>🎯 Controles:</h6>
-          <ul style="font-size:12px;">
-            <li>Clic en símbolo: cambiar estado</li>
-            <li>Clic en texto: editar tarea</li>
-            <li>Botón ➕: añadir subtarea</li>
-            <li>Arrastrar: mover entre columnas</li>
-          </ul>
-        </div>
-        <div style="margin-bottom:15px;">
-          <h6>📅 Filtros:</h6>
-          <ul style="font-size:12px;">
-            <li>15d: alternar vista de largo plazo</li>
-            <li>🔍 Filtros: por estado, fecha, prioridad</li>
-            <li>Próximas 30 días / Todas las citas</li>
-          </ul>
-        </div>
-        <div style="margin-bottom:15px;">
-          <h6>🔥 Firebase Firestore:</h6>
-          <ul style="font-size:12px;">
-            <li><strong>1.</strong> Sincronización en tiempo real</li>
-            <li><strong>2.</strong> 1GB gratis + 50k lecturas/día</li>
-            <li><strong>3.</strong> Respaldo automático de Google</li>
-            <li><strong>4.</strong> Acceso desde cualquier dispositivo</li>
-            <li><strong>5.</strong> Configurar en console.firebase.google.com</li>
-          </ul>
-        </div>
-        <div>
-          <h6>⚙️ Configuración:</h6>
-          <ul style="font-size:12px;">
-            <li>Firebase: sincronización en tiempo real</li>
-            <li>Visual: tema, nombre, frases</li>
-            <li>Opciones: fecha obligatoria, sin táctil</li>
-          </ul>
-        </div>
-      </div>
     </div>
     
     <div class="modal-botones">
       <button class="btn-secundario" onclick="cerrarModal('modal-config')">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal para ver historial -->
-<div id="modal-historial" class="modal">
-  <div class="modal-content" style="max-width:800px;width:95%;max-height:90vh;">
-    <h4>📜 Historial de Elementos Eliminados</h4>
-    <div id="historial-contenido" style="max-height:70vh;overflow-y:auto;padding:10px;border:1px solid #ddd;border-radius:8px;background:#f9f9f9;"></div>
-    <div class="modal-botones">
-      <button class="btn-secundario" onclick="cerrarModal('modal-historial')">Cerrar</button>
     </div>
   </div>
 </div>
@@ -687,21 +553,17 @@ La disciplina es el puente entre metas y logros"></textarea>
   <div class="modal-content" style="max-width:450px;">
     <h4>📅 Conjunto de Citas</h4>
     
-    <!-- Selector de fecha base -->
     <div class="form-group">
       <label>Fecha base:</label>
       <input type="date" id="fecha-base-citas" onkeydown="return false;" onclick="this.showPicker();" onchange="actualizarPreviewFecha()">
     </div>
     
-    <!-- Lista de citas a agregar -->
     <div class="form-group">
       <label>Citas a agregar:</label>
       <div id="lista-citas-relativas" style="max-height:200px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:10px;background:#f9f9f9;">
-        <!-- Las citas se agregarán aquí dinámicamente -->
       </div>
     </div>
     
-    <!-- Formulario para nueva cita -->
     <div style="border-top:1px solid #eee;padding-top:15px;margin-top:15px;">
       <div class="form-group">
         <label>Nueva cita:</label>
@@ -772,12 +634,12 @@ La disciplina es el puente entre metas y logros"></textarea>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
 <!-- Scripts modulares -->
-<script src="js/app.js"></script>
-<script src="js/tareas.js"></script>
-<script src="js/calendario.js"></script>
-<script src="js/sincronizacion-simple.js"></script>
-<script src="js/rendimiento.js"></script>
-<script src="js/compatibility.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/tareas.js"></script>
+<script src="assets/js/calendario.js"></script>
+<script src="assets/js/sincronizacion-simple.js"></script>
+<script src="assets/js/rendimiento.js"></script>
+<script src="assets/js/compatibility.js"></script>
 
 </body>
 </html>
