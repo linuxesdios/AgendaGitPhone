@@ -1096,32 +1096,7 @@ body.modo-oscuro {
   .config-tab { padding: 8px 12px; font-size: 12px; }
 }
 
-/* ========== SCROLL MEJORADO PARA LISTAS ========== */
-#lista-criticas, #lista-metodo {
-  max-height: 50vh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  padding-right: 5px;
-}
 
-#lista-criticas::-webkit-scrollbar, #lista-metodo::-webkit-scrollbar {
-  width: 6px;
-}
-
-#lista-criticas::-webkit-scrollbar-track, #lista-metodo::-webkit-scrollbar-track {
-  background: rgba(0,0,0,0.05);
-  border-radius: 3px;
-}
-
-#lista-criticas::-webkit-scrollbar-thumb, #lista-metodo::-webkit-scrollbar-thumb {
-  background: rgba(78, 205, 196, 0.5);
-  border-radius: 3px;
-}
-
-#lista-criticas::-webkit-scrollbar-thumb:hover, #lista-metodo::-webkit-scrollbar-thumb:hover {
-  background: rgba(78, 205, 196, 0.7);
-}
 
 /* ========== SUBTAREAS ========== */
 .subtarea-item {

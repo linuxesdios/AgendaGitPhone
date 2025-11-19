@@ -91,6 +91,17 @@ function renderizarCriticas() {
     div.appendChild(simbolo);
     div.appendChild(texto);
     
+    // Botón de subtareas para tareas críticas
+    const btnSubtareaCritica = document.createElement('button');
+    btnSubtareaCritica.className = 'btn-subtarea';
+    btnSubtareaCritica.textContent = '📝';
+    btnSubtareaCritica.title = 'Añadir subtarea';
+    btnSubtareaCritica.onclick = (e) => {
+      e.stopPropagation();
+      abrirModalSubtareaCritica(realIndex);
+    };
+    div.appendChild(btnSubtareaCritica);
+    
     // Botón de borrar - siempre visible
     const btnBorrar = document.createElement('button');
     btnBorrar.className = 'btn-borrar-tarea';
@@ -154,6 +165,37 @@ function renderizarCriticas() {
     }
     
     lista.appendChild(div);
+    
+    // Renderizar subtareas si existen
+    if (tarea.subtareas && tarea.subtareas.length > 0) {
+      tarea.subtareas.forEach((subtarea, subIndex) => {
+        const subDiv = document.createElement('div');
+        subDiv.className = 'subtarea-item';
+        if (subtarea.completada) subDiv.classList.add('subtarea-completada');
+        
+        const subSimbolo = document.createElement('span');
+        subSimbolo.className = 'subtarea-simbolo';
+        subSimbolo.textContent = subtarea.completada ? '✓' : '○';
+        subSimbolo.onclick = () => toggleSubtareaCritica(realIndex, subIndex);
+        
+        const subTexto = document.createElement('div');
+        subTexto.className = 'subtarea-texto';
+        subTexto.textContent = subtarea.texto;
+        
+        const btnBorrarSub = document.createElement('button');
+        btnBorrarSub.className = 'btn-borrar-subtarea';
+        btnBorrarSub.textContent = '🗑️';
+        btnBorrarSub.onclick = (e) => {
+          e.stopPropagation();
+          eliminarSubtareaCritica(realIndex, subIndex);
+        };
+        
+        subDiv.appendChild(subSimbolo);
+        subDiv.appendChild(subTexto);
+        subDiv.appendChild(btnBorrarSub);
+        lista.appendChild(subDiv);
+      });
+    }
   });
 }
 
@@ -939,6 +981,82 @@ function guardarEdicion(index, tipo) {
 }
 
 // ========== SUBTAREAS ==========
+function abrirModalSubtareaCritica(tareaIndex) {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.id = 'modal-subtarea-critica';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h4>📝 Nueva Subtarea Crítica</h4>
+      <div class="form-group">
+        <label>Descripción:</label>
+        <input type="text" id="subtarea-critica-texto" placeholder="Ej: Revisar documentos">
+      </div>
+      <div class="modal-botones">
+        <button class="btn-primario" onclick="agregarSubtareaCritica(${tareaIndex})">Añadir</button>
+        <button class="btn-secundario" onclick="cerrarModal('modal-subtarea-critica')">Cancelar</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  modal.style.display = 'block';
+  setTimeout(() => document.getElementById('subtarea-critica-texto').focus(), 100);
+}
+
+function agregarSubtareaCritica(tareaIndex) {
+  const texto = document.getElementById('subtarea-critica-texto').value.trim();
+  if (!texto) {
+    alert('Ingresa una descripción para la subtarea');
+    return;
+  }
+  
+  const tarea = appState.agenda.tareas_criticas[tareaIndex];
+  if (!tarea.subtareas) tarea.subtareas = [];
+  
+  tarea.subtareas.push({
+    id: Date.now().toString(),
+    texto: texto,
+    completada: false
+  });
+  
+  cerrarModal('modal-subtarea-critica');
+  renderizar();
+  guardarJSON(true);
+  mostrarAlerta('📝 Subtarea crítica añadida', 'success');
+}
+
+function toggleSubtareaCritica(tareaIndex, subIndex) {
+  const subtarea = appState.agenda.tareas_criticas[tareaIndex].subtareas[subIndex];
+  subtarea.completada = !subtarea.completada;
+  
+  renderizar();
+  guardarJSON(true);
+  
+  if (subtarea.completada) {
+    mostrarAlerta('✅ Subtarea crítica completada', 'success');
+  }
+}
+
+function eliminarSubtareaCritica(tareaIndex, subIndex) {
+  const configFuncionales = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
+  const necesitaConfirmacion = configFuncionales.confirmacionBorrar !== false;
+  
+  if (necesitaConfirmacion) {
+    mostrarCuentaRegresiva(() => {
+      appState.agenda.tareas_criticas[tareaIndex].subtareas.splice(subIndex, 1);
+      renderizar();
+      guardarJSON(true);
+      mostrarAlerta('🗑️ Subtarea crítica eliminada', 'info');
+    });
+  } else {
+    appState.agenda.tareas_criticas[tareaIndex].subtareas.splice(subIndex, 1);
+    renderizar();
+    guardarJSON(true);
+    mostrarAlerta('🗑️ Subtarea crítica eliminada', 'info');
+  }
+}
+
 function abrirModalSubtarea(tareaIndex) {
   const modal = document.createElement('div');
   modal.className = 'modal';
@@ -1101,3 +1219,7 @@ window.abrirModalSubtarea = abrirModalSubtarea;
 window.agregarSubtarea = agregarSubtarea;
 window.toggleSubtarea = toggleSubtarea;
 window.eliminarSubtarea = eliminarSubtarea;
+window.abrirModalSubtareaCritica = abrirModalSubtareaCritica;
+window.agregarSubtareaCritica = agregarSubtareaCritica;
+window.toggleSubtareaCritica = toggleSubtareaCritica;
+window.eliminarSubtareaCritica = eliminarSubtareaCritica;
