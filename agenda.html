@@ -361,14 +361,14 @@
 
 <!-- Modal de Configuración -->
 <div id="modal-config" class="modal">
-  <div class="modal-content" style="max-width:500px;">
+  <div class="modal-content" style="max-width:500px;max-height:90vh;overflow-y:auto;">
     <h4>⚙️ Configuración</h4>
     
     <div class="config-tabs">
       <button class="config-tab active" onclick="switchTab('firebase')">🔥 Firebase</button>
-      <button class="config-tab" onclick="switchTab('google')">📅 Google</button>
       <button class="config-tab" onclick="switchTab('visual')">🎨 Visual</button>
-      <button class="config-tab" onclick="switchTab('actions')">⚙️ Acciones</button>
+      <button class="config-tab" onclick="switchTab('funcionales')">⚙️ Funcionales</button>
+      <button class="config-tab" onclick="switchTab('actions')">📊 Acciones</button>
     </div>
     
     <!-- Contenido Firebase -->
@@ -452,6 +452,34 @@
           <input type="text" id="config-nombre-input" placeholder="Pablo">
         </div>
         <button class="btn-primario" onclick="guardarConfigVisualPanel()">Aplicar</button>
+      </div>
+    </div>
+    
+    <!-- Contenido Funcionales -->
+    <div id="tab-funcionales" class="tab-content">
+      <div style="padding:20px;">
+        <h3>⚙️ Configuración Funcional</h3>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:10px;">
+            <input type="checkbox" id="config-fecha-obligatoria" onchange="guardarConfigFuncionales()">
+            <span>Fecha obligatoria al crear tareas</span>
+          </label>
+          <small style="color:#666;font-size:12px;">Si está activado, será obligatorio poner fecha límite al crear tareas</small>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:10px;">
+            <input type="checkbox" id="config-confirmacion-borrar" onchange="guardarConfigFuncionales()">
+            <span>Confirmación antes de borrar</span>
+          </label>
+          <small style="color:#666;font-size:12px;">Pedir confirmación antes de eliminar tareas</small>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:10px;">
+            <input type="checkbox" id="config-auto-mayuscula" onchange="guardarConfigFuncionales()">
+            <span>Auto-mayúscula en tareas</span>
+          </label>
+          <small style="color:#666;font-size:12px;">Capitalizar automáticamente la primera letra</small>
+        </div>
       </div>
     </div>
     

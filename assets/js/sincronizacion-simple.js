@@ -222,6 +222,9 @@ function cargarConfiguracionesModal() {
   if (appIdEl) appIdEl.value = firebaseConfig.appId || '';
   if (googleApiKeyEl) googleApiKeyEl.value = googleConfig.apiKey || '';
   if (googleClientIdEl) googleClientIdEl.value = googleConfig.clientId || '';
+  
+  // Cargar configuraciones funcionales
+  cargarConfigFuncionales();
 }
 
 function cambiarFraseMotivacional() {
@@ -307,6 +310,29 @@ function guardarConfigOpciones() {
   };
   
   localStorage.setItem('config-opciones', JSON.stringify(config));
+}
+
+function guardarConfigFuncionales() {
+  const config = {
+    fechaObligatoria: document.getElementById('config-fecha-obligatoria')?.checked || false,
+    confirmacionBorrar: document.getElementById('config-confirmacion-borrar')?.checked || false,
+    autoMayuscula: document.getElementById('config-auto-mayuscula')?.checked || false
+  };
+  
+  localStorage.setItem('config-funcionales', JSON.stringify(config));
+  mostrarAlerta('✅ Configuración funcional guardada', 'success');
+}
+
+function cargarConfigFuncionales() {
+  const config = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
+  
+  const fechaObligatoriaEl = document.getElementById('config-fecha-obligatoria');
+  const confirmacionBorrarEl = document.getElementById('config-confirmacion-borrar');
+  const autoMayusculaEl = document.getElementById('config-auto-mayuscula');
+  
+  if (fechaObligatoriaEl) fechaObligatoriaEl.checked = config.fechaObligatoria || false;
+  if (confirmacionBorrarEl) confirmacionBorrarEl.checked = config.confirmacionBorrar !== false; // Por defecto true
+  if (autoMayusculaEl) autoMayusculaEl.checked = config.autoMayuscula !== false; // Por defecto true
 }
 
 function verHistorial() {

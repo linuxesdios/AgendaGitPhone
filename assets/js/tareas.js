@@ -98,7 +98,12 @@ function renderizarCriticas() {
     btnBorrar.title = 'Eliminar tarea crítica';
     btnBorrar.onclick = async (e) => {
       e.stopPropagation();
-      if (confirm('¿Eliminar esta tarea crítica?')) {
+      
+      // Verificar configuración de confirmación
+      const configFuncionales = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
+      const necesitaConfirmacion = configFuncionales.confirmacionBorrar !== false; // Por defecto true
+      
+      if (!necesitaConfirmacion || confirm('¿Eliminar esta tarea crítica?')) {
         appState.agenda.tareas_criticas.splice(realIndex, 1);
         renderizar();
         await guardarJSON(true);
@@ -241,7 +246,12 @@ function renderizarTareas() {
     btnBorrar.title = 'Eliminar tarea';
     btnBorrar.onclick = async (e) => {
       e.stopPropagation();
-      if (confirm('¿Eliminar esta tarea?')) {
+      
+      // Verificar configuración de confirmación
+      const configFuncionales = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
+      const necesitaConfirmacion = configFuncionales.confirmacionBorrar !== false; // Por defecto true
+      
+      if (!necesitaConfirmacion || confirm('¿Eliminar esta tarea?')) {
         appState.agenda.tareas.splice(realIndex, 1);
         renderizar();
         await guardarJSON(true);
@@ -412,10 +422,10 @@ async function agregarTareaCritica() {
     return;
   }
   
-  // Verificar si se debe forzar fecha
-  const configOpciones = JSON.parse(localStorage.getItem('config-opciones') || '{}');
-  if (configOpciones.forzarFecha && !fecha) {
-    alert('Debes seleccionar una fecha para crear la tarea');
+  // Verificar si se debe forzar fecha (nueva configuración funcional)
+  const configFuncionales = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
+  if (configFuncionales.fechaObligatoria && !fecha) {
+    alert('Debes seleccionar una fecha límite para crear la tarea');
     return;
   }
   
@@ -458,10 +468,10 @@ async function agregarTarea() {
     return;
   }
   
-  // Verificar si se debe forzar fecha
-  const configOpciones = JSON.parse(localStorage.getItem('config-opciones') || '{}');
-  if (configOpciones.forzarFecha && !fecha) {
-    alert('Debes seleccionar una fecha para crear la tarea');
+  // Verificar si se debe forzar fecha (nueva configuración funcional)
+  const configFuncionales = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
+  if (configFuncionales.fechaObligatoria && !fecha) {
+    alert('Debes seleccionar una fecha límite para crear la tarea');
     return;
   }
   
