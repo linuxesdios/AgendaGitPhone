@@ -136,6 +136,7 @@ function guardarJSON(silent = false) {
     tareas_criticas: appState.agenda.tareas_criticas,
     tareas: appState.agenda.tareas,
     notas: appState.agenda.notas,
+    sentimientos: appState.agenda.sentimientos || '',
     citas: appState.agenda.citas || [],
     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
   };
@@ -163,6 +164,7 @@ function procesarJSON(data) {
   appState.agenda.tareas_criticas = data.tareas_criticas || [];
   appState.agenda.tareas = data.tareas || [];
   appState.agenda.notas = data.notas || '';
+  appState.agenda.sentimientos = data.sentimientos || '';
   appState.agenda.citas = data.citas || [];
   
   // Actualizar textarea de notas
@@ -170,6 +172,13 @@ function procesarJSON(data) {
   if (notasEl && appState.agenda.notas) {
     notasEl.value = appState.agenda.notas;
     autoResizeTextarea(notasEl);
+  }
+  
+  // Actualizar textarea de sentimientos
+  const sentimientosEl = document.getElementById('sentimientos-texto');
+  if (sentimientosEl && appState.agenda.sentimientos) {
+    sentimientosEl.value = appState.agenda.sentimientos;
+    autoResizeTextarea(sentimientosEl);
   }
   
   if (typeof renderizar === 'function') {
@@ -208,6 +217,8 @@ function cargarConfiguracionesModal() {
   const nombreEl = document.getElementById('config-nombre-input');
   const frasesEl = document.getElementById('config-frases-motivacionales');
   const popupCelebracionEl = document.getElementById('config-popup-celebracion');
+  const mostrarNotasEl = document.getElementById('config-mostrar-notas');
+  const mostrarSentimientosEl = document.getElementById('config-mostrar-sentimientos');
   const apiKeyEl = document.getElementById('firebase-apikey');
   const projectIdEl = document.getElementById('firebase-projectid');
   const messagingSenderIdEl = document.getElementById('firebase-messagingsenderid');
@@ -217,6 +228,8 @@ function cargarConfiguracionesModal() {
   if (nombreEl) nombreEl.value = visualConfig.nombre || 'Pablo';
   if (frasesEl) frasesEl.value = (visualConfig.frases || []).join('\n');
   if (popupCelebracionEl) popupCelebracionEl.checked = visualConfig.popupCelebracion !== false;
+  if (mostrarNotasEl) mostrarNotasEl.checked = visualConfig.mostrarNotas !== false;
+  if (mostrarSentimientosEl) mostrarSentimientosEl.checked = visualConfig.mostrarSentimientos !== false;
   if (apiKeyEl) apiKeyEl.value = firebaseConfig.apiKey || '';
   if (projectIdEl) projectIdEl.value = firebaseConfig.projectId || '';
   if (messagingSenderIdEl) messagingSenderIdEl.value = firebaseConfig.messagingSenderId || '';
@@ -282,13 +295,15 @@ function guardarConfigVisualPanel() {
   const nombre = document.getElementById('config-nombre-input')?.value || 'Pablo';
   const frasesTexto = document.getElementById('config-frases-motivacionales')?.value || '';
   const popupCelebracion = document.getElementById('config-popup-celebracion')?.checked || false;
+  const mostrarNotas = document.getElementById('config-mostrar-notas')?.checked !== false;
+  const mostrarSentimientos = document.getElementById('config-mostrar-sentimientos')?.checked !== false;
   
   // Procesar frases (una por línea, filtrar vacías)
   const frases = frasesTexto.split('\n')
     .map(f => f.trim())
     .filter(f => f.length > 0);
   
-  const config = { tema, nombre, frases, popupCelebracion };
+  const config = { tema, nombre, frases, popupCelebracion, mostrarNotas, mostrarSentimientos };
   localStorage.setItem('config-visual', JSON.stringify(config));
   
   // Aplicar tema
@@ -300,6 +315,12 @@ function guardarConfigVisualPanel() {
   if (titulo) {
     titulo.textContent = '🧠 Agenda de ' + nombre + ' 😊';
   }
+  
+  // Mostrar/ocultar secciones
+  const seccionNotas = document.getElementById('seccion-notas');
+  const seccionSentimientos = document.getElementById('seccion-sentimientos');
+  if (seccionNotas) seccionNotas.style.display = mostrarNotas ? 'block' : 'none';
+  if (seccionSentimientos) seccionSentimientos.style.display = mostrarSentimientos ? 'block' : 'none';
   
   mostrarAlerta('✅ Configuración visual aplicada', 'success');
 }
@@ -942,3 +963,38 @@ window.guardarConfigExtendsClass = guardarConfigFirebase;
 window.probarConexionExtendsClass = probarConexionFirebase;
 window.cargarHistorialFirebase = cargarHistorialFirebase;
 window.mostrarDashboard = mostrarDashboard;
+
+// ========== HISTORIAL DE SENTIMIENTOS ==========
+function guardarSentimiento(texto) {
+  if (!texto || !texto.trim()) return;
+  
+  const fecha = new Date().toISOString().slice(0, 10);
+  const hora = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  
+  const sentimientoHistorial = {
+    id: Date.now(),
+    texto: texto.trim(),
+    fecha: fecha,
+    hora: hora,
+    timestamp: new Date().toISOString()
+  };
+  
+  // Guardar en localStorage (backup)
+  const historialLocal = JSON.parse(localStorage.getItem('historial-sentimientos') || '[]');
+  historialLocal.push(sentimientoHistorial);
+  if (historialLocal.length > 500) {
+    historialLocal.splice(0, historialLocal.length - 500);
+  }
+  localStorage.setItem('historial-sentimientos', JSON.stringify(historialLocal));
+  
+  // Guardar en Firebase
+  if (isFirebaseInitialized) {
+    db.collection('sentimientos').add(sentimientoHistorial).then(() => {
+      console.log('✅ Sentimiento guardado en Firebase');
+    }).catch(error => {
+      console.error('❌ Error guardando sentimiento:', error);
+    });
+  }
+}
+
+window.guardarSentimiento = guardarSentimiento;

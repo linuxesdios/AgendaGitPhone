@@ -102,9 +102,14 @@
         <div id="citas-panel" style="max-height:200px;overflow-y:auto;"></div>
       </section>
 
-      <section>
+      <section id="seccion-notas" style="display: block;">
         <h3>📝 Notas / Brain Dump</h3>
         <textarea id="notas-texto" placeholder="Escribe aquí tus notas, ideas, recordatorios..."></textarea>
+      </section>
+
+      <section id="seccion-sentimientos" style="display: block;">
+        <h3>😊 ¿Cómo te sientes?</h3>
+        <textarea id="sentimientos-texto" placeholder="Describe cómo te sientes hoy, tus emociones, pensamientos..."></textarea>
       </section>
     </div>
 
@@ -420,6 +425,22 @@
             <span>🎉 Mostrar popup al completar tareas</span>
           </label>
           <small style="color:#666;font-size:12px;">Mostrar frases motivacionales al completar tareas</small>
+        </div>
+        
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:10px;">
+            <input type="checkbox" id="config-mostrar-notas" onchange="guardarConfigVisualPanel()">
+            <span>📝 Mostrar sección de Notas</span>
+          </label>
+          <small style="color:#666;font-size:12px;">Mostrar u ocultar la sección "Notas / Brain Dump"</small>
+        </div>
+        
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:10px;">
+            <input type="checkbox" id="config-mostrar-sentimientos" onchange="guardarConfigVisualPanel()">
+            <span>😊 Mostrar sección de Sentimientos</span>
+          </label>
+          <small style="color:#666;font-size:12px;">Mostrar u ocultar la sección "¿Cómo te sientes?"</small>
         </div>
         
         <div class="form-group">

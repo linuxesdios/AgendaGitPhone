@@ -877,7 +877,7 @@ function guardarEdicionCita(fechaOriginal, nombreOriginal) {
   const nuevosMinutos = document.getElementById('editor-cita-minutos').value;
   
   if (!nuevaFecha || !nuevaDesc) {
-    alert('Completa todos los campos');
+    alert('La fecha y descripción son obligatorias');
     return;
   }
   

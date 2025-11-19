@@ -6,6 +6,7 @@ const appState = {
     tareas_criticas: [],
     tareas: [],
     notas: '',
+    sentimientos: '',
     citas: [],
     personas: []
   },
@@ -84,14 +85,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const notasEl = document.getElementById('notas-texto');
   if (notasEl) {
     const optimizedHandler = debounce(() => {
+      appState.agenda.notas = notasEl.value;
       autoResizeTextarea(notasEl);
       autoCapitalize(notasEl);
       scheduleAutoSave();
     }, 300);
     
     notasEl.addEventListener('input', optimizedHandler);
-    // Ajustar altura inicial
     autoResizeTextarea(notasEl);
+  }
+  
+  // Listener optimizado para cambios en sentimientos
+  const sentimientosEl = document.getElementById('sentimientos-texto');
+  if (sentimientosEl) {
+    const optimizedHandler = debounce(() => {
+      appState.agenda.sentimientos = sentimientosEl.value;
+      guardarSentimiento(sentimientosEl.value);
+      autoResizeTextarea(sentimientosEl);
+      autoCapitalize(sentimientosEl);
+      scheduleAutoSave();
+    }, 300);
+    
+    sentimientosEl.addEventListener('input', optimizedHandler);
+    autoResizeTextarea(sentimientosEl);
   }
   
   // Configurar auto-capitalización
@@ -277,6 +293,14 @@ function cargarConfigVisual() {
   if (titulo) {
     titulo.textContent = '🧠 Agenda de ' + nombre + ' 😊';
   }
+  
+  // Mostrar/ocultar secciones
+  const mostrarNotas = config.mostrarNotas !== false;
+  const mostrarSentimientos = config.mostrarSentimientos !== false;
+  const seccionNotas = document.getElementById('seccion-notas');
+  const seccionSentimientos = document.getElementById('seccion-sentimientos');
+  if (seccionNotas) seccionNotas.style.display = mostrarNotas ? 'block' : 'none';
+  if (seccionSentimientos) seccionSentimientos.style.display = mostrarSentimientos ? 'block' : 'none';
 }
 
 // Hacer funciones disponibles globalmente para compatibilidad

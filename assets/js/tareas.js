@@ -992,9 +992,9 @@ function guardarEdicion(index, tipo) {
     tarea.texto = texto;
   }
   
-  tarea.fecha_fin = fecha;
-  tarea.persona = persona;
-  tarea.fecha_migrar = fechaMigrar;
+  tarea.fecha_fin = fecha || null;
+  tarea.persona = persona || null;
+  tarea.fecha_migrar = fechaMigrar || null;
   
   // Actualizar estado según datos
   if (persona) {
@@ -1270,9 +1270,9 @@ function guardarEdicionSubtarea(tareaIndex, subIndex, tipo) {
   }
   
   subtarea.texto = texto;
-  subtarea.fecha_fin = fecha;
-  subtarea.persona = persona;
-  subtarea.fecha_migrar = fechaMigrar;
+  subtarea.fecha_fin = fecha || null;
+  subtarea.persona = persona || null;
+  subtarea.fecha_migrar = fechaMigrar || null;
   
   cerrarModal('modal-editor-subtarea');
   renderizar();
