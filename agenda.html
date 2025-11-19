@@ -25,6 +25,7 @@
     </div>
     <div style="display: flex; flex-direction: column; align-items: flex-end; width:120px; gap:5px;">
       <button id="btn-progreso" class="boton-cargar tooltip" onclick="mostrarDashboardMotivacional()" style="padding:6px 12px;font-size:12px;" data-tooltip="Mi Progreso">📊</button>
+      <button id="btn-historial" class="boton-cargar tooltip" onclick="abrirVisorHistorial()" style="padding:6px 12px;font-size:12px;" data-tooltip="Ver Historial">📋</button>
       <button id="btn-config" class="boton-cargar tooltip" onclick="toggleConfigFloating()" style="padding:6px 12px;font-size:12px;" data-tooltip="Configuración">⚙️</button>
     </div>
   </div>
@@ -333,9 +334,17 @@
         <label style="font-size:12px;">Minutos:</label>
         <select id="nueva-cita-minutos" style="width:100%;padding:6px;">
           <option value="00" selected>00</option>
+          <option value="05">05</option>
+          <option value="10">10</option>
           <option value="15">15</option>
+          <option value="20">20</option>
+          <option value="25">25</option>
           <option value="30">30</option>
+          <option value="35">35</option>
+          <option value="40">40</option>
           <option value="45">45</option>
+          <option value="50">50</option>
+          <option value="55">55</option>
         </select>
       </div>
     </div>
@@ -552,9 +561,17 @@
         <label style="font-size:12px;">Minutos:</label>
         <select id="periodica-minutos" style="width:100%;padding:6px;">
           <option value="00" selected>00</option>
+          <option value="05">05</option>
+          <option value="10">10</option>
           <option value="15">15</option>
+          <option value="20">20</option>
+          <option value="25">25</option>
           <option value="30">30</option>
+          <option value="35">35</option>
+          <option value="40">40</option>
           <option value="45">45</option>
+          <option value="50">50</option>
+          <option value="55">55</option>
         </select>
       </div>
     </div>
@@ -646,9 +663,17 @@
           <label style="font-size:12px;">Minutos:</label>
           <select id="minutos-cita-relativa" style="width:100%;padding:6px;">
             <option value="00" selected>00</option>
+            <option value="05">05</option>
+            <option value="10">10</option>
             <option value="15">15</option>
+            <option value="20">20</option>
+            <option value="25">25</option>
             <option value="30">30</option>
+            <option value="35">35</option>
+            <option value="40">40</option>
             <option value="45">45</option>
+            <option value="50">50</option>
+            <option value="55">55</option>
           </select>
         </div>
       </div>
@@ -672,6 +697,7 @@
 <script src="assets/js/tareas.js"></script>
 <script src="assets/js/calendario.js"></script>
 <script src="assets/js/sincronizacion-simple.js"></script>
+<script src="assets/js/historial-viewer.js"></script>
 <script src="assets/js/rendimiento.js"></script>
 <script src="assets/js/compatibility.js"></script>
 

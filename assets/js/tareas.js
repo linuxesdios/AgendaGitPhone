@@ -86,7 +86,7 @@ function renderizarCriticas() {
       contenido += '</span>';
     }
     texto.innerHTML = contenido;
-    texto.onclick = () => editarTareaCritica(realIndex);
+    texto.onclick = () => abrirEditorTarea(realIndex, 'critica');
     
     div.appendChild(simbolo);
     div.appendChild(texto);
@@ -103,7 +103,14 @@ function renderizarCriticas() {
       const configFuncionales = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
       const necesitaConfirmacion = configFuncionales.confirmacionBorrar !== false; // Por defecto true
       
-      if (!necesitaConfirmacion || confirm('¿Eliminar esta tarea crítica?')) {
+      if (necesitaConfirmacion) {
+        mostrarCuentaRegresiva(() => {
+          appState.agenda.tareas_criticas.splice(realIndex, 1);
+          renderizar();
+          guardarJSON(true);
+          mostrarAlerta('🗑️ Tarea crítica eliminada', 'info');
+        });
+      } else {
         appState.agenda.tareas_criticas.splice(realIndex, 1);
         renderizar();
         await guardarJSON(true);
@@ -234,7 +241,7 @@ function renderizarTareas() {
       contenido += '</span>';
     }
     texto.innerHTML = contenido;
-    texto.onclick = () => editarTarea(realIndex);
+    texto.onclick = () => abrirEditorTarea(realIndex, 'tarea');
     
     div.appendChild(simbolo);
     div.appendChild(texto);
@@ -251,7 +258,14 @@ function renderizarTareas() {
       const configFuncionales = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
       const necesitaConfirmacion = configFuncionales.confirmacionBorrar !== false; // Por defecto true
       
-      if (!necesitaConfirmacion || confirm('¿Eliminar esta tarea?')) {
+      if (necesitaConfirmacion) {
+        mostrarCuentaRegresiva(() => {
+          appState.agenda.tareas.splice(realIndex, 1);
+          renderizar();
+          guardarJSON(true);
+          mostrarAlerta('🗑️ Tarea eliminada', 'info');
+        });
+      } else {
         appState.agenda.tareas.splice(realIndex, 1);
         renderizar();
         await guardarJSON(true);
@@ -294,8 +308,49 @@ function renderizarTareas() {
       }
     }
     
+    // Botón de subtareas - solo para tareas normales
+    const btnSubtarea = document.createElement('button');
+    btnSubtarea.className = 'btn-subtarea';
+    btnSubtarea.textContent = '📝';
+    btnSubtarea.title = 'Añadir subtarea';
+    btnSubtarea.onclick = (e) => {
+      e.stopPropagation();
+      abrirModalSubtarea(realIndex);
+    };
+    div.appendChild(btnSubtarea);
     
     lista.appendChild(div);
+    
+    // Renderizar subtareas si existen
+    if (tarea.subtareas && tarea.subtareas.length > 0) {
+      tarea.subtareas.forEach((subtarea, subIndex) => {
+        const subDiv = document.createElement('div');
+        subDiv.className = 'subtarea-item';
+        if (subtarea.completada) subDiv.classList.add('subtarea-completada');
+        
+        const subSimbolo = document.createElement('span');
+        subSimbolo.className = 'subtarea-simbolo';
+        subSimbolo.textContent = subtarea.completada ? '✓' : '○';
+        subSimbolo.onclick = () => toggleSubtarea(realIndex, subIndex);
+        
+        const subTexto = document.createElement('div');
+        subTexto.className = 'subtarea-texto';
+        subTexto.textContent = subtarea.texto;
+        
+        const btnBorrarSub = document.createElement('button');
+        btnBorrarSub.className = 'btn-borrar-subtarea';
+        btnBorrarSub.textContent = '🗑️';
+        btnBorrarSub.onclick = (e) => {
+          e.stopPropagation();
+          eliminarSubtarea(realIndex, subIndex);
+        };
+        
+        subDiv.appendChild(subSimbolo);
+        subDiv.appendChild(subTexto);
+        subDiv.appendChild(btnBorrarSub);
+        lista.appendChild(subDiv);
+      });
+    }
   });
 }
 
@@ -809,6 +864,211 @@ function mostrarCelebracion() {
   }, 1000);
 }
 
+// ========== EDITOR UNIFICADO ==========
+function abrirEditorTarea(index, tipo) {
+  const tarea = tipo === 'critica' ? appState.agenda.tareas_criticas[index] : appState.agenda.tareas[index];
+  
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.id = 'modal-editor';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h4>✏️ Editar ${tipo === 'critica' ? 'Tarea Crítica' : 'Tarea'}</h4>
+      <div class="form-group">
+        <label>${tipo === 'critica' ? 'Título' : 'Descripción'}:</label>
+        <input type="text" id="editor-texto" value="${escapeHtml(tipo === 'critica' ? tarea.titulo : tarea.texto)}">
+      </div>
+      <div class="form-group">
+        <label>Fecha límite:</label>
+        <input type="date" id="editor-fecha" value="${tarea.fecha_fin || ''}">
+      </div>
+      <div class="form-group">
+        <label>Persona delegada:</label>
+        <input type="text" id="editor-persona" value="${tarea.persona || ''}">
+      </div>
+      <div class="form-group">
+        <label>Fecha migración:</label>
+        <input type="date" id="editor-fecha-migrar" value="${tarea.fecha_migrar || ''}">
+      </div>
+      <div class="modal-botones">
+        <button class="btn-primario" onclick="guardarEdicion(${index}, '${tipo}')">Guardar</button>
+        <button class="btn-secundario" onclick="cerrarModal('modal-editor')">Cancelar</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  modal.style.display = 'block';
+}
+
+function guardarEdicion(index, tipo) {
+  const tarea = tipo === 'critica' ? appState.agenda.tareas_criticas[index] : appState.agenda.tareas[index];
+  const texto = document.getElementById('editor-texto').value.trim();
+  const fecha = document.getElementById('editor-fecha').value;
+  const persona = document.getElementById('editor-persona').value.trim();
+  const fechaMigrar = document.getElementById('editor-fecha-migrar').value;
+  
+  if (!texto) {
+    alert('El texto no puede estar vacío');
+    return;
+  }
+  
+  if (tipo === 'critica') {
+    tarea.titulo = texto;
+  } else {
+    tarea.texto = texto;
+  }
+  
+  tarea.fecha_fin = fecha;
+  tarea.persona = persona;
+  tarea.fecha_migrar = fechaMigrar;
+  
+  // Actualizar estado según datos
+  if (persona) {
+    tarea.estado = 'migrada';
+  } else if (fechaMigrar) {
+    tarea.estado = 'programada';
+  } else {
+    tarea.estado = 'pendiente';
+  }
+  
+  cerrarModal('modal-editor');
+  renderizar();
+  guardarJSON(true);
+  mostrarAlerta('✅ Tarea actualizada', 'success');
+}
+
+// ========== SUBTAREAS ==========
+function abrirModalSubtarea(tareaIndex) {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.id = 'modal-subtarea';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h4>📝 Nueva Subtarea</h4>
+      <div class="form-group">
+        <label>Descripción:</label>
+        <input type="text" id="subtarea-texto" placeholder="Ej: Revisar documentos">
+      </div>
+      <div class="modal-botones">
+        <button class="btn-primario" onclick="agregarSubtarea(${tareaIndex})">Añadir</button>
+        <button class="btn-secundario" onclick="cerrarModal('modal-subtarea')">Cancelar</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  modal.style.display = 'block';
+  setTimeout(() => document.getElementById('subtarea-texto').focus(), 100);
+}
+
+function agregarSubtarea(tareaIndex) {
+  const texto = document.getElementById('subtarea-texto').value.trim();
+  if (!texto) {
+    alert('Ingresa una descripción para la subtarea');
+    return;
+  }
+  
+  const tarea = appState.agenda.tareas[tareaIndex];
+  if (!tarea.subtareas) tarea.subtareas = [];
+  
+  tarea.subtareas.push({
+    id: Date.now().toString(),
+    texto: texto,
+    completada: false
+  });
+  
+  cerrarModal('modal-subtarea');
+  renderizar();
+  guardarJSON(true);
+  mostrarAlerta('📝 Subtarea añadida', 'success');
+}
+
+function toggleSubtarea(tareaIndex, subIndex) {
+  const subtarea = appState.agenda.tareas[tareaIndex].subtareas[subIndex];
+  subtarea.completada = !subtarea.completada;
+  
+  renderizar();
+  guardarJSON(true);
+  
+  if (subtarea.completada) {
+    mostrarAlerta('✅ Subtarea completada', 'success');
+  }
+}
+
+function eliminarSubtarea(tareaIndex, subIndex) {
+  const configFuncionales = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
+  const necesitaConfirmacion = configFuncionales.confirmacionBorrar !== false;
+  
+  if (necesitaConfirmacion) {
+    mostrarCuentaRegresiva(() => {
+      appState.agenda.tareas[tareaIndex].subtareas.splice(subIndex, 1);
+      renderizar();
+      guardarJSON(true);
+      mostrarAlerta('🗑️ Subtarea eliminada', 'info');
+    });
+  } else {
+    appState.agenda.tareas[tareaIndex].subtareas.splice(subIndex, 1);
+    renderizar();
+    guardarJSON(true);
+    mostrarAlerta('🗑️ Subtarea eliminada', 'info');
+  }
+}
+
+// ========== CUENTA REGRESIVA PARA ELIMINAR ==========
+function mostrarCuentaRegresiva(callback) {
+  const frases = [
+    '🤔 ¿Estás seguro?',
+    '✨ Piensa bien...',
+    '💭 Reflexiona un momento',
+    '🚀 ¿Realmente quieres eliminarla?',
+    '🌱 Quizás puedas completarla',
+    '💪 ¿Y si la intentas una vez más?'
+  ];
+  
+  const frase = frases[Math.floor(Math.random() * frases.length)];
+  
+  const overlay = document.createElement('div');
+  overlay.className = 'dashboard-overlay countdown-overlay';
+  overlay.innerHTML = `
+    <div class="dashboard-content countdown-content">
+      <div class="countdown-message">${frase}</div>
+      <div class="countdown-number" id="countdown-number">3</div>
+      <div class="countdown-actions">
+        <button class="btn-cancelar" onclick="cancelarEliminacion()">Cancelar</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(overlay);
+  overlay.classList.add('show');
+  
+  let contador = 3;
+  const numeroEl = document.getElementById('countdown-number');
+  
+  const intervalo = setInterval(() => {
+    contador--;
+    if (numeroEl) numeroEl.textContent = contador;
+    
+    if (contador <= 0) {
+      clearInterval(intervalo);
+      overlay.remove();
+      callback();
+    }
+  }, 1000);
+  
+  window.currentCountdown = { overlay, intervalo };
+}
+
+function cancelarEliminacion() {
+  if (window.currentCountdown) {
+    clearInterval(window.currentCountdown.intervalo);
+    window.currentCountdown.overlay.remove();
+    window.currentCountdown = null;
+    mostrarAlerta('❌ Eliminación cancelada', 'info');
+  }
+}
+
 // Hacer funciones disponibles globalmente
 window.renderizar = renderizar;
 window.renderizarCriticas = renderizarCriticas;
@@ -833,3 +1093,11 @@ window.toggleFiltros = toggleFiltros;
 window.toggleLargoPlazo = toggleLargoPlazo;
 window.setupPersonasAutocomplete = setupPersonasAutocomplete;
 window.mostrarCelebracion = mostrarCelebracion;
+window.mostrarCuentaRegresiva = mostrarCuentaRegresiva;
+window.cancelarEliminacion = cancelarEliminacion;
+window.abrirEditorTarea = abrirEditorTarea;
+window.guardarEdicion = guardarEdicion;
+window.abrirModalSubtarea = abrirModalSubtarea;
+window.agregarSubtarea = agregarSubtarea;
+window.toggleSubtarea = toggleSubtarea;
+window.eliminarSubtarea = eliminarSubtarea;

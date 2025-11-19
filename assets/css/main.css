@@ -215,6 +215,9 @@ section h3 {
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   transition: transform 0.2s;
   min-height: 48px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
 .tarea-item.urgente {
@@ -1093,6 +1096,105 @@ body.modo-oscuro {
   .config-tab { padding: 8px 12px; font-size: 12px; }
 }
 
+/* ========== SCROLL MEJORADO PARA LISTAS ========== */
+#lista-criticas, #lista-metodo {
+  max-height: 50vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  padding-right: 5px;
+}
+
+#lista-criticas::-webkit-scrollbar, #lista-metodo::-webkit-scrollbar {
+  width: 6px;
+}
+
+#lista-criticas::-webkit-scrollbar-track, #lista-metodo::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.05);
+  border-radius: 3px;
+}
+
+#lista-criticas::-webkit-scrollbar-thumb, #lista-metodo::-webkit-scrollbar-thumb {
+  background: rgba(78, 205, 196, 0.5);
+  border-radius: 3px;
+}
+
+#lista-criticas::-webkit-scrollbar-thumb:hover, #lista-metodo::-webkit-scrollbar-thumb:hover {
+  background: rgba(78, 205, 196, 0.7);
+}
+
+/* ========== SUBTAREAS ========== */
+.subtarea-item {
+  margin-left: 30px;
+  margin-bottom: 4px;
+  padding: 6px 10px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-left: 3px solid #4ecdc4;
+  border-radius: 6px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subtarea-item.subtarea-completada {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+.subtarea-simbolo {
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 20px;
+  text-align: center;
+  color: #4ecdc4;
+}
+
+.subtarea-texto {
+  flex: 1;
+  color: #495057;
+}
+
+.btn-subtarea {
+  background: #17a2b8;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 5px;
+  min-width: 32px;
+  height: 32px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-subtarea:hover {
+  background: #138496;
+  transform: scale(1.1);
+}
+
+.btn-borrar-subtarea {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 10px;
+  min-width: 24px;
+  height: 24px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-borrar-subtarea:hover {
+  background: #c82333;
+  transform: scale(1.1);
+}
+
 /* ========== BOTONES DE BORRAR TAREAS ========== */
 .btn-borrar-tarea {
   background: #e74c3c;
@@ -1398,6 +1500,60 @@ input[type="file"] {
   line-height: 1.6;
   white-space: pre-wrap;
   margin: 0;
+}
+
+/* ========== CUENTA REGRESIVA ========== */
+.countdown-overlay {
+  cursor: default !important;
+}
+
+.countdown-content {
+  text-align: center;
+  max-width: 350px;
+  padding: 40px 30px;
+}
+
+.countdown-message {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+.countdown-number {
+  font-size: 80px;
+  font-weight: bold;
+  color: #f44336;
+  margin: 20px 0;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+  animation: countdownPulse 1s infinite;
+}
+
+@keyframes countdownPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.countdown-actions {
+  margin-top: 20px;
+}
+
+.btn-cancelar {
+  background: #95a5a6;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancelar:hover {
+  background: #7f8c8d;
+  transform: translateY(-2px);
 }
 
 /* Colores por tema */

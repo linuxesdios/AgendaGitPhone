@@ -940,3 +940,5 @@ window.guardarConfigFuncionales = guardarConfigFuncionales;
 window.cargarConfigFuncionales = cargarConfigFuncionales;
 window.guardarConfigExtendsClass = guardarConfigFirebase;
 window.probarConexionExtendsClass = probarConexionFirebase;
+window.cargarHistorialFirebase = cargarHistorialFirebase;
+window.mostrarDashboard = mostrarDashboard;

@@ -345,12 +345,7 @@ function renderCitasPanel() {
     
     div.addEventListener('click', (e) => {
       if (e.target.tagName !== 'BUTTON') {
-        abrirModal('modal-calendar');
-        focusCalendarOn(c.fecha);
-        appState.calendar.selectedDate = c.fecha;
-        renderCalendar();
-        renderAllAppointmentsList();
-        showAppointments(c.fecha);
+        abrirEditorCita(c.fecha, c.nombre);
       }
     });
     panel.appendChild(div);
@@ -820,3 +815,86 @@ window.agregarCitaRelativa = agregarCitaRelativa;
 window.eliminarCitaRelativa = eliminarCitaRelativa;
 window.guardarCitasRelativas = guardarCitasRelativas;
 window.programarNotificacionesCita = programarNotificacionesCita;
+
+// ========== EDITOR DE CITAS ==========
+function abrirEditorCita(fecha, nombre) {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.id = 'modal-editor-cita';
+  
+  // Extraer hora y descripción
+  const partes = nombre.split(' - ');
+  const hora = partes[0] || '14:00';
+  const descripcion = partes[1] || nombre;
+  const [horas, minutos] = hora.split(':');
+  
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h4>✏️ Editar Cita</h4>
+      <div class="form-group">
+        <label>Fecha:</label>
+        <input type="date" id="editor-cita-fecha" value="${fecha}">
+      </div>
+      <div class="form-group">
+        <label>Descripción:</label>
+        <input type="text" id="editor-cita-desc" value="${escapeHtml(descripcion)}">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;">
+        <div>
+          <label>Hora:</label>
+          <select id="editor-cita-hora">
+            ${Array.from({length: 15}, (_, i) => {
+              const h = String(i + 8).padStart(2, '0');
+              return `<option value="${h}" ${h === horas ? 'selected' : ''}>${h}:00</option>`;
+            }).join('')}
+          </select>
+        </div>
+        <div>
+          <label>Minutos:</label>
+          <select id="editor-cita-minutos">
+            ${Array.from({length: 12}, (_, i) => {
+              const m = String(i * 5).padStart(2, '0');
+              return `<option value="${m}" ${m === minutos ? 'selected' : ''}>${m}</option>`;
+            }).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="modal-botones">
+        <button class="btn-primario" onclick="guardarEdicionCita('${fecha}', '${escapeHtml(nombre)}')">Guardar</button>
+        <button class="btn-secundario" onclick="cerrarModal('modal-editor-cita')">Cancelar</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  modal.style.display = 'block';
+}
+
+function guardarEdicionCita(fechaOriginal, nombreOriginal) {
+  const nuevaFecha = document.getElementById('editor-cita-fecha').value;
+  const nuevaDesc = document.getElementById('editor-cita-desc').value.trim();
+  const nuevaHora = document.getElementById('editor-cita-hora').value;
+  const nuevosMinutos = document.getElementById('editor-cita-minutos').value;
+  
+  if (!nuevaFecha || !nuevaDesc) {
+    alert('Completa todos los campos');
+    return;
+  }
+  
+  // Encontrar y actualizar la cita
+  const index = appState.agenda.citas.findIndex(c => c.fecha === fechaOriginal && c.nombre === nombreOriginal);
+  if (index > -1) {
+    const nuevoNombre = `${nuevaHora}:${nuevosMinutos} - ${nuevaDesc}`;
+    appState.agenda.citas[index] = { fecha: nuevaFecha, nombre: nuevoNombre };
+    
+    cerrarModal('modal-editor-cita');
+    renderCalendar();
+    renderAllAppointmentsList();
+    renderCitasPanel();
+    guardarJSON(true);
+    mostrarAlerta('✅ Cita actualizada', 'success');
+  }
+}
+
+window.abrirEditorCita = abrirEditorCita;
+window.guardarEdicionCita = guardarEdicionCita;
