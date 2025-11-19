@@ -344,6 +344,33 @@ section h3 {
   overflow: hidden;
 }
 
+/* Calendario de tareas con celdas más grandes */
+#calendarGridTareas .calendar-day {
+  min-height: 120px;
+  padding: 10px;
+  font-size: 11px;
+}
+
+#calendarGridTareas .day-events {
+  margin-top: 6px;
+  font-size: 10px;
+  line-height: 1.2;
+  max-height: 80px;
+}
+
+#calendarGridTareas .day-event {
+  background: rgba(78, 205, 196, 0.15);
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin-bottom: 2px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  font-weight: 500;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
 .day-events {
   margin-top: 4px;
   font-size: 9px;

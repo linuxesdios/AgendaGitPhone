@@ -412,8 +412,28 @@ function abrirCalendario() {
 
 function abrirCalendarioTareas() {
   abrirModal('modal-calendar-tareas');
+  
+  // Inicializar navegación del calendario de tareas
+  const prevBtn = document.getElementById('prevMonthTareas');
+  const nextBtn = document.getElementById('nextMonthTareas');
+  
+  if (prevBtn && !prevBtn.hasAttribute('data-initialized')) {
+    prevBtn.addEventListener('click', () => {
+      appState.calendar.currentDate.setMonth(appState.calendar.currentDate.getMonth() - 1);
+      renderCalendarTareas();
+    });
+    prevBtn.setAttribute('data-initialized', 'true');
+  }
+  
+  if (nextBtn && !nextBtn.hasAttribute('data-initialized')) {
+    nextBtn.addEventListener('click', () => {
+      appState.calendar.currentDate.setMonth(appState.calendar.currentDate.getMonth() + 1);
+      renderCalendarTareas();
+    });
+    nextBtn.setAttribute('data-initialized', 'true');
+  }
+  
   renderCalendarTareas();
-  renderAllTasksList();
 }
 
 function renderCalendarTareas() {
@@ -458,11 +478,11 @@ function renderCalendarTareas() {
         const eventsDiv = document.createElement('div');
         eventsDiv.className = 'day-events';
         
-        tareasDelDia.slice(0, 2).forEach(tarea => {
+        tareasDelDia.forEach(tarea => {
           const eventDiv = document.createElement('div');
           eventDiv.className = 'day-event';
           const texto = tarea.titulo || tarea.texto;
-          eventDiv.textContent = texto.length > 10 ? texto.substring(0, 10) + '...' : texto;
+          eventDiv.textContent = texto; // Mostrar texto completo
           eventsDiv.appendChild(eventDiv);
         });
         

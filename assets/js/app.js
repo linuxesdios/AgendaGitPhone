@@ -265,6 +265,20 @@ function cargarConfigOpciones() {
   }
 }
 
+function cargarConfigVisual() {
+  const config = JSON.parse(localStorage.getItem('config-visual') || '{}');
+  const tema = config.tema || 'verde';
+  document.body.classList.remove('tema-verde', 'tema-azul', 'tema-amarillo', 'tema-oscuro');
+  document.body.classList.add('tema-' + tema);
+  
+  // Actualizar título si hay nombre configurado
+  const nombre = config.nombre || 'Pablo';
+  const titulo = document.getElementById('titulo-agenda');
+  if (titulo) {
+    titulo.textContent = '🧠 Agenda de ' + nombre + ' 😊';
+  }
+}
+
 // Hacer funciones disponibles globalmente para compatibilidad
 window.appState = appState;
 window.getExtendsClassConfig = getExtendsClassConfig;
@@ -283,3 +297,4 @@ window.autoCapitalize = autoCapitalize;
 window.setupAutoCapitalize = setupAutoCapitalize;
 window.scheduleAutoSave = scheduleAutoSave;
 window.cargarConfigOpciones = cargarConfigOpciones;
+window.cargarConfigVisual = cargarConfigVisual;

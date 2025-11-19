@@ -433,8 +433,6 @@ function mostrarPopupCelebracion() {
     return;
   }
   
-  console.log('Configuración visual:', visualConfig); // Debug
-  
   // Obtener frases personalizadas
   const frasesPersonalizadas = visualConfig.frases || [];
   
@@ -454,8 +452,6 @@ function mostrarPopupCelebracion() {
   // Usar frases personalizadas si existen, sino usar las por defecto
   const frases = frasesPersonalizadas.length > 0 ? frasesPersonalizadas : frasesDefault;
   const frase = frases[Math.floor(Math.random() * frases.length)];
-  
-  console.log('Frase seleccionada:', frase); // Debug
   
   // Crear overlay transparente como el dashboard
   const overlay = document.createElement('div');
@@ -714,10 +710,9 @@ function yaNotificado(cita, minutosRestantes) {
 function marcarComoNotificado(cita, minutosRestantes) {
   const clave = `notif-${cita.fecha}-${cita.nombre}-${Math.floor(minutosRestantes / 30)}`;
   localStorage.setItem(clave, 'true');
-  
-  // Limpiar notificaciones antiguas (más de 7 días)
-  limpiarNotificacionesAntiguas();
 }
+
+
 
 function limpiarNotificacionesAntiguas() {
   const hace7Dias = new Date();
