@@ -175,28 +175,25 @@ function renderizarCriticas() {
         
         const subSimbolo = document.createElement('span');
         subSimbolo.className = 'subtarea-simbolo';
-        subSimbolo.textContent = subtarea.completada ? '✓' : '○';
-        subSimbolo.onclick = () => {
-          toggleSubtareaCritica(realIndex, subIndex);
-          if (!subtarea.completada) {
-            guardarSubtareaCompletada(subtarea, true);
-          }
-        };
+        subSimbolo.textContent = obtenerSimboloSubtarea(subtarea);
+        subSimbolo.onclick = () => cambiarEstadoSubtareaCritica(realIndex, subIndex);
         
         const subTexto = document.createElement('div');
         subTexto.className = 'subtarea-texto';
         subTexto.style.cursor = 'pointer';
-        subTexto.textContent = subtarea.texto;
+        let contenidoSub = subtarea.texto;
+        if (subtarea.persona || subtarea.fecha_migrar) {
+          contenidoSub += ' <span style="font-size: 11px; color: #9c27b0;">→ ';
+          if (subtarea.persona) {
+            contenidoSub += `<span style="background: #e3f2fd; color: #1976d2; padding: 2px 6px; border-radius: 3px; font-size: 10px;">👤 ${escapeHtml(subtarea.persona)}</span>`;
+          }
+          if (subtarea.fecha_migrar) {
+            contenidoSub += `<span style="background: #ffe5e5; color: #666; padding: 2px 6px; border-radius: 3px; font-size: 10px;">📅 ${subtarea.fecha_migrar}</span>`;
+          }
+          contenidoSub += '</span>';
+        }
+        subTexto.innerHTML = contenidoSub;
         subTexto.onclick = () => abrirEditorSubtarea(realIndex, subIndex, 'critica');
-        
-        const btnSubtareaSub = document.createElement('button');
-        btnSubtareaSub.className = 'btn-subtarea';
-        btnSubtareaSub.textContent = '📝';
-        btnSubtareaSub.title = 'Añadir subtarea';
-        btnSubtareaSub.onclick = (e) => {
-          e.stopPropagation();
-          abrirModalSubtareaCritica(realIndex);
-        };
         
         const btnBorrarSub = document.createElement('button');
         btnBorrarSub.className = 'btn-borrar-subtarea';
@@ -208,7 +205,6 @@ function renderizarCriticas() {
         
         subDiv.appendChild(subSimbolo);
         subDiv.appendChild(subTexto);
-        subDiv.appendChild(btnSubtareaSub);
         subDiv.appendChild(btnBorrarSub);
         lista.appendChild(subDiv);
       });
@@ -381,28 +377,25 @@ function renderizarTareas() {
         
         const subSimbolo = document.createElement('span');
         subSimbolo.className = 'subtarea-simbolo';
-        subSimbolo.textContent = subtarea.completada ? '✓' : '○';
-        subSimbolo.onclick = () => {
-          toggleSubtarea(realIndex, subIndex);
-          if (!subtarea.completada) {
-            guardarSubtareaCompletada(subtarea, false);
-          }
-        };
+        subSimbolo.textContent = obtenerSimboloSubtarea(subtarea);
+        subSimbolo.onclick = () => cambiarEstadoSubtarea(realIndex, subIndex);
         
         const subTexto = document.createElement('div');
         subTexto.className = 'subtarea-texto';
         subTexto.style.cursor = 'pointer';
-        subTexto.textContent = subtarea.texto;
+        let contenidoSub = subtarea.texto;
+        if (subtarea.persona || subtarea.fecha_migrar) {
+          contenidoSub += ' <span style="font-size: 11px; color: #9c27b0;">→ ';
+          if (subtarea.persona) {
+            contenidoSub += `<span style="background: #e3f2fd; color: #1976d2; padding: 2px 6px; border-radius: 3px; font-size: 10px;">👤 ${escapeHtml(subtarea.persona)}</span>`;
+          }
+          if (subtarea.fecha_migrar) {
+            contenidoSub += `<span style="background: #ffe5e5; color: #666; padding: 2px 6px; border-radius: 3px; font-size: 10px;">📅 ${subtarea.fecha_migrar}</span>`;
+          }
+          contenidoSub += '</span>';
+        }
+        subTexto.innerHTML = contenidoSub;
         subTexto.onclick = () => abrirEditorSubtarea(realIndex, subIndex, 'tarea');
-        
-        const btnSubtareaSub = document.createElement('button');
-        btnSubtareaSub.className = 'btn-subtarea';
-        btnSubtareaSub.textContent = '📝';
-        btnSubtareaSub.title = 'Añadir subtarea';
-        btnSubtareaSub.onclick = (e) => {
-          e.stopPropagation();
-          abrirModalSubtarea(realIndex);
-        };
         
         const btnBorrarSub = document.createElement('button');
         btnBorrarSub.className = 'btn-borrar-subtarea';
@@ -414,7 +407,6 @@ function renderizarTareas() {
         
         subDiv.appendChild(subSimbolo);
         subDiv.appendChild(subTexto);
-        subDiv.appendChild(btnSubtareaSub);
         subDiv.appendChild(btnBorrarSub);
         lista.appendChild(subDiv);
       });
@@ -663,8 +655,25 @@ function guardarMigracion() {
   }
   
   // Verificar si es una subtarea
-  if (window.subtareaSeleccionada) {
-    guardarMigracionSubtarea();
+  if (appState.ui.subtareaSeleccionada) {
+    const { tipo, tareaIndex, subIndex } = appState.ui.subtareaSeleccionada;
+    const tarea = tipo === 'critica' ? appState.agenda.tareas_criticas[tareaIndex] : appState.agenda.tareas[tareaIndex];
+    const subtarea = tarea.subtareas[subIndex];
+    
+    subtarea.fecha_migrar = fecha || null;
+    subtarea.persona = persona || null;
+    subtarea.estado = persona ? 'migrada' : (fecha ? 'programada' : 'pendiente');
+    
+    appState.ui.subtareaSeleccionada = null;
+    cerrarModal('modal-migrar');
+    renderizar();
+    guardarJSON(true);
+    
+    if (persona) {
+      mostrarAlerta(`→ Subtarea asignada a ${persona}`, 'success');
+    } else if (fecha) {
+      mostrarAlerta(`→ Subtarea pospuesta para ${fecha}`, 'success');
+    }
     return;
   }
   
@@ -1322,6 +1331,87 @@ function guardarMigracionSubtarea() {
   }
 }
 
+// ========== SÍMBOLOS Y ESTADOS DE SUBTAREAS ==========
+function obtenerSimboloSubtarea(subtarea) {
+  if (!subtarea.estado) subtarea.estado = 'pendiente';
+  if (subtarea.estado === 'completada') return '✔';
+  if (subtarea.estado === 'migrada') return '→';
+  if (subtarea.estado === 'programada') return '<';
+  return '●';
+}
+
+function cambiarEstadoSubtareaCritica(tareaIndex, subIndex) {
+  const subtarea = appState.agenda.tareas_criticas[tareaIndex].subtareas[subIndex];
+  if (!subtarea.estado) subtarea.estado = 'pendiente';
+  
+  if (subtarea.estado === 'pendiente') {
+    subtarea.estado = 'migrada';
+    subtarea.completada = false;
+    appState.ui.subtareaSeleccionada = { tipo: 'critica', tareaIndex, subIndex };
+    abrirModal('modal-migrar');
+    return;
+  } else if (subtarea.estado === 'migrada') {
+    if (subtarea.persona) {
+      subtarea.estado = 'completada';
+      subtarea.completada = true;
+      guardarSubtareaCompletada(subtarea, true);
+      mostrarCelebracion();
+    } else {
+      subtarea.estado = 'programada';
+      subtarea.completada = false;
+    }
+  } else if (subtarea.estado === 'programada') {
+    subtarea.estado = 'completada';
+    subtarea.completada = true;
+    guardarSubtareaCompletada(subtarea, true);
+    mostrarCelebracion();
+  } else {
+    subtarea.estado = 'pendiente';
+    subtarea.completada = false;
+    delete subtarea.persona;
+    delete subtarea.fecha_migrar;
+  }
+  
+  renderizar();
+  guardarJSON(true);
+}
+
+function cambiarEstadoSubtarea(tareaIndex, subIndex) {
+  const subtarea = appState.agenda.tareas[tareaIndex].subtareas[subIndex];
+  if (!subtarea.estado) subtarea.estado = 'pendiente';
+  
+  if (subtarea.estado === 'pendiente') {
+    subtarea.estado = 'migrada';
+    subtarea.completada = false;
+    appState.ui.subtareaSeleccionada = { tipo: 'tarea', tareaIndex, subIndex };
+    abrirModal('modal-migrar');
+    return;
+  } else if (subtarea.estado === 'migrada') {
+    if (subtarea.persona) {
+      subtarea.estado = 'completada';
+      subtarea.completada = true;
+      guardarSubtareaCompletada(subtarea, false);
+      mostrarCelebracion();
+    } else {
+      subtarea.estado = 'programada';
+      subtarea.completada = false;
+    }
+  } else if (subtarea.estado === 'programada') {
+    subtarea.estado = 'completada';
+    subtarea.completada = true;
+    guardarSubtareaCompletada(subtarea, false);
+    mostrarCelebracion();
+  } else {
+    subtarea.estado = 'pendiente';
+    subtarea.completada = false;
+    delete subtarea.persona;
+    delete subtarea.fecha_migrar;
+  }
+  
+  renderizar();
+  guardarJSON(true);
+}
+
 // ========== GUARDAR SUBTAREAS EN HISTORIAL ==========
 function guardarSubtareaCompletada(subtarea, esCritica) {
   if (typeof guardarEnHistorial === 'function') {
@@ -1369,14 +1459,13 @@ window.abrirEditorTarea = abrirEditorTarea;
 window.guardarEdicion = guardarEdicion;
 window.abrirModalSubtarea = abrirModalSubtarea;
 window.agregarSubtarea = agregarSubtarea;
-window.toggleSubtarea = toggleSubtarea;
+window.obtenerSimboloSubtarea = obtenerSimboloSubtarea;
+window.cambiarEstadoSubtareaCritica = cambiarEstadoSubtareaCritica;
+window.cambiarEstadoSubtarea = cambiarEstadoSubtarea;
 window.eliminarSubtarea = eliminarSubtarea;
 window.abrirModalSubtareaCritica = abrirModalSubtareaCritica;
 window.agregarSubtareaCritica = agregarSubtareaCritica;
-window.toggleSubtareaCritica = toggleSubtareaCritica;
 window.eliminarSubtareaCritica = eliminarSubtareaCritica;
 window.abrirEditorSubtarea = abrirEditorSubtarea;
 window.guardarEdicionSubtarea = guardarEdicionSubtarea;
-window.abrirMigracionSubtarea = abrirMigracionSubtarea;
-window.guardarMigracionSubtarea = guardarMigracionSubtarea;
 window.guardarSubtareaCompletada = guardarSubtareaCompletada;
