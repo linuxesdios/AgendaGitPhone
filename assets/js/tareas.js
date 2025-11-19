@@ -799,14 +799,14 @@ function toggleFiltros(tipo) {
 function scrollToTop() {
   const lista = document.getElementById('lista-metodo');
   if (lista) {
-    lista.scrollTop = 0;
+    lista.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
 function scrollToBottom() {
   const lista = document.getElementById('lista-metodo');
-  if (lista) {
-    lista.scrollTop = lista.scrollHeight;
+  if (lista && lista.lastElementChild) {
+    lista.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }
 }
 
