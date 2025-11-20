@@ -29,12 +29,14 @@ const appState = {
     criticas: {
       estado: '',
       fecha: '',
-      prioridad: ''
+      persona: '',
+      etiqueta: ''
     },
     tareas: {
       estado: '',
       fecha: '',
-      prioridad: ''
+      persona: '',
+      etiqueta: ''
     }
   }
 };
@@ -80,6 +82,16 @@ document.addEventListener('DOMContentLoaded', () => {
   renderizar();
 
   // Firebase se inicializa automáticamente en sincronizacion-simple.js
+  
+  // Inicializar calendario integrado si está visible
+  setTimeout(() => {
+    const calendarioIntegrado = document.getElementById('calendario-citas-integrado');
+    if (calendarioIntegrado && calendarioIntegrado.style.display === 'block') {
+      if (typeof initializeCalendarioIntegrado === 'function') {
+        initializeCalendarioIntegrado();
+      }
+    }
+  }, 500);
   
   // Listener optimizado para cambios en notas
   const notasEl = document.getElementById('notas-texto');
@@ -284,6 +296,8 @@ function cargarConfigOpciones() {
 
 function cargarConfigVisual() {
   const config = JSON.parse(localStorage.getItem('config-visual') || '{}');
+  console.log('📊 Cargando configuración visual:', config);
+  
   const tema = config.tema || 'verde';
   document.body.classList.remove('tema-verde', 'tema-azul', 'tema-amarillo', 'tema-oscuro');
   document.body.classList.add('tema-' + tema);
@@ -302,6 +316,21 @@ function cargarConfigVisual() {
   const seccionSentimientos = document.getElementById('seccion-sentimientos');
   if (seccionNotas) seccionNotas.style.display = mostrarNotas ? 'block' : 'none';
   if (seccionSentimientos) seccionSentimientos.style.display = mostrarSentimientos ? 'block' : 'none';
+  
+  // Configurar visualización del calendario de citas
+  const calendarioCitas = config.calendarioCitas || 'boton';
+  const btnCalendario = document.getElementById('btn-calendario-citas');
+  const calendarioIntegrado = document.getElementById('calendario-citas-integrado');
+  
+  console.log('📅 Modo calendario:', calendarioCitas);
+  
+  if (calendarioCitas === 'integrado') {
+    if (btnCalendario) btnCalendario.style.display = 'none';
+    if (calendarioIntegrado) calendarioIntegrado.style.display = 'block';
+  } else {
+    if (btnCalendario) btnCalendario.style.display = 'inline-block';
+    if (calendarioIntegrado) calendarioIntegrado.style.display = 'none';
+  }
 }
 
 // Hacer funciones disponibles globalmente para compatibilidad
@@ -323,3 +352,173 @@ window.setupAutoCapitalize = setupAutoCapitalize;
 window.scheduleAutoSave = scheduleAutoSave;
 window.cargarConfigOpciones = cargarConfigOpciones;
 window.cargarConfigVisual = cargarConfigVisual;
+
+
+// ========== CONFIGURACIÓN VISUAL ==========
+function guardarConfigVisualPanel() {
+  const config = {
+    tema: document.getElementById('config-tema-select')?.value || 'verde',
+    nombre: document.getElementById('config-nombre-input')?.value || 'Pablo',
+    modoVisualizacion: document.getElementById('config-modo-visualizacion')?.value || 'estado',
+    popupCelebracion: document.getElementById('config-popup-celebracion')?.checked !== false,
+    mostrarNotas: document.getElementById('config-mostrar-notas')?.checked !== false,
+    mostrarSentimientos: document.getElementById('config-mostrar-sentimientos')?.checked !== false,
+    calendarioCitas: document.getElementById('config-calendario-citas')?.value || 'boton',
+    frases: document.getElementById('config-frases-motivacionales')?.value.split('\n').filter(f => f.trim()) || []
+  };
+  
+  console.log('💾 Guardando configuración visual:', config);
+  localStorage.setItem('config-visual', JSON.stringify(config));
+  
+  // Aplicar configuración inmediatamente
+  cargarConfigVisual();
+  
+  // Sincronizar con Firebase
+  if (typeof guardarConfigEnFirebase === 'function') {
+    console.log('🔥 Sincronizando con Firebase...');
+    guardarConfigEnFirebase();
+  } else {
+    console.warn('⚠️ guardarConfigEnFirebase no disponible');
+  }
+  
+  mostrarAlerta('✅ Configuración visual guardada', 'success');
+}
+
+function switchTab(tabName) {
+  // Ocultar todos los contenidos
+  document.querySelectorAll('.tab-content').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  // Desactivar todos los botones
+  document.querySelectorAll('.config-tab').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Activar el tab seleccionado
+  const tabContent = document.getElementById(`tab-${tabName}`);
+  if (tabContent) {
+    tabContent.classList.add('active');
+  }
+  
+  // Activar el botón correspondiente
+  event.target.classList.add('active');
+  
+  // Cargar datos específicos del tab
+  if (tabName === 'visual') {
+    cargarConfigVisualEnFormulario();
+  } else if (tabName === 'funcionales') {
+    cargarConfigFuncionalesEnFormulario();
+  } else if (tabName === 'etiquetas') {
+    if (typeof cargarListaEtiquetas === 'function') {
+      cargarListaEtiquetas();
+    }
+  } else if (tabName === 'personas') {
+    if (typeof cargarListaPersonas === 'function') {
+      cargarListaPersonas();
+    }
+  } else if (tabName === 'backups') {
+    if (typeof cargarListaSalvados === 'function') {
+      cargarListaSalvados();
+    }
+  } else if (tabName === 'log') {
+    if (typeof cargarLog === 'function') {
+      cargarLog();
+    }
+  }
+}
+
+function cargarConfigVisualEnFormulario() {
+  const config = JSON.parse(localStorage.getItem('config-visual') || '{}');
+  console.log('📝 Cargando configuración visual en formulario:', config);
+  
+  const temaSelect = document.getElementById('config-tema-select');
+  if (temaSelect) temaSelect.value = config.tema || 'verde';
+  
+  const nombreInput = document.getElementById('config-nombre-input');
+  if (nombreInput) nombreInput.value = config.nombre || 'Pablo';
+  
+  const modoVisualizacion = document.getElementById('config-modo-visualizacion');
+  if (modoVisualizacion) modoVisualizacion.value = config.modoVisualizacion || 'estado';
+  
+  const popupCelebracion = document.getElementById('config-popup-celebracion');
+  if (popupCelebracion) popupCelebracion.checked = config.popupCelebracion !== false;
+  
+  const mostrarNotas = document.getElementById('config-mostrar-notas');
+  if (mostrarNotas) mostrarNotas.checked = config.mostrarNotas !== false;
+  
+  const mostrarSentimientos = document.getElementById('config-mostrar-sentimientos');
+  if (mostrarSentimientos) mostrarSentimientos.checked = config.mostrarSentimientos !== false;
+  
+  const calendarioCitas = document.getElementById('config-calendario-citas');
+  if (calendarioCitas) {
+    calendarioCitas.value = config.calendarioCitas || 'boton';
+    console.log('📅 Calendario citas configurado como:', calendarioCitas.value);
+  }
+  
+  const frasesMotivacionales = document.getElementById('config-frases-motivacionales');
+  if (frasesMotivacionales) frasesMotivacionales.value = (config.frases || []).join('\n');
+}
+
+function cargarConfigFuncionalesEnFormulario() {
+  const config = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
+  
+  const fechaObligatoria = document.getElementById('config-fecha-obligatoria');
+  if (fechaObligatoria) fechaObligatoria.checked = config.fechaObligatoria || false;
+  
+  const confirmacionBorrar = document.getElementById('config-confirmacion-borrar');
+  if (confirmacionBorrar) confirmacionBorrar.checked = config.confirmacionBorrar !== false;
+  
+  const autoMayuscula = document.getElementById('config-auto-mayuscula');
+  if (autoMayuscula) autoMayuscula.checked = config.autoMayuscula !== false;
+  
+  const popupDiario = document.getElementById('config-popup-diario');
+  if (popupDiario) popupDiario.checked = config.popupDiario || false;
+  
+  const notificacionesActivas = document.getElementById('config-notificaciones-activas');
+  if (notificacionesActivas) notificacionesActivas.checked = config.notificacionesActivas || false;
+  
+  const notif1Dia = document.getElementById('config-notif-1-dia');
+  if (notif1Dia) notif1Dia.checked = config.notif1Dia || false;
+  
+  const notif2Horas = document.getElementById('config-notif-2-horas');
+  if (notif2Horas) notif2Horas.checked = config.notif2Horas || false;
+  
+  const notif30Min = document.getElementById('config-notif-30-min');
+  if (notif30Min) notif30Min.checked = config.notif30Min || false;
+}
+
+function guardarConfigFuncionales() {
+  const config = {
+    fechaObligatoria: document.getElementById('config-fecha-obligatoria')?.checked || false,
+    confirmacionBorrar: document.getElementById('config-confirmacion-borrar')?.checked !== false,
+    autoMayuscula: document.getElementById('config-auto-mayuscula')?.checked !== false,
+    popupDiario: document.getElementById('config-popup-diario')?.checked || false,
+    notificacionesActivas: document.getElementById('config-notificaciones-activas')?.checked || false,
+    notif1Dia: document.getElementById('config-notif-1-dia')?.checked || false,
+    notif2Horas: document.getElementById('config-notif-2-horas')?.checked || false,
+    notif30Min: document.getElementById('config-notif-30-min')?.checked || false
+  };
+  
+  localStorage.setItem('config-funcionales', JSON.stringify(config));
+  
+  // Sincronizar con Firebase si está disponible
+  if (typeof guardarConfigEnFirebase === 'function') {
+    guardarConfigEnFirebase();
+  }
+  
+  mostrarAlerta('✅ Configuración funcional guardada', 'success');
+}
+
+function toggleConfigFloating() {
+  abrirModal('modal-config');
+  // Cargar configuración visual por defecto
+  cargarConfigVisualEnFormulario();
+}
+
+window.guardarConfigVisualPanel = guardarConfigVisualPanel;
+window.switchTab = switchTab;
+window.cargarConfigVisualEnFormulario = cargarConfigVisualEnFormulario;
+window.cargarConfigFuncionalesEnFormulario = cargarConfigFuncionalesEnFormulario;
+window.guardarConfigFuncionales = guardarConfigFuncionales;
+window.toggleConfigFloating = toggleConfigFloating;

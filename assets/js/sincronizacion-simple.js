@@ -113,8 +113,10 @@ function extendsClassPull() {
     db.collection('citas').doc('data').get(),
     db.collection('notas').doc('data').get(),
     db.collection('sentimientos').doc('data').get(),
-    db.collection('historial').doc('eliminados').get()
-  ]).then(([tareasDoc, citasDoc, notasDoc, sentimientosDoc, historialDoc]) => {
+    db.collection('historial').doc('eliminados').get(),
+    db.collection('config').doc('settings').get(),
+    db.collection('personas').doc('asignadas').get()
+  ]).then(([tareasDoc, citasDoc, notasDoc, sentimientosDoc, historialDoc, configDoc, personasDoc]) => {
     const data = {
       tareas_criticas: tareasDoc.exists ? (tareasDoc.data().tareas_criticas || []) : [],
       tareas: tareasDoc.exists ? (tareasDoc.data().tareas || []) : [],
@@ -129,8 +131,30 @@ function extendsClassPull() {
       localStorage.setItem('historial-eliminados', JSON.stringify(historialFirebase));
     }
     
+    // Sincronizar configuración
+    if (configDoc.exists) {
+      const configFirebase = configDoc.data();
+      if (configFirebase.visual) localStorage.setItem('config-visual', JSON.stringify(configFirebase.visual));
+      if (configFirebase.funcionales) localStorage.setItem('config-funcionales', JSON.stringify(configFirebase.funcionales));
+      if (configFirebase.etiquetas) localStorage.setItem('etiquetas', JSON.stringify(configFirebase.etiquetas));
+      aplicarConfiguracionSincronizada();
+    }
+    
+    // Sincronizar personas
+    if (personasDoc.exists) {
+      const personasFirebase = personasDoc.data().lista || [];
+      localStorage.setItem('personas-asignadas', JSON.stringify(personasFirebase));
+    }
+    
     console.log('📥 Sincronizado desde Firebase');
     procesarJSON(data);
+    // Actualizar filtros después de cargar datos
+    setTimeout(() => {
+      actualizarFiltrosPersonas();
+      actualizarFiltrosEtiquetas();
+      // Mostrar resumen diario después de cargar datos
+      setTimeout(() => mostrarResumenDiario(), 500);
+    }, 100);
     mostrarAlerta('✅ Datos sincronizados', 'success');
   }).catch((error) => {
     console.error('Error:', error);
@@ -189,6 +213,48 @@ function guardarJSON(silent = false) {
   });
 
   return true;
+}
+
+function guardarConfigEnFirebase() {
+  if (!isFirebaseInitialized) return;
+  
+  const configCompleta = {
+    visual: JSON.parse(localStorage.getItem('config-visual') || '{}'),
+    funcionales: JSON.parse(localStorage.getItem('config-funcionales') || '{}'),
+    etiquetas: JSON.parse(localStorage.getItem('etiquetas') || '{}'),
+    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  
+  const personas = JSON.parse(localStorage.getItem('personas-asignadas') || '[]');
+  
+  // Guardar configuración
+  db.collection('config').doc('settings').set(configCompleta).then(() => {
+    console.log('✅ Configuración guardada en Firebase');
+  }).catch(error => {
+    console.error('Error guardando configuración:', error);
+  });
+  
+  // Guardar personas
+  db.collection('personas').doc('asignadas').set({
+    lista: personas,
+    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    console.log('✅ Personas guardadas en Firebase');
+  }).catch(error => {
+    console.error('Error guardando personas:', error);
+  });
+}
+
+function aplicarConfiguracionSincronizada() {
+  // Aplicar configuración visual
+  cargarConfigVisual();
+  aplicarVisibilidadSecciones();
+  
+  // Aplicar configuración funcional
+  const configFuncionales = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
+  if (configFuncionales.notificacionesActivas) {
+    iniciarSistemaNotificaciones();
+  }
 }
 
 function procesarJSON(data) {
@@ -254,6 +320,7 @@ function cargarConfiguracionesModal() {
   const popupCelebracionEl = document.getElementById('config-popup-celebracion');
   const mostrarNotasEl = document.getElementById('config-mostrar-notas');
   const mostrarSentimientosEl = document.getElementById('config-mostrar-sentimientos');
+  const modoVisualizacionEl = document.getElementById('config-modo-visualizacion');
   const apiKeyEl = document.getElementById('firebase-apikey');
   const projectIdEl = document.getElementById('firebase-projectid');
   const messagingSenderIdEl = document.getElementById('firebase-messagingsenderid');
@@ -265,6 +332,7 @@ function cargarConfiguracionesModal() {
   if (popupCelebracionEl) popupCelebracionEl.checked = visualConfig.popupCelebracion !== false;
   if (mostrarNotasEl) mostrarNotasEl.checked = visualConfig.mostrarNotas !== false;
   if (mostrarSentimientosEl) mostrarSentimientosEl.checked = visualConfig.mostrarSentimientos !== false;
+  if (modoVisualizacionEl) modoVisualizacionEl.value = visualConfig.modoVisualizacion || 'estado';
   if (apiKeyEl) apiKeyEl.value = firebaseConfig.apiKey || '';
   if (projectIdEl) projectIdEl.value = firebaseConfig.projectId || '';
   if (messagingSenderIdEl) messagingSenderIdEl.value = firebaseConfig.messagingSenderId || '';
@@ -277,9 +345,12 @@ function cargarConfiguracionesModal() {
   renderizarListaEtiquetas('etiquetas-tareas-lista', 'tareas');
   renderizarListaEtiquetas('etiquetas-citas-lista', 'citas');
   
-  // Cargar log y backups
+  // Cargar log, backups y personas
   cargarLog();
   cargarListaSalvados();
+  cargarListaPersonas();
+  actualizarFiltrosPersonas();
+  actualizarFiltrosEtiquetas();
 }
 
 function cambiarFraseMotivacional() {
@@ -340,13 +411,14 @@ function guardarConfigVisualPanel() {
   const popupCelebracion = document.getElementById('config-popup-celebracion')?.checked || false;
   const mostrarNotas = document.getElementById('config-mostrar-notas')?.checked !== false;
   const mostrarSentimientos = document.getElementById('config-mostrar-sentimientos')?.checked !== false;
+  const modoVisualizacion = document.getElementById('config-modo-visualizacion')?.value || 'estado';
   
   // Procesar frases (una por línea, filtrar vacías)
   const frases = frasesTexto.split('\n')
     .map(f => f.trim())
     .filter(f => f.length > 0);
   
-  const config = { tema, nombre, frases, popupCelebracion, mostrarNotas, mostrarSentimientos };
+  const config = { tema, nombre, frases, popupCelebracion, mostrarNotas, mostrarSentimientos, modoVisualizacion };
   localStorage.setItem('config-visual', JSON.stringify(config));
   
   // Aplicar tema
@@ -362,7 +434,13 @@ function guardarConfigVisualPanel() {
   // Mostrar/ocultar secciones
   aplicarVisibilidadSecciones();
   
-  registrarAccion('Cambiar configuración visual', `tema: ${tema}`);
+  // Re-renderizar tareas con nuevo modo de visualización
+  renderizar();
+  
+  // Guardar en Firebase
+  guardarConfigEnFirebase();
+  
+  registrarAccion('Cambiar configuración visual', `tema: ${tema}, modo: ${modoVisualizacion}`);
   mostrarAlerta('✅ Configuración visual aplicada', 'success');
 }
 
@@ -386,7 +464,8 @@ function guardarConfigFuncionales() {
     notif1Dia: document.getElementById('config-notif-1-dia')?.checked || false,
     notif2Horas: document.getElementById('config-notif-2-horas')?.checked || false,
     notif30Min: document.getElementById('config-notif-30-min')?.checked || false,
-    popupCelebracion: document.getElementById('config-popup-celebracion')?.checked || false
+    popupCelebracion: document.getElementById('config-popup-celebracion')?.checked || false,
+    popupDiario: document.getElementById('config-popup-diario')?.checked || false
   };
   
   localStorage.setItem('config-funcionales', JSON.stringify(config));
@@ -397,6 +476,9 @@ function guardarConfigFuncionales() {
   } else {
     detenerSistemaNotificaciones();
   }
+  
+  // Guardar en Firebase
+  guardarConfigEnFirebase();
   
   mostrarAlerta('✅ Configuración funcional guardada', 'success');
 }
@@ -412,6 +494,7 @@ function cargarConfigFuncionales() {
   const notif2HorasEl = document.getElementById('config-notif-2-horas');
   const notif30MinEl = document.getElementById('config-notif-30-min');
   const popupCelebracionEl = document.getElementById('config-popup-celebracion');
+  const popupDiarioEl = document.getElementById('config-popup-diario');
   
   if (fechaObligatoriaEl) fechaObligatoriaEl.checked = config.fechaObligatoria || false;
   if (confirmacionBorrarEl) confirmacionBorrarEl.checked = config.confirmacionBorrar !== false; // Por defecto true
@@ -421,6 +504,94 @@ function cargarConfigFuncionales() {
   if (notif2HorasEl) notif2HorasEl.checked = config.notif2Horas !== false; // Por defecto true
   if (notif30MinEl) notif30MinEl.checked = config.notif30Min !== false; // Por defecto true
   if (popupCelebracionEl) popupCelebracionEl.checked = config.popupCelebracion !== false; // Por defecto true
+  if (popupDiarioEl) popupDiarioEl.checked = config.popupDiario !== false; // Por defecto true
+}
+
+function mostrarResumenDiario() {
+  const config = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
+  if (config.popupDiario === false) return;
+  
+  const hoy = new Date().toISOString().slice(0, 10);
+  const ultimaVez = localStorage.getItem('ultimo-popup-diario');
+  
+  // Solo mostrar si es la primera vez del día
+  if (ultimaVez === hoy) return;
+  
+  // Buscar tareas del día
+  const tareasHoy = [...(appState.agenda.tareas_criticas || []), ...(appState.agenda.tareas || [])]
+    .filter(t => !t.completada && (t.fecha_fin === hoy || t.fecha_migrar === hoy));
+  
+  // Buscar tareas pasadas
+  const tareasPasadas = [...(appState.agenda.tareas_criticas || []), ...(appState.agenda.tareas || [])]
+    .filter(t => !t.completada && ((t.fecha_fin && esFechaPasada(t.fecha_fin)) || (t.fecha_migrar && esFechaPasada(t.fecha_migrar))));
+  
+  // Buscar citas del día
+  const citasHoy = (appState.agenda.citas || []).filter(c => c.fecha === hoy);
+  
+  if (tareasHoy.length === 0 && citasHoy.length === 0 && tareasPasadas.length === 0) {
+    localStorage.setItem('ultimo-popup-diario', hoy);
+    return;
+  }
+  
+  let contenido = `🌅 RESUMEN DEL DÍA - ${hoy}\n\n`;
+  
+  if (tareasPasadas.length > 0) {
+    contenido += `⚠️ TAREAS ATRASADAS (${tareasPasadas.length}):\n`;
+    tareasPasadas.forEach((t, i) => {
+      const texto = t.titulo || t.texto;
+      const fecha = t.fecha_fin || t.fecha_migrar;
+      const tipo = appState.agenda.tareas_criticas?.includes(t) ? '😨' : '✅';
+      contenido += `${i + 1}. ${tipo} ${texto} (${fecha})\n`;
+    });
+    contenido += '\n';
+  }
+  
+  if (tareasHoy.length > 0) {
+    contenido += `📝 TAREAS DE HOY (${tareasHoy.length}):\n`;
+    tareasHoy.forEach((t, i) => {
+      const texto = t.titulo || t.texto;
+      const tipo = appState.agenda.tareas_criticas?.includes(t) ? '😨' : '✅';
+      contenido += `${i + 1}. ${tipo} ${texto}\n`;
+    });
+    contenido += '\n';
+  }
+  
+  if (citasHoy.length > 0) {
+    contenido += `📅 CITAS DE HOY (${citasHoy.length}):\n`;
+    citasHoy.forEach((c, i) => {
+      const descripcion = (c.nombre && c.nombre.includes(' - ')) ? c.nombre.split(' - ')[1] : (c.nombre || 'Sin descripción');
+      const hora = (c.nombre && c.nombre.includes(' - ')) ? c.nombre.split(' - ')[0] : '';
+      contenido += `${i + 1}. 🕰️ ${hora} - ${descripcion}\n`;
+    });
+  }
+  
+  contenido += '\n💪 ¡Que tengas un día productivo!';
+  
+  // Crear overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'dashboard-overlay';
+  overlay.innerHTML = `
+    <div class="dashboard-content" style="max-width:500px;">
+      <pre style="white-space:pre-wrap;font-family:inherit;">${contenido}</pre>
+      <div style="margin-top:20px;text-align:center;">
+        <button onclick="cerrarResumenDiario()" class="btn-primario">Entendido</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(overlay);
+  overlay.classList.add('show');
+  
+  // Marcar como mostrado hoy
+  localStorage.setItem('ultimo-popup-diario', hoy);
+}
+
+function cerrarResumenDiario() {
+  const overlay = document.querySelector('.dashboard-overlay');
+  if (overlay) {
+    overlay.classList.remove('show');
+    setTimeout(() => overlay.remove(), 300);
+  }
 }
 
 function verHistorial() {
@@ -982,6 +1153,14 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     aplicarVisibilidadSecciones();
     inicializarEtiquetas();
+    inicializarPersonas();
+    // Cargar filtros después de inicializar datos
+    setTimeout(() => {
+      actualizarFiltrosPersonas();
+      actualizarFiltrosEtiquetas();
+      // Mostrar resumen diario si no hay Firebase
+      setTimeout(() => mostrarResumenDiario(), 1000);
+    }, 200);
   }, 100);
   
   // Iniciar notificaciones si están activadas
@@ -1101,8 +1280,9 @@ function renderizarListaEtiquetas(containerId, tipo) {
   etiquetas[tipo].forEach((etiqueta, index) => {
     const div = document.createElement('div');
     div.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:5px;';
+    const colorCircle = etiqueta.color ? `<span style="display:inline-block;width:12px;height:12px;background:${etiqueta.color};border-radius:50%;margin-right:5px;"></span>` : '';
     div.innerHTML = `
-      <span>${etiqueta.simbolo} ${etiqueta.nombre}</span>
+      <span onclick="editarEtiqueta('${tipo}', ${index})" style="cursor:pointer;flex:1;" title="Clic para editar">${colorCircle}${etiqueta.simbolo} ${etiqueta.nombre}</span>
       <button onclick="eliminarEtiqueta('${tipo}', ${index})" style="background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:2px 6px;border-radius:3px;cursor:pointer;">❌</button>
     `;
     container.appendChild(div);
@@ -1112,31 +1292,37 @@ function renderizarListaEtiquetas(containerId, tipo) {
 function agregarEtiquetaTarea() {
   const nombre = document.getElementById('nueva-etiqueta-tarea').value.trim();
   const simbolo = document.getElementById('simbolo-etiqueta-tarea').value;
+  const color = document.getElementById('color-etiqueta-tarea').value;
   if (!nombre) return;
   
   const etiquetas = JSON.parse(localStorage.getItem('etiquetas') || '{}');
   if (!etiquetas.tareas) etiquetas.tareas = [];
-  etiquetas.tareas.push({ nombre, simbolo });
+  etiquetas.tareas.push({ nombre, simbolo, color });
   localStorage.setItem('etiquetas', JSON.stringify(etiquetas));
   
+  guardarConfigEnFirebase();
   registrarAccion('Añadir etiqueta de tarea', `${simbolo} ${nombre}`);
   document.getElementById('nueva-etiqueta-tarea').value = '';
   renderizarListaEtiquetas('etiquetas-tareas-lista', 'tareas');
+  actualizarFiltrosEtiquetas();
 }
 
 function agregarEtiquetaCita() {
   const nombre = document.getElementById('nueva-etiqueta-cita').value.trim();
   const simbolo = document.getElementById('simbolo-etiqueta-cita').value;
+  const color = document.getElementById('color-etiqueta-cita').value;
   if (!nombre) return;
   
   const etiquetas = JSON.parse(localStorage.getItem('etiquetas') || '{}');
   if (!etiquetas.citas) etiquetas.citas = [];
-  etiquetas.citas.push({ nombre, simbolo });
+  etiquetas.citas.push({ nombre, simbolo, color });
   localStorage.setItem('etiquetas', JSON.stringify(etiquetas));
   
+  guardarConfigEnFirebase();
   registrarAccion('Añadir etiqueta de cita', `${simbolo} ${nombre}`);
   document.getElementById('nueva-etiqueta-cita').value = '';
   renderizarListaEtiquetas('etiquetas-citas-lista', 'citas');
+  actualizarFiltrosEtiquetas();
 }
 
 function eliminarEtiqueta(tipo, index) {
@@ -1427,6 +1613,227 @@ window.guardarEtiquetas = guardarEtiquetas;
 window.obtenerEtiquetaInfo = obtenerEtiquetaInfo;
 window.moverAHistorial = moverAHistorial;
 window.registrarAccion = registrarAccion;
+
+function editarEtiqueta(tipo, index) {
+  const etiquetas = JSON.parse(localStorage.getItem('etiquetas') || '{}');
+  const etiqueta = etiquetas[tipo][index];
+  if (!etiqueta) return;
+  
+  // Crear modal de edición
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.id = 'modal-editar-etiqueta';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h4>✏️ Editar Etiqueta</h4>
+      <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;">
+        <input type="text" id="editar-nombre-etiqueta" placeholder="Nombre etiqueta" value="${etiqueta.nombre}" style="flex:1;min-width:120px;padding:6px;">
+        <select id="editar-simbolo-etiqueta" style="padding:6px;min-width:100px;">
+          <option value="💼">💼 Trabajo</option>
+          <option value="🏥">🏥 Salud</option>
+          <option value="🎮">🎮 Ocio</option>
+          <option value="📚">📚 Estudio</option>
+          <option value="🏠">🏠 Casa</option>
+          <option value="💰">💰 Finanzas</option>
+          <option value="🚗">🚗 Transporte</option>
+          <option value="🍽️">🍽️ Comida</option>
+          <option value="📞">📞 Llamadas</option>
+          <option value="🛍️">🛍️ Compras</option>
+          <option value="✈️">✈️ Viajes</option>
+          <option value="📱">📱 Tecnología</option>
+          <option value="🏋️">🏋️ Ejercicio</option>
+          <option value="📝">📝 Documentos</option>
+          <option value="🎉">🎉 Eventos</option>
+          <option value="👥">👥 Social</option>
+          <option value="🎨">🎨 Creatividad</option>
+          <option value="🔧">🔧 Reparaciones</option>
+          <option value="🌱">🌱 Jardinería</option>
+          <option value="📧">📧 Email</option>
+        </select>
+        <div style="display:flex;gap:3px;align-items:center;">
+          <input type="color" id="editar-color-etiqueta" value="${etiqueta.color || '#4ecdc4'}" style="width:35px;height:35px;padding:2px;border:1px solid #ddd;border-radius:4px;">
+          <button onclick="guardarEdicionEtiqueta('${tipo}', ${index})" class="btn-primario" style="padding:6px 12px;white-space:nowrap;">✓ Guardar</button>
+        </div>
+      </div>
+      <div class="modal-botones">
+        <button class="btn-secundario" onclick="cerrarModalEdicion()">Cancelar</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  modal.style.display = 'block';
+  
+  // Preseleccionar símbolo actual
+  document.getElementById('editar-simbolo-etiqueta').value = etiqueta.simbolo;
+  
+  // Foco en el nombre
+  setTimeout(() => document.getElementById('editar-nombre-etiqueta').focus(), 100);
+}
+
+function guardarEdicionEtiqueta(tipo, index) {
+  const nombre = document.getElementById('editar-nombre-etiqueta').value.trim();
+  const simbolo = document.getElementById('editar-simbolo-etiqueta').value;
+  const color = document.getElementById('editar-color-etiqueta').value;
+  
+  if (!nombre) {
+    alert('El nombre no puede estar vacío');
+    return;
+  }
+  
+  const etiquetas = JSON.parse(localStorage.getItem('etiquetas') || '{}');
+  etiquetas[tipo][index] = { nombre, simbolo, color };
+  
+  localStorage.setItem('etiquetas', JSON.stringify(etiquetas));
+  guardarConfigEnFirebase();
+  renderizarListaEtiquetas(`etiquetas-${tipo}-lista`, tipo);
+  actualizarFiltrosEtiquetas();
+  registrarAccion('Editar etiqueta', `${simbolo} ${nombre}`);
+  
+  cerrarModalEdicion();
+  mostrarAlerta('✅ Etiqueta actualizada', 'success');
+}
+
+function cerrarModalEdicion() {
+  const modal = document.getElementById('modal-editar-etiqueta');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+window.editarEtiqueta = editarEtiqueta;
+window.guardarEdicionEtiqueta = guardarEdicionEtiqueta;
+window.cerrarModalEdicion = cerrarModalEdicion;
+// ========== GESTIÓN DE PERSONAS ==========
+function inicializarPersonas() {
+  const personas = JSON.parse(localStorage.getItem('personas-asignadas') || '[]');
+  if (personas.length === 0) {
+    const personasDefault = ['Juan', 'María', 'Carlos'];
+    localStorage.setItem('personas-asignadas', JSON.stringify(personasDefault));
+  }
+}
+
+function cargarListaPersonas() {
+  const personas = JSON.parse(localStorage.getItem('personas-asignadas') || '[]');
+  const container = document.getElementById('personas-lista');
+  if (!container) return;
+  
+  if (personas.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">No hay personas registradas</div>';
+    return;
+  }
+  
+  container.innerHTML = personas.map((persona, index) => 
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:5px;background:white;">
+      <span style="font-weight:500;">👤 ${persona}</span>
+      <button onclick="eliminarPersona(${index})" style="background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:2px 6px;border-radius:3px;cursor:pointer;font-size:11px;">🗑️</button>
+    </div>`
+  ).join('');
+}
+
+function agregarPersona() {
+  const nombre = document.getElementById('nueva-persona').value.trim();
+  if (!nombre) return;
+  
+  const personas = JSON.parse(localStorage.getItem('personas-asignadas') || '[]');
+  if (personas.includes(nombre)) {
+    mostrarAlerta('⚠️ Esta persona ya existe', 'warning');
+    return;
+  }
+  
+  personas.push(nombre);
+  localStorage.setItem('personas-asignadas', JSON.stringify(personas));
+  
+  // Sincronizar con Firebase
+  if (isFirebaseInitialized) {
+    db.collection('personas').doc('asignadas').set({
+      lista: personas,
+      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+  
+  document.getElementById('nueva-persona').value = '';
+  cargarListaPersonas();
+  actualizarFiltrosPersonas();
+  registrarAccion('Añadir persona', nombre);
+  mostrarAlerta('✅ Persona añadida', 'success');
+}
+
+function eliminarPersona(index) {
+  const personas = JSON.parse(localStorage.getItem('personas-asignadas') || '[]');
+  const nombre = personas[index];
+  
+  if (confirm(`¿Eliminar a ${nombre}?`)) {
+    personas.splice(index, 1);
+    localStorage.setItem('personas-asignadas', JSON.stringify(personas));
+    
+    // Sincronizar con Firebase
+    if (isFirebaseInitialized) {
+      db.collection('personas').doc('asignadas').set({
+        lista: personas,
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    
+    cargarListaPersonas();
+    actualizarFiltrosPersonas();
+    registrarAccion('Eliminar persona', nombre);
+    mostrarAlerta('🗑️ Persona eliminada', 'info');
+  }
+}
+
+function actualizarFiltrosPersonas() {
+  const personas = JSON.parse(localStorage.getItem('personas-asignadas') || '[]');
+  const filtros = ['filtro-persona-criticas', 'filtro-persona-tareas'];
+  
+  filtros.forEach(filtroId => {
+    const select = document.getElementById(filtroId);
+    if (select) {
+      const valorActual = select.value;
+      select.innerHTML = '<option value="">Todas</option>';
+      personas.forEach(persona => {
+        const option = document.createElement('option');
+        option.value = persona;
+        option.textContent = persona;
+        if (persona === valorActual) option.selected = true;
+        select.appendChild(option);
+      });
+    }
+  });
+}
+
+function actualizarFiltrosEtiquetas() {
+  const etiquetas = JSON.parse(localStorage.getItem('etiquetas') || '{}');
+  
+  // Filtros de tareas
+  const filtroTareas = document.getElementById('filtro-etiqueta-tareas');
+  if (filtroTareas && etiquetas.tareas) {
+    const valorActual = filtroTareas.value;
+    filtroTareas.innerHTML = '<option value="">Todas</option>';
+    etiquetas.tareas.forEach(etiqueta => {
+      const option = document.createElement('option');
+      option.value = etiqueta.nombre;
+      option.textContent = `${etiqueta.simbolo} ${etiqueta.nombre}`;
+      if (etiqueta.nombre === valorActual) option.selected = true;
+      filtroTareas.appendChild(option);
+    });
+  }
+  
+  // Filtros de críticas
+  const filtroCriticas = document.getElementById('filtro-etiqueta-criticas');
+  if (filtroCriticas && etiquetas.tareas) {
+    const valorActual = filtroCriticas.value;
+    filtroCriticas.innerHTML = '<option value="">Todas</option>';
+    etiquetas.tareas.forEach(etiqueta => {
+      const option = document.createElement('option');
+      option.value = etiqueta.nombre;
+      option.textContent = `${etiqueta.simbolo} ${etiqueta.nombre}`;
+      if (etiqueta.nombre === valorActual) option.selected = true;
+      filtroCriticas.appendChild(option);
+    });
+  }
+}
+
 window.cargarLog = cargarLog;
 window.limpiarLog = limpiarLog;
 window.exportarLog = exportarLog;
@@ -1436,4 +1843,190 @@ window.limpiarSalvadosAntiguos = limpiarSalvadosAntiguos;
 window.cargarListaSalvados = cargarListaSalvados;
 window.restaurarSalvado = restaurarSalvado;
 window.crearSalvadoManual = crearSalvadoManual;
+window.guardarConfigEnFirebase = guardarConfigEnFirebase;
+window.aplicarConfiguracionSincronizada = aplicarConfiguracionSincronizada;
+window.inicializarPersonas = inicializarPersonas;
+window.cargarListaPersonas = cargarListaPersonas;
+window.agregarPersona = agregarPersona;
+window.eliminarPersona = eliminarPersona;
+window.actualizarFiltrosPersonas = actualizarFiltrosPersonas;
+window.actualizarFiltrosEtiquetas = actualizarFiltrosEtiquetas;
+window.mostrarResumenDiario = mostrarResumenDiario;
+window.cerrarResumenDiario = cerrarResumenDiario;
+
+function mostrarResumenDiarioManual() {
+  const hoy = new Date().toISOString().slice(0, 10);
+  
+  // Buscar tareas del día
+  const tareasHoy = [...(appState.agenda.tareas_criticas || []), ...(appState.agenda.tareas || [])]
+    .filter(t => !t.completada && (t.fecha_fin === hoy || t.fecha_migrar === hoy));
+  
+  // Buscar tareas pasadas
+  const tareasPasadas = [...(appState.agenda.tareas_criticas || []), ...(appState.agenda.tareas || [])]
+    .filter(t => !t.completada && ((t.fecha_fin && esFechaPasada(t.fecha_fin)) || (t.fecha_migrar && esFechaPasada(t.fecha_migrar))));
+  
+  // Buscar citas del día
+  const citasHoy = (appState.agenda.citas || []).filter(c => c.fecha === hoy);
+  
+  let contenido = `🌅 RESUMEN DEL DÍA - ${hoy}\n\n`;
+  
+  if (tareasHoy.length === 0 && citasHoy.length === 0 && tareasPasadas.length === 0) {
+    contenido += '🎉 ¡No tienes tareas ni citas pendientes!\n\n😎 ¡Disfruta tu día libre!';
+  } else {
+    if (tareasPasadas.length > 0) {
+      contenido += `⚠️ TAREAS ATRASADAS (${tareasPasadas.length}):\n`;
+      tareasPasadas.forEach((t, i) => {
+        const texto = t.titulo || t.texto;
+        const fecha = t.fecha_fin || t.fecha_migrar;
+        const tipo = appState.agenda.tareas_criticas?.includes(t) ? '😨' : '✅';
+        contenido += `${i + 1}. ${tipo} ${texto} (${fecha})\n`;
+      });
+      contenido += '\n';
+    }
+    
+    if (tareasHoy.length > 0) {
+      contenido += `📝 TAREAS DE HOY (${tareasHoy.length}):\n`;
+      tareasHoy.forEach((t, i) => {
+        const texto = t.titulo || t.texto;
+        const tipo = appState.agenda.tareas_criticas?.includes(t) ? '😨' : '✅';
+        contenido += `${i + 1}. ${tipo} ${texto}\n`;
+      });
+      contenido += '\n';
+    }
+    
+    if (citasHoy.length > 0) {
+      contenido += `📅 CITAS DE HOY (${citasHoy.length}):\n`;
+      citasHoy.forEach((c, i) => {
+        const descripcion = (c.nombre && c.nombre.includes(' - ')) ? c.nombre.split(' - ')[1] : (c.nombre || 'Sin descripción');
+        const hora = (c.nombre && c.nombre.includes(' - ')) ? c.nombre.split(' - ')[0] : '';
+        contenido += `${i + 1}. 🕰️ ${hora} - ${descripcion}\n`;
+      });
+      contenido += '\n';
+    }
+    
+    contenido += '💪 ¡Que tengas un día productivo!';
+  }
+  
+  // Crear overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'dashboard-overlay';
+  overlay.innerHTML = `
+    <div class="dashboard-content" style="max-width:500px;">
+      <pre style="white-space:pre-wrap;font-family:inherit;">${contenido}</pre>
+      <div style="margin-top:20px;text-align:center;">
+        <button onclick="cerrarResumenDiario()" class="btn-primario">Cerrar</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(overlay);
+  overlay.classList.add('show');
+}
+
+window.mostrarResumenDiarioManual = mostrarResumenDiarioManual;
+
+// ========== CARGAR HISTORIAL DESDE FIREBASE ==========
+async function cargarHistorialFirebase() {
+  if (!isFirebaseInitialized) {
+    console.warn('⚠️ Firebase no inicializado, cargando historial local');
+    // Cargar datos locales como fallback
+    const historialTareas = JSON.parse(localStorage.getItem('historial-tareas') || '[]');
+    const historialEliminados = JSON.parse(localStorage.getItem('historial-eliminados') || '[]');
+    const historialSentimientos = JSON.parse(localStorage.getItem('historial-sentimientos') || '[]');
+
+    return [...historialTareas, ...historialEliminados, ...historialSentimientos];
+  }
+
+  try {
+    // Cargar desde Firebase usando la nueva estructura
+    const [historialDoc, sentimientosDoc, logDoc] = await Promise.all([
+      db.collection('historial').doc('eliminados').get(),
+      db.collection('sentimientos').doc('data').get(),
+      db.collection('log').doc('acciones').get()
+    ]);
+
+    const historialCompleto = [];
+
+    // Agregar elementos del historial de eliminados
+    if (historialDoc.exists) {
+      const historialData = historialDoc.data();
+      if (historialData.items && Array.isArray(historialData.items)) {
+        historialData.items.forEach(item => {
+          historialCompleto.push({
+            ...item,
+            tipo: 'eliminado'
+          });
+        });
+      }
+    }
+
+    // Agregar sentimientos
+    if (sentimientosDoc.exists) {
+      const sentimientosData = sentimientosDoc.data();
+      if (sentimientosData.sentimientos) {
+        // Si es un string, intentar parsearlo
+        let sentimientos = sentimientosData.sentimientos;
+        if (typeof sentimientos === 'string') {
+          try {
+            sentimientos = JSON.parse(sentimientos);
+          } catch (e) {
+            sentimientos = [];
+          }
+        }
+
+        if (Array.isArray(sentimientos)) {
+          sentimientos.forEach(sentimiento => {
+            historialCompleto.push({
+              ...sentimiento,
+              tipo: 'sentimiento'
+            });
+          });
+        }
+      }
+    }
+
+    // Agregar log de acciones
+    if (logDoc.exists) {
+      const logData = logDoc.data();
+      if (logData.entries && Array.isArray(logData.entries)) {
+        logData.entries.forEach(entry => {
+          historialCompleto.push({
+            ...entry,
+            tipo: 'accion'
+          });
+        });
+      }
+    }
+
+    // Agregar historial local como complemento
+    const historialLocal = JSON.parse(localStorage.getItem('historial-tareas') || '[]');
+    historialLocal.forEach(item => {
+      historialCompleto.push({
+        ...item,
+        tipo: 'tarea_local'
+      });
+    });
+
+    // Ordenar por timestamp/fecha
+    historialCompleto.sort((a, b) => {
+      const fechaA = new Date(a.timestamp || a.fecha + 'T00:00:00' || '2000-01-01');
+      const fechaB = new Date(b.timestamp || b.fecha + 'T00:00:00' || '2000-01-01');
+      return fechaB - fechaA; // Más recientes primero
+    });
+
+    console.log(`✅ Historial cargado desde Firebase: ${historialCompleto.length} elementos`);
+    return historialCompleto;
+
+  } catch (error) {
+    console.error('❌ Error cargando historial desde Firebase:', error);
+    // Fallback a localStorage
+    const historialTareas = JSON.parse(localStorage.getItem('historial-tareas') || '[]');
+    const historialEliminados = JSON.parse(localStorage.getItem('historial-eliminados') || '[]');
+    const historialSentimientos = JSON.parse(localStorage.getItem('historial-sentimientos') || '[]');
+
+    return [...historialTareas, ...historialEliminados, ...historialSentimientos];
+  }
+}
+
+window.cargarHistorialFirebase = cargarHistorialFirebase;
 

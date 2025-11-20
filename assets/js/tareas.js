@@ -7,6 +7,14 @@ function renderizar() {
     renderizarTareas();
     renderCitasPanel();
     
+    // Actualizar filtros para mantener opciones actualizadas
+    if (typeof actualizarFiltrosPersonas === 'function') {
+      actualizarFiltrosPersonas();
+    }
+    if (typeof actualizarFiltrosEtiquetas === 'function') {
+      actualizarFiltrosEtiquetas();
+    }
+    
     // Solo renderizar calendario si el modal está abierto
     const calendarModal = document.getElementById('modal-calendar');
     if (calendarModal && calendarModal.style.display === 'flex') {
@@ -52,12 +60,14 @@ function renderizarCriticas() {
     const esUrgente = esFechaHoy(tarea.fecha_fin) || esFechaPasada(tarea.fecha_fin);
     if (esUrgente && !tarea.completada) {
       div.classList.add('urgente');
-    } else if (tarea.estado === 'completada') {
-      div.classList.add('completada');
-    } else if (tarea.estado === 'migrada') {
-      div.classList.add('migrada');
-    } else if (tarea.estado === 'programada') {
-      div.classList.add('programada');
+    }
+    
+    // Aplicar colores según modo de visualización
+    aplicarColorVisualizacion(div, tarea, 'critica');
+    
+    // Guardar información de urgencia para mostrar icono
+    if (esUrgente && !tarea.completada) {
+      div.dataset.urgente = 'true';
     }
     
     const simbolo = document.createElement('span');
@@ -264,12 +274,14 @@ function renderizarTareas() {
     const esUrgente = esFechaHoy(tarea.fecha_fin) || esFechaHoy(tarea.fecha_migrar) || esFechaPasada(tarea.fecha_fin) || esFechaPasada(tarea.fecha_migrar);
     if (esUrgente && !tarea.completada) {
       div.classList.add('urgente');
-    } else if (tarea.estado === 'completada') {
-      div.classList.add('completada');
-    } else if (tarea.estado === 'migrada') {
-      div.classList.add('migrada');
-    } else if (tarea.estado === 'programada') {
-      div.classList.add('programada');
+    }
+    
+    // Aplicar colores según modo de visualización
+    aplicarColorVisualizacion(div, tarea, 'tarea');
+    
+    // Guardar información de urgencia para mostrar icono
+    if (esUrgente && !tarea.completada) {
+      div.dataset.urgente = 'true';
     }
     
     const simbolo = document.createElement('span');
@@ -536,7 +548,7 @@ function abrirModal(id) {
       // Configurar auto-capitalización para inputs del modal
       setupAutoCapitalize();
     }
-    // Configurar autocompletado para el campo de persona
+    // Configurar selector de personas
     if (id === 'modal-migrar') {
       setupPersonasAutocomplete();
     }
@@ -694,11 +706,35 @@ function editarTareaCritica(index) {
 
 function guardarMigracion() {
   const fecha = document.getElementById('migrar-fecha').value;
-  const persona = document.getElementById('migrar-persona').value.trim();
+  const selectPersona = document.getElementById('migrar-persona-select').value;
+  let persona = '';
   
-  // Guardar nueva persona si no existe
-  if (persona && !appState.agenda.personas.includes(persona)) {
-    appState.agenda.personas.push(persona);
+  if (selectPersona === '__otra__') {
+    // Nueva persona desde input
+    persona = document.getElementById('migrar-persona').value.trim();
+    if (persona) {
+      // Añadir a la lista de personas
+      const personas = JSON.parse(localStorage.getItem('personas-asignadas') || '[]');
+      if (!personas.includes(persona)) {
+        personas.push(persona);
+        localStorage.setItem('personas-asignadas', JSON.stringify(personas));
+        
+        // Sincronizar con Firebase
+        if (typeof guardarConfigEnFirebase === 'function') {
+          guardarConfigEnFirebase();
+        }
+        
+        // Actualizar filtros
+        if (typeof actualizarFiltrosPersonas === 'function') {
+          actualizarFiltrosPersonas();
+        }
+        
+        registrarAccion('Añadir persona (desde tarea)', persona);
+      }
+    }
+  } else if (selectPersona) {
+    // Persona existente seleccionada
+    persona = selectPersona;
   }
   
   // Verificar si es una subtarea
@@ -788,18 +824,14 @@ function filtrarTareas(tareas, tipo) {
       }
     }
     
-    // Filtro por prioridad
-    if (filtros.prioridad) {
-      const esUrgente = esFechaHoy(tarea.fecha_fin) || esFechaHoy(tarea.fecha_migrar) || esFechaPasada(tarea.fecha_fin) || esFechaPasada(tarea.fecha_migrar);
-      
-      switch (filtros.prioridad) {
-        case 'urgente':
-          if (!esUrgente || tarea.completada) return false;
-          break;
-        case 'normal':
-          if (esUrgente && !tarea.completada) return false;
-          break;
-      }
+    // Filtro por persona
+    if (filtros.persona && tarea.persona !== filtros.persona) {
+      return false;
+    }
+    
+    // Filtro por etiqueta
+    if (filtros.etiqueta && tarea.etiqueta !== filtros.etiqueta) {
+      return false;
     }
     
     return true;
@@ -810,12 +842,14 @@ function aplicarFiltros() {
   // Obtener valores de filtros para críticas
   appState.filtros.criticas.estado = document.getElementById('filtro-estado-criticas')?.value || '';
   appState.filtros.criticas.fecha = document.getElementById('filtro-fecha-criticas')?.value || '';
-  appState.filtros.criticas.prioridad = document.getElementById('filtro-prioridad-criticas')?.value || '';
+  appState.filtros.criticas.persona = document.getElementById('filtro-persona-criticas')?.value || '';
+  appState.filtros.criticas.etiqueta = document.getElementById('filtro-etiqueta-criticas')?.value || '';
   
   // Obtener valores de filtros para tareas
   appState.filtros.tareas.estado = document.getElementById('filtro-estado-tareas')?.value || '';
   appState.filtros.tareas.fecha = document.getElementById('filtro-fecha-tareas')?.value || '';
-  appState.filtros.tareas.prioridad = document.getElementById('filtro-prioridad-tareas')?.value || '';
+  appState.filtros.tareas.persona = document.getElementById('filtro-persona-tareas')?.value || '';
+  appState.filtros.tareas.etiqueta = document.getElementById('filtro-etiqueta-tareas')?.value || '';
   
   // Actualizar estilos visuales de filtros activos
   actualizarEstilosFiltros();
@@ -826,7 +860,7 @@ function aplicarFiltros() {
 
 function actualizarEstilosFiltros() {
   // Filtros de críticas
-  const filtrosCriticas = ['filtro-estado-criticas', 'filtro-fecha-criticas', 'filtro-prioridad-criticas'];
+  const filtrosCriticas = ['filtro-estado-criticas', 'filtro-fecha-criticas', 'filtro-persona-criticas', 'filtro-etiqueta-criticas'];
   filtrosCriticas.forEach(id => {
     const select = document.getElementById(id);
     if (select) {
@@ -839,7 +873,7 @@ function actualizarEstilosFiltros() {
   });
   
   // Filtros de tareas
-  const filtrosTareas = ['filtro-estado-tareas', 'filtro-fecha-tareas', 'filtro-prioridad-tareas'];
+  const filtrosTareas = ['filtro-estado-tareas', 'filtro-fecha-tareas', 'filtro-persona-tareas', 'filtro-etiqueta-tareas'];
   filtrosTareas.forEach(id => {
     const select = document.getElementById(id);
     if (select) {
@@ -857,14 +891,16 @@ function limpiarFiltros(tipo) {
   appState.filtros[tipo] = {
     estado: '',
     fecha: '',
-    prioridad: ''
+    persona: '',
+    etiqueta: ''
   };
   
   // Limpiar selects del DOM
   const filtros = [
     `filtro-estado-${tipo}`,
     `filtro-fecha-${tipo}`,
-    `filtro-prioridad-${tipo}`
+    `filtro-persona-${tipo}`,
+    `filtro-etiqueta-${tipo}`
   ];
   
   filtros.forEach(id => {
@@ -914,57 +950,43 @@ function toggleLargoPlazo() {
 }
 
 // ========== AUTOCOMPLETADO DE PERSONAS ==========
-function setupPersonasAutocomplete() {
+function manejarSeleccionPersona() {
+  const select = document.getElementById('migrar-persona-select');
+  const inputDiv = document.getElementById('migrar-persona-input');
   const input = document.getElementById('migrar-persona');
-  const dropdown = document.getElementById('personas-dropdown');
   
-  if (!input || !dropdown) return;
+  if (select.value === '__otra__') {
+    inputDiv.style.display = 'block';
+    input.focus();
+  } else {
+    inputDiv.style.display = 'none';
+    input.value = '';
+  }
+}
+
+function cargarPersonasEnSelect() {
+  const personas = JSON.parse(localStorage.getItem('personas-asignadas') || '[]');
+  const select = document.getElementById('migrar-persona-select');
+  if (!select) return;
   
-  input.addEventListener('input', () => {
-    const value = input.value.trim().toLowerCase();
-    
-    if (value.length === 0) {
-      dropdown.style.display = 'none';
-      return;
-    }
-    
-    const matches = appState.agenda.personas.filter(persona => 
-      persona.toLowerCase().includes(value)
-    );
-    
-    if (matches.length === 0) {
-      dropdown.style.display = 'none';
-      return;
-    }
-    
-    dropdown.innerHTML = '';
-    matches.forEach(persona => {
-      const item = document.createElement('div');
-      item.style.cssText = 'padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee;';
-      item.textContent = persona;
-      item.addEventListener('mouseenter', () => {
-        item.style.background = '#f0f8ff';
-      });
-      item.addEventListener('mouseleave', () => {
-        item.style.background = 'white';
-      });
-      item.addEventListener('click', () => {
-        input.value = persona;
-        dropdown.style.display = 'none';
-        input.focus();
-      });
-      dropdown.appendChild(item);
-    });
-    
-    dropdown.style.display = 'block';
+  // Limpiar opciones existentes excepto las fijas
+  select.innerHTML = `
+    <option value="">No asignar</option>
+    <option value="__otra__">➕ Otra persona...</option>
+  `;
+  
+  // Añadir personas existentes
+  personas.forEach(persona => {
+    const option = document.createElement('option');
+    option.value = persona;
+    option.textContent = `👤 ${persona}`;
+    select.appendChild(option);
   });
-  
-  // Ocultar dropdown al hacer clic fuera
-  document.addEventListener('click', (e) => {
-    if (!input.contains(e.target) && !dropdown.contains(e.target)) {
-      dropdown.style.display = 'none';
-    }
-  });
+}
+
+function setupPersonasAutocomplete() {
+  // Cargar personas en el select
+  cargarPersonasEnSelect();
 }
 
 // ========== CELEBRACIÓN ==========
@@ -1461,6 +1483,42 @@ function cambiarEstadoSubtarea(tareaIndex, subIndex) {
   guardarJSON(true);
 }
 
+// ========== VISUALIZACIÓN POR COLORES ==========
+function aplicarColorVisualizacion(elemento, tarea, tipo) {
+  const configVisual = JSON.parse(localStorage.getItem('config-visual') || '{}');
+  const modoVisualizacion = configVisual.modoVisualizacion || 'estado';
+  
+  if (modoVisualizacion === 'etiqueta') {
+    // Limpiar clases de estado y urgente para evitar conflictos
+    elemento.classList.remove('completada', 'migrada', 'programada', 'urgente');
+    
+    if (tarea.etiqueta) {
+      // Modo etiqueta: usar color de la etiqueta
+      const etiquetaInfo = obtenerEtiquetaInfo(tarea.etiqueta, 'tareas');
+      if (etiquetaInfo && etiquetaInfo.color) {
+        elemento.style.borderLeft = `4px solid ${etiquetaInfo.color}`;
+        elemento.style.backgroundColor = `${etiquetaInfo.color}15`; // Color con transparencia
+      }
+    } else {
+      // Sin etiqueta: fondo blanco
+      elemento.style.borderLeft = '4px solid #e0e0e0';
+      elemento.style.backgroundColor = '#ffffff';
+    }
+  } else {
+    // Modo estado: limpiar estilos inline y usar clases CSS por estado
+    elemento.style.borderLeft = '';
+    elemento.style.backgroundColor = '';
+    
+    if (tarea.estado === 'completada') {
+      elemento.classList.add('completada');
+    } else if (tarea.estado === 'migrada') {
+      elemento.classList.add('migrada');
+    } else if (tarea.estado === 'programada') {
+      elemento.classList.add('programada');
+    }
+  }
+}
+
 // ========== GUARDAR SUBTAREAS EN HISTORIAL ==========
 function guardarSubtareaCompletada(subtarea, esCritica) {
   if (typeof guardarEnHistorial === 'function') {
@@ -1518,3 +1576,6 @@ window.eliminarSubtareaCritica = eliminarSubtareaCritica;
 window.abrirEditorSubtarea = abrirEditorSubtarea;
 window.guardarEdicionSubtarea = guardarEdicionSubtarea;
 window.guardarSubtareaCompletada = guardarSubtareaCompletada;
+window.manejarSeleccionPersona = manejarSeleccionPersona;
+window.cargarPersonasEnSelect = cargarPersonasEnSelect;
+window.aplicarColorVisualizacion = aplicarColorVisualizacion;

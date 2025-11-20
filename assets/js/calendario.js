@@ -129,7 +129,7 @@ function showAppointments(date) {
     appt.className = 'cita-item';
     appt.innerHTML = `
       <span>${cita.nombre}</span>
-      <button onclick="deleteCita('${date}', '${cita.nombre}')" class="boton-eliminar">🗑️</button>
+      <button onclick="deleteCita('${date}', '${cita.nombre}')" class="btn-borrar-tarea" title="Eliminar cita">🗑️</button>
     `;
     list.appendChild(appt);
   });
@@ -163,7 +163,7 @@ function renderAllAppointmentsList() {
     
     div.innerHTML = `
       <span>${diaSemana}, ${c.fecha}<br><small>${c.nombre}</small></span>
-      <button onclick="deleteCita('${c.fecha}', '${c.nombre}')" class="boton-eliminar" style="font-size:10px;padding:2px 4px;">🗑️</button>
+      <button onclick="deleteCita('${c.fecha}', '${c.nombre}')" class="btn-borrar-tarea" title="Eliminar cita">🗑️</button>
     `;
     div.addEventListener('click', (e) => {
       if (e.target.tagName !== 'BUTTON') {
@@ -222,29 +222,58 @@ function confirmarCita() {
 }
 
 async function deleteCita(fecha, nombre) {
-  const index = appState.agenda.citas.findIndex(c => c.fecha === fecha && c.nombre === nombre);
+  if (!nombre) return;
+  const nombreDecodificado = nombre.replace(/&#39;/g, "'");
+  
+  const index = appState.agenda.citas.findIndex(c => 
+    c && c.fecha === fecha && c.nombre && (c.nombre === nombre || c.nombre === nombreDecodificado)
+  );
+  
   if (index > -1) {
-    console.log('Usuario movió cita al historial');
     const cita = appState.agenda.citas[index];
+    console.log('🎯 Eliminando cita:', cita);
     
-    // Mover al historial en lugar de eliminar
-    if (typeof moverAHistorial === 'function') {
-      moverAHistorial(cita, 'cita');
+    // Verificar configuración de confirmación
+    const configFuncionales = JSON.parse(localStorage.getItem('config-funcionales') || '{}');
+    const necesitaConfirmacion = configFuncionales.confirmacionBorrar !== false;
+    
+    const eliminarCita = () => {
+      if (typeof moverAHistorial === 'function') {
+        moverAHistorial(cita, 'cita');
+      }
+      if (typeof registrarAccion === 'function') {
+        registrarAccion('Eliminar cita', cita.nombre);
+      }
+      appState.agenda.citas.splice(index, 1);
+  
+      
+      renderCalendar();
+      renderAllAppointmentsList();
+      showAppointments(fecha);
+      renderCitasPanel();
+      
+      // Actualizar calendario integrado si está visible
+      const calendarioIntegrado = document.getElementById('calendario-citas-integrado');
+      if (calendarioIntegrado && calendarioIntegrado.style.display === 'block') {
+        console.log('🔄 Actualizando calendario integrado después de eliminar...');
+        renderCalendarioIntegrado();
+      }
+      
+      guardarJSON(true);
+      mostrarAlerta('🗑️ Cita movida al historial', 'info');
+    };
+    
+    if (necesitaConfirmacion && typeof mostrarCuentaRegresiva === 'function') {
+      mostrarCuentaRegresiva(eliminarCita);
+    } else if (necesitaConfirmacion) {
+      if (confirm('¿Eliminar esta cita?')) {
+        eliminarCita();
+      }
+    } else {
+      eliminarCita();
     }
-    
-    // Eliminar la cita del array
-    appState.agenda.citas.splice(index, 1);
-    
-    // Actualizar todas las vistas
-    renderCalendar();
-    renderAllAppointmentsList();
-    showAppointments(fecha);
-    renderCitasPanel();
-    
-    // Guardar cambios inmediatamente
-    await guardarJSON(true);
-    
-    mostrarAlerta('🗑️ Cita movida al historial', 'info');
+  } else {
+    console.error('❌ No se encontró la cita para eliminar');
   }
 }
 
@@ -278,7 +307,16 @@ function renderCitasPanel() {
   const panel = document.getElementById('citas-panel');
   if (!panel) return;
   
+  console.log('🔄 Renderizando panel de citas. Total:', appState.agenda.citas.length);
+  
   panel.innerHTML = '';
+  
+  // Actualizar calendario integrado si está visible
+  const calendarioIntegrado = document.getElementById('calendario-citas-integrado');
+  if (calendarioIntegrado && calendarioIntegrado.style.display === 'block') {
+    console.log('🔄 Calendario integrado visible, actualizando...');
+    setTimeout(() => renderCalendarioIntegrado(), 50);
+  }
   
   if(!appState.agenda.citas || appState.agenda.citas.length === 0) {
     panel.innerHTML = '<div style="color:#777;padding:10px;text-align:center;">No hay citas</div>';
@@ -319,7 +357,7 @@ function renderCitasPanel() {
   sortedCitas.forEach(c => {
     const div = document.createElement('div');
     div.className = 'cita-item';
-    div.style.fontSize = '12px';
+    div.style.fontSize = '16px';
     div.style.cursor = 'pointer';
     
     // Obtener día de la semana
@@ -344,18 +382,20 @@ function renderCitasPanel() {
       alertaHtml = '<span class="alerta-urgente" title="¡Cita hoy!">⚠️ Vence hoy</span>';
     }
     
-    let contenidoCita = `${diaSemana}, ${c.fecha}<br><small>${c.nombre}</small>`;
+    // Extraer solo la descripción de la cita (sin hora)
+    const descripcion = (c.nombre && c.nombre.includes(' - ')) ? c.nombre.split(' - ')[1] : (c.nombre || 'Sin descripción');
+    let contenidoCita = `${descripcion} - ${c.fecha}`;
     if (c.etiqueta) {
       const etiquetaInfo = obtenerEtiquetaInfo ? obtenerEtiquetaInfo(c.etiqueta, 'citas') : null;
       if (etiquetaInfo) {
-        contenidoCita += `<br><span style="background: rgba(78, 205, 196, 0.1); color: #2d5a27; padding: 2px 6px; border-radius: 3px; font-size: 10px;">${etiquetaInfo.simbolo} ${etiquetaInfo.nombre}</span>`;
+        contenidoCita += ` ${etiquetaInfo.simbolo}`;
       }
     }
     
     div.innerHTML = `
       <span style="${(esHoy || esPasada) ? 'color: #d32f2f; font-weight: bold;' : ''}">${contenidoCita}</span>
       ${alertaHtml}
-      <button onclick="deleteCita('${c.fecha}', '${c.nombre}')" class="boton-eliminar" style="font-size:10px;padding:2px 4px;">🗑️</button>
+      <button onclick="deleteCita('${c.fecha}', '${c.nombre}')" class="btn-borrar-tarea" title="Eliminar cita">🗑️</button>
     `;
     
     div.addEventListener('click', (e) => {
@@ -389,6 +429,8 @@ function guardarNuevaCita() {
   const minutos = document.getElementById('nueva-cita-minutos').value;
   const etiqueta = document.getElementById('nueva-cita-etiqueta').value;
   
+  console.log('📅 Guardando nueva cita:', { fecha, descripcion, hora, minutos });
+  
   if (!fecha) {
     alert('Por favor, selecciona una fecha');
     return;
@@ -408,11 +450,20 @@ function guardarNuevaCita() {
   };
   
   appState.agenda.citas.push(nuevaCita);
+  console.log('✅ Cita añadida al estado. Total citas:', appState.agenda.citas.length);
   
   cerrarModal('modal-nueva-cita');
   renderCalendar();
   renderAllAppointmentsList();
   renderCitasPanel();
+  
+  // Actualizar calendario integrado si está visible
+  const calendarioIntegrado = document.getElementById('calendario-citas-integrado');
+  if (calendarioIntegrado && calendarioIntegrado.style.display === 'block') {
+    console.log('🔄 Actualizando calendario integrado...');
+    renderCalendarioIntegrado();
+  }
+  
   guardarJSON(true);
   
   // Programar notificaciones para esta nueva cita
@@ -699,7 +750,7 @@ function agregarCitaRelativa() {
   div.innerHTML = `
     <span class="fecha-calculada">${fechaResultante}</span>
     <span class="descripcion">${citaCompleta}</span>
-    <button class="btn-eliminar" onclick="eliminarCitaRelativa(${citasRelativasTemp.length - 1})">🗑️</button>
+    <button class="btn-borrar-tarea" onclick="eliminarCitaRelativa(${citasRelativasTemp.length - 1})" title="Eliminar cita">🗑️</button>
   `;
   lista.appendChild(div);
   
@@ -723,7 +774,7 @@ function eliminarCitaRelativa(index) {
     div.innerHTML = `
       <span class="fecha-calculada">${cita.fecha}</span>
       <span class="descripcion">${cita.nombre}</span>
-      <button class="btn-eliminar" onclick="eliminarCitaRelativa(${i})">🗑️</button>
+      <button class="btn-borrar-tarea" onclick="eliminarCitaRelativa(${i})" title="Eliminar cita">🗑️</button>
     `;
     lista.appendChild(div);
   });
@@ -841,15 +892,17 @@ window.programarNotificacionesCita = programarNotificacionesCita;
 
 // ========== EDITOR DE CITAS ==========
 function abrirEditorCita(fecha, nombre) {
+  if (!nombre) return;
+  
   const modal = document.createElement('div');
   modal.className = 'modal';
   modal.id = 'modal-editor-cita';
   
   // Extraer hora y descripción
-  const partes = nombre.split(' - ');
+  const partes = nombre.includes(' - ') ? nombre.split(' - ') : ['14:00', nombre];
   const hora = partes[0] || '14:00';
   const descripcion = partes[1] || nombre;
-  const [horas, minutos] = hora.split(':');
+  const [horas, minutos] = hora.includes(':') ? hora.split(':') : ['14', '00'];
   
   modal.innerHTML = `
     <div class="modal-content">
@@ -904,16 +957,26 @@ function guardarEdicionCita(fechaOriginal, nombreOriginal) {
     return;
   }
   
-  // Encontrar y actualizar la cita
-  const index = appState.agenda.citas.findIndex(c => c.fecha === fechaOriginal && c.nombre === nombreOriginal);
+  const index = appState.agenda.citas.findIndex(c => c && c.fecha === fechaOriginal && c.nombre === nombreOriginal);
   if (index > -1) {
     const nuevoNombre = `${nuevaHora}:${nuevosMinutos} - ${nuevaDesc}`;
-    appState.agenda.citas[index] = { fecha: nuevaFecha, nombre: nuevoNombre };
+    appState.agenda.citas[index] = { 
+      id: appState.agenda.citas[index].id || Date.now().toString(),
+      fecha: nuevaFecha, 
+      nombre: nuevoNombre,
+      etiqueta: appState.agenda.citas[index].etiqueta || null
+    };
     
     cerrarModal('modal-editor-cita');
     renderCalendar();
     renderAllAppointmentsList();
     renderCitasPanel();
+    
+    const calendarioIntegrado = document.getElementById('calendario-citas-integrado');
+    if (calendarioIntegrado && calendarioIntegrado.style.display === 'block') {
+      renderCalendarioIntegrado();
+    }
+    
     guardarJSON(true);
     mostrarAlerta('✅ Cita actualizada', 'success');
   }
@@ -921,3 +984,147 @@ function guardarEdicionCita(fechaOriginal, nombreOriginal) {
 
 window.abrirEditorCita = abrirEditorCita;
 window.guardarEdicionCita = guardarEdicionCita;
+
+// ========== CALENDARIO INTEGRADO EN LA PÁGINA ==========
+let calendarioIntegradoState = {
+  currentDate: new Date(),
+  selectedDate: null
+};
+
+function initializeCalendarioIntegrado() {
+  console.log('🚀 Inicializando calendario integrado...');
+  
+  const prevBtn = document.getElementById('prevMonthIntegrado');
+  const nextBtn = document.getElementById('nextMonthIntegrado');
+  
+  if (prevBtn && !prevBtn.hasAttribute('data-initialized')) {
+    prevBtn.addEventListener('click', () => {
+      calendarioIntegradoState.currentDate.setMonth(calendarioIntegradoState.currentDate.getMonth() - 1);
+      renderCalendarioIntegrado();
+    });
+    prevBtn.setAttribute('data-initialized', 'true');
+    console.log('✅ Botón anterior inicializado');
+  }
+  
+  if (nextBtn && !nextBtn.hasAttribute('data-initialized')) {
+    nextBtn.addEventListener('click', () => {
+      calendarioIntegradoState.currentDate.setMonth(calendarioIntegradoState.currentDate.getMonth() + 1);
+      renderCalendarioIntegrado();
+    });
+    nextBtn.setAttribute('data-initialized', 'true');
+    console.log('✅ Botón siguiente inicializado');
+  }
+  
+  renderCalendarioIntegrado();
+  console.log('✅ Calendario integrado inicializado');
+}
+
+function renderCalendarioIntegrado() {
+  const grid = document.getElementById('calendarGridIntegrado');
+  if (!grid) {
+    console.warn('⚠️ No se encontró el grid del calendario integrado');
+    return;
+  }
+  
+  console.log('🔄 Renderizando calendario integrado. Total citas:', appState.agenda.citas.length);
+  
+  grid.innerHTML = '';
+  const monthYearEl = document.getElementById('monthYearIntegrado');
+  if (monthYearEl) {
+    monthYearEl.textContent = calendarioIntegradoState.currentDate.toLocaleString('es-ES', {month:'long', year:'numeric'});
+  }
+  
+  const year = calendarioIntegradoState.currentDate.getFullYear();
+  const month = calendarioIntegradoState.currentDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  
+  for (let i = 0; i < 42; i++) {
+    const cell = document.createElement('div');
+    cell.style.cssText = 'padding:5px;border:1px solid #ddd;min-height:40px;background:white;cursor:pointer;font-size:11px;position:relative;';
+    
+    const firstDayOfWeek = (firstDay.getDay() + 6) % 7;
+    const dayOffset = i - firstDayOfWeek;
+    const dayNumber = dayOffset + 1;
+    
+    if (dayOffset >= 0 && dayOffset < lastDay.getDate()) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
+      
+      const dayNum = document.createElement('div');
+      dayNum.style.cssText = 'font-weight:bold;margin-bottom:3px;';
+      dayNum.textContent = dayNumber;
+      cell.appendChild(dayNum);
+      
+      const hoy = new Date().toISOString().slice(0, 10);
+      const esHoy = dateStr === hoy;
+      
+      const appointments = appState.agenda.citas.filter(cita => cita.fecha === dateStr);
+      const tieneCitas = appointments.length > 0;
+      
+      if (esHoy && tieneCitas) {
+        cell.style.background = '#fff3cd';
+        cell.style.border = '2px solid #ffc107';
+      } else if (esHoy) {
+        cell.style.background = '#e3f2fd';
+        cell.style.border = '2px solid #2196f3';
+      } else if (tieneCitas) {
+        cell.style.background = '#e8f5e9';
+      }
+      
+      if (tieneCitas) {
+        appointments.slice(0, 2).forEach(cita => {
+          if (!cita || !cita.nombre) return;
+          const eventDiv = document.createElement('div');
+          eventDiv.style.cssText = 'background:#4ecdc4;color:white;padding:2px;margin:2px 0;border-radius:3px;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;';
+          const descripcion = (cita.nombre && cita.nombre.includes(' - ')) ? cita.nombre.split(' - ')[1] : (cita.nombre || '');
+          eventDiv.textContent = descripcion;
+          eventDiv.onclick = (e) => {
+            e.stopPropagation();
+            if (cita.nombre) abrirEditorCita(cita.fecha, cita.nombre);
+          };
+          cell.appendChild(eventDiv);
+        });
+        
+        if (appointments.length > 2) {
+          const moreDiv = document.createElement('div');
+          moreDiv.style.cssText = 'font-size:9px;color:#666;font-style:italic;margin-top:2px;';
+          moreDiv.textContent = `+${appointments.length - 2} más`;
+          cell.appendChild(moreDiv);
+        }
+      }
+      
+      cell.addEventListener('click', () => {
+        calendarioIntegradoState.selectedDate = dateStr;
+        document.getElementById('nueva-cita-fecha').value = dateStr;
+        abrirModalNuevaCita();
+      });
+      
+      cell.dataset.date = dateStr;
+    } else {
+      cell.style.opacity = '0.3';
+    }
+    
+    grid.appendChild(cell);
+  }
+  
+  // Actualizar lista de citas si hay una fecha seleccionada
+  if (calendarioIntegradoState.selectedDate) {
+    showAppointmentsIntegrado(calendarioIntegradoState.selectedDate);
+  }
+}
+
+function showAppointmentsIntegrado(date) {
+  const list = document.getElementById('appointmentsListIntegrado');
+  if (!list) return;
+  list.innerHTML = '';
+}
+
+function toggleCalendarioCitas() {
+  // Abrir el modal del calendario
+  abrirCalendario();
+}
+
+window.initializeCalendarioIntegrado = initializeCalendarioIntegrado;
+window.renderCalendarioIntegrado = renderCalendarioIntegrado;
+window.showAppointmentsIntegrado = showAppointmentsIntegrado;
+window.toggleCalendarioCitas = toggleCalendarioCitas;
