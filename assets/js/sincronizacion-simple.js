@@ -317,10 +317,7 @@ function guardarConfigVisualPanel() {
   }
   
   // Mostrar/ocultar secciones
-  const seccionNotas = document.getElementById('seccion-notas');
-  const seccionSentimientos = document.getElementById('seccion-sentimientos');
-  if (seccionNotas) seccionNotas.style.display = mostrarNotas ? 'block' : 'none';
-  if (seccionSentimientos) seccionSentimientos.style.display = mostrarSentimientos ? 'block' : 'none';
+  aplicarVisibilidadSecciones();
   
   mostrarAlerta('✅ Configuración visual aplicada', 'success');
 }
@@ -910,6 +907,17 @@ function iniciarRecordatorios() {
 
 
 
+function aplicarVisibilidadSecciones() {
+  const config = JSON.parse(localStorage.getItem('config-visual') || '{}');
+  const mostrarNotas = config.mostrarNotas !== false;
+  const mostrarSentimientos = config.mostrarSentimientos !== false;
+  
+  const seccionNotas = document.getElementById('seccion-notas');
+  const seccionSentimientos = document.getElementById('seccion-sentimientos');
+  if (seccionNotas) seccionNotas.style.display = mostrarNotas ? 'block' : 'none';
+  if (seccionSentimientos) seccionSentimientos.style.display = mostrarSentimientos ? 'block' : 'none';
+}
+
 // Inicializar Firebase y sincronización
 document.addEventListener('DOMContentLoaded', () => {
   const config = getFirebaseConfig();
@@ -921,6 +929,9 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     console.log('💡 Configura Firebase en ⚙️ → Firebase');
   }
+  
+  // Aplicar visibilidad de secciones al cargar
+  setTimeout(() => aplicarVisibilidadSecciones(), 100);
   
   // Iniciar notificaciones si están activadas
   if (localStorage.getItem('notificaciones-activas') === 'true') {
@@ -998,3 +1009,4 @@ function guardarSentimiento(texto) {
 }
 
 window.guardarSentimiento = guardarSentimiento;
+window.aplicarVisibilidadSecciones = aplicarVisibilidadSecciones;
