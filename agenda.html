@@ -389,6 +389,8 @@
       <button class="config-tab" onclick="switchTab('visual')">🎨 Visual</button>
       <button class="config-tab" onclick="switchTab('funcionales')">⚙️ Funcionales</button>
       <button class="config-tab" onclick="switchTab('etiquetas')">🏷️ Etiquetas</button>
+      <button class="config-tab" onclick="switchTab('backups')">💾 Backups</button>
+      <button class="config-tab" onclick="switchTab('log')">📋 Log</button>
       <button class="config-tab" onclick="switchTab('actions')">📊 Acciones</button>
     </div>
     
@@ -601,6 +603,40 @@
         </div>
         
         <button class="btn-primario" onclick="guardarEtiquetas()">Guardar Etiquetas</button>
+      </div>
+    </div>
+    
+    <!-- Contenido Backups -->
+    <div id="tab-backups" class="tab-content">
+      <div style="padding:20px;">
+        <h3>💾 Salvados Diarios</h3>
+        <p style="font-size:12px;color:#666;margin-bottom:15px;">Backups automáticos diarios de tareas y citas</p>
+        
+        <div style="margin-bottom:15px;">
+          <button class="btn-primario" onclick="crearSalvadoManual()" style="font-size:12px;padding:6px 12px;">💾 Crear Backup Ahora</button>
+          <button class="btn-secundario" onclick="limpiarSalvadosAntiguos()" style="font-size:12px;padding:6px 12px;margin-left:10px;">🗑️ Limpiar Antiguos</button>
+        </div>
+        
+        <div id="backups-container" style="max-height:300px;overflow-y:auto;border:1px solid #ddd;border-radius:6px;padding:10px;background:#f9f9f9;">
+          <div style="text-align:center;color:#666;padding:20px;">Cargando backups...</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Contenido Log -->
+    <div id="tab-log" class="tab-content">
+      <div style="padding:20px;">
+        <h3>📋 Registro de Actividad</h3>
+        <p style="font-size:12px;color:#666;margin-bottom:15px;">Historial de todas las acciones realizadas</p>
+        
+        <div style="margin-bottom:15px;">
+          <button class="btn-secundario" onclick="limpiarLog()" style="font-size:12px;padding:6px 12px;">🗑️ Limpiar Log</button>
+          <button class="btn-secundario" onclick="exportarLog()" style="font-size:12px;padding:6px 12px;margin-left:10px;">📥 Exportar</button>
+        </div>
+        
+        <div id="log-container" style="max-height:300px;overflow-y:auto;border:1px solid #ddd;border-radius:6px;padding:10px;background:#f9f9f9;font-family:monospace;font-size:12px;">
+          <div style="text-align:center;color:#666;padding:20px;">Cargando log...</div>
+        </div>
       </div>
     </div>
     

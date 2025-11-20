@@ -123,6 +123,7 @@ function renderizarCriticas() {
       if (necesitaConfirmacion) {
         mostrarCuentaRegresiva(() => {
           moverAHistorial(tarea, 'tarea_critica');
+          registrarAccion('Eliminar tarea crítica', tarea.titulo);
           appState.agenda.tareas_criticas.splice(realIndex, 1);
           renderizar();
           guardarJSON(true);
@@ -130,6 +131,7 @@ function renderizarCriticas() {
         });
       } else {
         moverAHistorial(tarea, 'tarea_critica');
+        registrarAccion('Eliminar tarea crítica', tarea.titulo);
         appState.agenda.tareas_criticas.splice(realIndex, 1);
         renderizar();
         await guardarJSON(true);
@@ -322,6 +324,7 @@ function renderizarTareas() {
       if (necesitaConfirmacion) {
         mostrarCuentaRegresiva(() => {
           moverAHistorial(tarea, 'tarea');
+          registrarAccion('Eliminar tarea', tarea.texto);
           appState.agenda.tareas.splice(realIndex, 1);
           renderizar();
           guardarJSON(true);
@@ -329,6 +332,7 @@ function renderizarTareas() {
         });
       } else {
         moverAHistorial(tarea, 'tarea');
+        registrarAccion('Eliminar tarea', tarea.texto);
         appState.agenda.tareas.splice(realIndex, 1);
         renderizar();
         await guardarJSON(true);
@@ -441,6 +445,7 @@ function obtenerSimbolo(tarea) {
 // ========== CAMBIAR ESTADO ==========
 function cambiarEstadoCritica(index) {
   const tarea = appState.agenda.tareas_criticas[index];
+  const estadoAnterior = tarea.estado;
   
   if (tarea.estado === 'pendiente') {
     tarea.estado = 'migrada';
@@ -455,20 +460,24 @@ function cambiarEstadoCritica(index) {
       tarea.completada = true;
       guardarTareaCompletada(tarea, true);
       mostrarCelebracion();
+      registrarAccion('Completar tarea crítica', tarea.titulo);
     } else {
       tarea.estado = 'programada';
       tarea.completada = false;
+      registrarAccion('Programar tarea crítica', tarea.titulo);
     }
   } else if (tarea.estado === 'programada') {
     tarea.estado = 'completada';
     tarea.completada = true;
     guardarTareaCompletada(tarea, true);
     mostrarCelebracion();
+    registrarAccion('Completar tarea crítica', tarea.titulo);
   } else {
     tarea.estado = 'pendiente';
     tarea.completada = false;
     delete tarea.persona;
     delete tarea.fecha_migrar;
+    registrarAccion('Reiniciar tarea crítica', tarea.titulo);
   }
   
   renderizar();
@@ -491,20 +500,24 @@ function cambiarEstadoTarea(index) {
       tarea.completada = true;
       guardarTareaCompletada(tarea, false);
       mostrarCelebracion();
+      registrarAccion('Completar tarea', tarea.texto);
     } else {
       tarea.estado = 'programada';
       tarea.completada = false;
+      registrarAccion('Programar tarea', tarea.texto);
     }
   } else if (tarea.estado === 'programada') {
     tarea.estado = 'completada';
     tarea.completada = true;
     guardarTareaCompletada(tarea, false);
     mostrarCelebracion();
+    registrarAccion('Completar tarea', tarea.texto);
   } else {
     tarea.estado = 'pendiente';
     tarea.completada = false;
     delete tarea.persona;
     delete tarea.fecha_migrar;
+    registrarAccion('Reiniciar tarea', tarea.texto);
   }
   
   renderizar();
@@ -580,6 +593,7 @@ async function agregarTareaCritica() {
     tarea.fecha_fin = fecha;
     tarea.etiqueta = etiqueta || null;
     appState.ui.criticaEditando = null;
+    registrarAccion('Editar tarea crítica', titulo);
   } else {
     // Nueva tarea crítica
     const nuevaTarea = {
@@ -593,6 +607,7 @@ async function agregarTareaCritica() {
       fecha_creacion: new Date().toISOString()
     };
     appState.agenda.tareas_criticas.push(nuevaTarea);
+    registrarAccion('Crear tarea crítica', titulo);
   }
   
   cerrarModal('modal-critica');
@@ -629,6 +644,7 @@ async function agregarTarea() {
     tarea.fecha_fin = fecha;
     tarea.etiqueta = etiqueta || null;
     appState.ui.tareaEditando = null;
+    registrarAccion('Editar tarea', texto);
   } else {
     // Nueva tarea
     const nuevaTarea = {
@@ -641,6 +657,7 @@ async function agregarTarea() {
       fecha_creacion: new Date().toISOString()
     };
     appState.agenda.tareas.push(nuevaTarea);
+    registrarAccion('Crear tarea', texto);
   }
   
   cerrarModal('modal-tarea');
@@ -731,10 +748,12 @@ function guardarMigracion() {
   
   guardarJSON(true);
   
-  // Mostrar confirmación
+  // Mostrar confirmación y registrar acción
   if (persona) {
+    registrarAccion('Delegar tarea', `a ${persona}`);
     mostrarAlerta(`→ Tarea delegada a ${persona}`, 'success');
   } else if (fecha) {
+    registrarAccion('Reprogramar tarea', `para ${fecha}`);
     mostrarAlerta(`→ Tarea reprogramada para ${fecha}`, 'success');
   }
 }

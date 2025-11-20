@@ -48,13 +48,35 @@ function cargarHistorialCompleto() {
   
   contenido.innerHTML = '<div style="text-align: center; padding: 20px;">🔄 Cargando historial...</div>';
   
-  cargarHistorialFirebase().then(historial => {
-    window.historialCompleto = historial;
+  try {
+    // Cargar historial desde localStorage
+    const historialTareas = JSON.parse(localStorage.getItem('historial-tareas') || '[]');
+    const historialEliminados = JSON.parse(localStorage.getItem('historial-eliminados') || '[]');
+    const historialSentimientos = JSON.parse(localStorage.getItem('historial-sentimientos') || '[]');
+    
+    // Combinar todos los historiales
+    const historialCompleto = [
+      ...historialTareas,
+      ...historialEliminados.map(item => ({
+        ...item.data,
+        fecha: item.fecha_eliminacion ? item.fecha_eliminacion.slice(0, 10) : new Date().toISOString().slice(0, 10),
+        hora: item.fecha_eliminacion ? new Date(item.fecha_eliminacion).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '00:00',
+        texto: item.data.titulo || item.data.texto || item.data.nombre || 'Item eliminado',
+        esCritica: item.tipo === 'tarea_critica'
+      })),
+      ...historialSentimientos.map(item => ({
+        ...item,
+        texto: `Sentimiento: ${item.texto}`,
+        esCritica: false
+      }))
+    ];
+    
+    window.historialCompleto = historialCompleto;
     filtrarHistorial();
-  }).catch(error => {
+  } catch (error) {
     console.error('Error cargando historial:', error);
     contenido.innerHTML = '<div style="text-align: center; padding: 20px; color: #f44336;">❌ Error cargando historial</div>';
-  });
+  }
 }
 
 function filtrarHistorial() {

@@ -112,8 +112,9 @@ function extendsClassPull() {
     db.collection('tareas').doc('data').get(),
     db.collection('citas').doc('data').get(),
     db.collection('notas').doc('data').get(),
-    db.collection('sentimientos').doc('data').get()
-  ]).then(([tareasDoc, citasDoc, notasDoc, sentimientosDoc]) => {
+    db.collection('sentimientos').doc('data').get(),
+    db.collection('historial').doc('eliminados').get()
+  ]).then(([tareasDoc, citasDoc, notasDoc, sentimientosDoc, historialDoc]) => {
     const data = {
       tareas_criticas: tareasDoc.exists ? (tareasDoc.data().tareas_criticas || []) : [],
       tareas: tareasDoc.exists ? (tareasDoc.data().tareas || []) : [],
@@ -121,6 +122,12 @@ function extendsClassPull() {
       notas: notasDoc.exists ? (notasDoc.data().notas || '') : '',
       sentimientos: sentimientosDoc.exists ? (sentimientosDoc.data().sentimientos || '') : ''
     };
+    
+    // Sincronizar historial eliminados
+    if (historialDoc.exists) {
+      const historialFirebase = historialDoc.data().items || [];
+      localStorage.setItem('historial-eliminados', JSON.stringify(historialFirebase));
+    }
     
     console.log('📥 Sincronizado desde Firebase');
     procesarJSON(data);
@@ -269,6 +276,10 @@ function cargarConfiguracionesModal() {
   // Cargar etiquetas
   renderizarListaEtiquetas('etiquetas-tareas-lista', 'tareas');
   renderizarListaEtiquetas('etiquetas-citas-lista', 'citas');
+  
+  // Cargar log y backups
+  cargarLog();
+  cargarListaSalvados();
 }
 
 function cambiarFraseMotivacional() {
@@ -351,6 +362,7 @@ function guardarConfigVisualPanel() {
   // Mostrar/ocultar secciones
   aplicarVisibilidadSecciones();
   
+  registrarAccion('Cambiar configuración visual', `tema: ${tema}`);
   mostrarAlerta('✅ Configuración visual aplicada', 'success');
 }
 
@@ -956,7 +968,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (config.apiKey && config.projectId) {
     if (initFirebase()) {
       setupAutoSync();
-      setTimeout(() => extendsClassPull(), 1000);
+      setTimeout(() => {
+        extendsClassPull();
+        // Verificar salvado diario después de cargar datos
+        setTimeout(() => verificarSalvadoDiario(), 2000);
+      }, 1000);
     }
   } else {
     console.log('💡 Configura Firebase en ⚙️ → Firebase');
@@ -1103,6 +1119,7 @@ function agregarEtiquetaTarea() {
   etiquetas.tareas.push({ nombre, simbolo });
   localStorage.setItem('etiquetas', JSON.stringify(etiquetas));
   
+  registrarAccion('Añadir etiqueta de tarea', `${simbolo} ${nombre}`);
   document.getElementById('nueva-etiqueta-tarea').value = '';
   renderizarListaEtiquetas('etiquetas-tareas-lista', 'tareas');
 }
@@ -1117,6 +1134,7 @@ function agregarEtiquetaCita() {
   etiquetas.citas.push({ nombre, simbolo });
   localStorage.setItem('etiquetas', JSON.stringify(etiquetas));
   
+  registrarAccion('Añadir etiqueta de cita', `${simbolo} ${nombre}`);
   document.getElementById('nueva-etiqueta-cita').value = '';
   renderizarListaEtiquetas('etiquetas-citas-lista', 'citas');
 }
@@ -1158,12 +1176,243 @@ function moverAHistorial(item, tipo) {
   
   localStorage.setItem('historial-eliminados', JSON.stringify(historial));
   
-  // Guardar en Firebase
+  // Guardar en Firebase - crear la colección historial
   if (isFirebaseInitialized) {
-    db.collection('historial').add(entrada).catch(error => {
+    db.collection('historial').doc('eliminados').set({
+      items: historial,
+      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(error => {
       console.error('Error guardando en historial:', error);
     });
   }
+}
+
+// ========== SISTEMA DE LOG ==========
+function registrarAccion(accion, detalles = '') {
+  const entrada = {
+    id: Date.now().toString(),
+    accion: accion,
+    detalles: detalles,
+    fecha: new Date().toISOString().slice(0, 10),
+    hora: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+    timestamp: new Date().toISOString()
+  };
+  
+  // Guardar en localStorage
+  const log = JSON.parse(localStorage.getItem('log-acciones') || '[]');
+  log.push(entrada);
+  if (log.length > 2000) {
+    log.splice(0, log.length - 2000);
+  }
+  localStorage.setItem('log-acciones', JSON.stringify(log));
+  
+  // Guardar en Firebase
+  if (isFirebaseInitialized) {
+    db.collection('log').doc('acciones').set({
+      entries: log,
+      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(error => {
+      console.error('Error guardando log:', error);
+    });
+  }
+}
+
+// ========== SISTEMA DE SALVADO DIARIO ==========
+function verificarSalvadoDiario() {
+  if (!isFirebaseInitialized) return;
+  
+  const hoy = new Date().toISOString().slice(0, 10).replace(/-/g, '-');
+  const nombreSalvado = `salvadodiario${hoy}`;
+  
+  // Verificar si ya existe el salvado de hoy
+  db.collection('salvados').doc(nombreSalvado).get().then(doc => {
+    if (!doc.exists) {
+      crearSalvadoDiario(nombreSalvado);
+    }
+  }).catch(error => {
+    console.error('Error verificando salvado diario:', error);
+  });
+}
+
+function crearSalvadoDiario(nombre) {
+  const salvado = {
+    fecha: new Date().toISOString().slice(0, 10),
+    timestamp: new Date().toISOString(),
+    tareas_criticas: appState.agenda.tareas_criticas || [],
+    tareas: appState.agenda.tareas || [],
+    citas: appState.agenda.citas || []
+  };
+  
+  db.collection('salvados').doc(nombre).set(salvado).then(() => {
+    console.log('✅ Salvado diario creado:', nombre);
+    registrarAccion('Crear salvado diario', nombre);
+    limpiarSalvadosAntiguos();
+  }).catch(error => {
+    console.error('Error creando salvado diario:', error);
+  });
+}
+
+function limpiarSalvadosAntiguos() {
+  if (!isFirebaseInitialized) return;
+  
+  db.collection('salvados').get().then(snapshot => {
+    const salvados = [];
+    snapshot.forEach(doc => {
+      if (doc.id.startsWith('salvadodiario')) {
+        salvados.push({ id: doc.id, data: doc.data() });
+      }
+    });
+    
+    // Ordenar por fecha (más recientes primero)
+    salvados.sort((a, b) => new Date(b.data.timestamp) - new Date(a.data.timestamp));
+    
+    // Si hay más de 15, eliminar los más antiguos
+    if (salvados.length > 15) {
+      const aEliminar = salvados.slice(15);
+      aEliminar.forEach(salvado => {
+        db.collection('salvados').doc(salvado.id).delete();
+      });
+      console.log(`🗑️ Eliminados ${aEliminar.length} salvados antiguos`);
+    }
+  }).catch(error => {
+    console.error('Error limpiando salvados antiguos:', error);
+  });
+}
+
+function cargarListaSalvados() {
+  const container = document.getElementById('backups-container');
+  if (!container || !isFirebaseInitialized) return;
+  
+  db.collection('salvados').get().then(snapshot => {
+    const salvados = [];
+    snapshot.forEach(doc => {
+      if (doc.id.startsWith('salvadodiario')) {
+        salvados.push({ id: doc.id, data: doc.data() });
+      }
+    });
+    
+    if (salvados.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">No hay salvados disponibles</div>';
+      return;
+    }
+    
+    // Ordenar por fecha (más recientes primero)
+    salvados.sort((a, b) => new Date(b.data.timestamp) - new Date(a.data.timestamp));
+    
+    container.innerHTML = salvados.map(salvado => {
+      const fecha = salvado.data.fecha;
+      const tareas = (salvado.data.tareas_criticas?.length || 0) + (salvado.data.tareas?.length || 0);
+      const citas = salvado.data.citas?.length || 0;
+      
+      return `<div style="margin-bottom:8px;padding:10px;border:1px solid #ddd;border-radius:6px;background:white;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:bold;color:#2d5a27;">💾 ${fecha}</div>
+            <div style="color:#666;font-size:11px;">${tareas} tareas, ${citas} citas</div>
+          </div>
+          <button onclick="restaurarSalvado('${salvado.id}')" class="btn-secundario" style="font-size:11px;padding:4px 8px;">🔄 Restaurar</button>
+        </div>
+      </div>`;
+    }).join('');
+  }).catch(error => {
+    container.innerHTML = '<div style="text-align:center;color:#f44;padding:20px;">Error cargando salvados</div>';
+    console.error('Error cargando salvados:', error);
+  });
+}
+
+function restaurarSalvado(nombreSalvado) {
+  const confirmacion = confirm('⚠️ ¿Estás seguro de restaurar este salvado?\n\nSe perderán todos los datos actuales (tareas, citas) y se reemplazarán con los del salvado seleccionado.\n\n¿Continuar?');
+  
+  if (!confirmacion) return;
+  
+  db.collection('salvados').doc(nombreSalvado).get().then(doc => {
+    if (doc.exists) {
+      const data = doc.data();
+      
+      // Restaurar datos
+      appState.agenda.tareas_criticas = data.tareas_criticas || [];
+      appState.agenda.tareas = data.tareas || [];
+      appState.agenda.citas = data.citas || [];
+      
+      // Guardar en Firebase
+      guardarJSON(true);
+      
+      // Renderizar
+      renderizar();
+      
+      registrarAccion('Restaurar salvado', nombreSalvado);
+      mostrarAlerta('✅ Salvado restaurado correctamente', 'success');
+      
+      // Cerrar modal
+      cerrarModal('modal-config');
+    } else {
+      mostrarAlerta('❌ Salvado no encontrado', 'error');
+    }
+  }).catch(error => {
+    mostrarAlerta('❌ Error restaurando salvado: ' + error.message, 'error');
+  });
+}
+
+function crearSalvadoManual() {
+  const hoy = new Date().toISOString().slice(0, 10).replace(/-/g, '-');
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const nombreSalvado = `salvadodiario${hoy}-manual-${timestamp}`;
+  
+  crearSalvadoDiario(nombreSalvado);
+  setTimeout(() => cargarListaSalvados(), 1000);
+  mostrarAlerta('💾 Salvado manual creado', 'success');
+}
+
+// ========== FUNCIONES DE LOG ==========
+function cargarLog() {
+  const log = JSON.parse(localStorage.getItem('log-acciones') || '[]');
+  const container = document.getElementById('log-container');
+  if (!container) return;
+  
+  if (log.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">No hay acciones registradas</div>';
+    return;
+  }
+  
+  // Mostrar últimas 50 entradas
+  const entradas = log.slice(-50).reverse();
+  container.innerHTML = entradas.map(entrada => 
+    `<div style="margin-bottom:8px;padding:8px;border-left:3px solid #4ecdc4;background:white;">
+      <div style="font-weight:bold;color:#2d5a27;">${entrada.accion}</div>
+      <div style="color:#666;font-size:11px;">${entrada.fecha} ${entrada.hora}</div>
+      ${entrada.detalles ? `<div style="color:#333;margin-top:4px;">${entrada.detalles}</div>` : ''}
+    </div>`
+  ).join('');
+}
+
+function limpiarLog() {
+  if (confirm('¿Estás seguro de que quieres limpiar todo el log?')) {
+    localStorage.setItem('log-acciones', '[]');
+    if (isFirebaseInitialized) {
+      db.collection('log').doc('acciones').set({
+        entries: [],
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    cargarLog();
+    mostrarAlerta('🗑️ Log limpiado', 'info');
+  }
+}
+
+function exportarLog() {
+  const log = JSON.parse(localStorage.getItem('log-acciones') || '[]');
+  const texto = log.map(entrada => 
+    `${entrada.fecha} ${entrada.hora} - ${entrada.accion}${entrada.detalles ? ': ' + entrada.detalles : ''}`
+  ).join('\n');
+  
+  const blob = new Blob([texto], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'log-acciones-' + new Date().toISOString().slice(0, 10) + '.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+  mostrarAlerta('📥 Log exportado', 'success');
 }
 
 window.guardarSentimiento = guardarSentimiento;
@@ -1177,4 +1426,14 @@ window.eliminarEtiqueta = eliminarEtiqueta;
 window.guardarEtiquetas = guardarEtiquetas;
 window.obtenerEtiquetaInfo = obtenerEtiquetaInfo;
 window.moverAHistorial = moverAHistorial;
+window.registrarAccion = registrarAccion;
+window.cargarLog = cargarLog;
+window.limpiarLog = limpiarLog;
+window.exportarLog = exportarLog;
+window.verificarSalvadoDiario = verificarSalvadoDiario;
+window.crearSalvadoDiario = crearSalvadoDiario;
+window.limpiarSalvadosAntiguos = limpiarSalvadosAntiguos;
+window.cargarListaSalvados = cargarListaSalvados;
+window.restaurarSalvado = restaurarSalvado;
+window.crearSalvadoManual = crearSalvadoManual;
 
