@@ -224,8 +224,13 @@ function confirmarCita() {
 async function deleteCita(fecha, nombre) {
   const index = appState.agenda.citas.findIndex(c => c.fecha === fecha && c.nombre === nombre);
   if (index > -1) {
-    console.log('Usuario eliminó cita manualmente');
-    const citaEliminada = appState.agenda.citas[index];
+    console.log('Usuario movió cita al historial');
+    const cita = appState.agenda.citas[index];
+    
+    // Mover al historial en lugar de eliminar
+    if (typeof moverAHistorial === 'function') {
+      moverAHistorial(cita, 'cita');
+    }
     
     // Eliminar la cita del array
     appState.agenda.citas.splice(index, 1);
@@ -238,6 +243,8 @@ async function deleteCita(fecha, nombre) {
     
     // Guardar cambios inmediatamente
     await guardarJSON(true);
+    
+    mostrarAlerta('🗑️ Cita movida al historial', 'info');
   }
 }
 
@@ -337,8 +344,16 @@ function renderCitasPanel() {
       alertaHtml = '<span class="alerta-urgente" title="¡Cita hoy!">⚠️ Vence hoy</span>';
     }
     
+    let contenidoCita = `${diaSemana}, ${c.fecha}<br><small>${c.nombre}</small>`;
+    if (c.etiqueta) {
+      const etiquetaInfo = obtenerEtiquetaInfo ? obtenerEtiquetaInfo(c.etiqueta, 'citas') : null;
+      if (etiquetaInfo) {
+        contenidoCita += `<br><span style="background: rgba(78, 205, 196, 0.1); color: #2d5a27; padding: 2px 6px; border-radius: 3px; font-size: 10px;">${etiquetaInfo.simbolo} ${etiquetaInfo.nombre}</span>`;
+      }
+    }
+    
     div.innerHTML = `
-      <span style="${(esHoy || esPasada) ? 'color: #d32f2f; font-weight: bold;' : ''}">${diaSemana}, ${c.fecha}<br><small>${c.nombre}</small></span>
+      <span style="${(esHoy || esPasada) ? 'color: #d32f2f; font-weight: bold;' : ''}">${contenidoCita}</span>
       ${alertaHtml}
       <button onclick="deleteCita('${c.fecha}', '${c.nombre}')" class="boton-eliminar" style="font-size:10px;padding:2px 4px;">🗑️</button>
     `;
@@ -372,6 +387,7 @@ function guardarNuevaCita() {
   const descripcion = document.getElementById('nueva-cita-desc').value.trim();
   const hora = document.getElementById('nueva-cita-hora').value;
   const minutos = document.getElementById('nueva-cita-minutos').value;
+  const etiqueta = document.getElementById('nueva-cita-etiqueta').value;
   
   if (!fecha) {
     alert('Por favor, selecciona una fecha');
@@ -384,7 +400,14 @@ function guardarNuevaCita() {
   }
   
   const citaCompleta = `${hora}:${minutos} - ${descripcion}`;
-  appState.agenda.citas.push({ fecha, nombre: citaCompleta });
+  const nuevaCita = { 
+    id: Date.now().toString(),
+    fecha, 
+    nombre: citaCompleta,
+    etiqueta: etiqueta || null
+  };
+  
+  appState.agenda.citas.push(nuevaCita);
   
   cerrarModal('modal-nueva-cita');
   renderCalendar();
@@ -393,7 +416,7 @@ function guardarNuevaCita() {
   guardarJSON(true);
   
   // Programar notificaciones para esta nueva cita
-  programarNotificacionesCita({ fecha, nombre: citaCompleta });
+  programarNotificacionesCita(nuevaCita);
   
   mostrarAlerta('📅 Cita añadida correctamente', 'success');
 }

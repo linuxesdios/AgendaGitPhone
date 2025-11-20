@@ -1007,8 +1007,6 @@ window.guardarConfigFuncionales = guardarConfigFuncionales;
 window.cargarConfigFuncionales = cargarConfigFuncionales;
 window.guardarConfigExtendsClass = guardarConfigFirebase;
 window.probarConexionExtendsClass = probarConexionFirebase;
-window.cargarHistorialFirebase = cargarHistorialFirebase;
-window.mostrarDashboard = mostrarDashboard;
 
 // ========== HISTORIAL DE SENTIMIENTOS ==========
 function guardarSentimiento(texto) {
