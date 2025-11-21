@@ -1836,59 +1836,57 @@ function renderizarListaPersonalizada(listaId) {
     btnBorrar.title = 'Eliminar tarea';
     btnBorrar.onclick = (e) => {
       e.stopPropagation();
-
-      // Verificar configuración de confirmación
-      const configFuncionales = window.configFuncionales || {};
-      const necesitaConfirmacion = configFuncionales.confirmacionBorrar !== false;
-
-      if (necesitaConfirmacion && typeof mostrarCuentaRegresiva === 'function') {
-        mostrarCuentaRegresiva(() => {
-          eliminarTareaListaPersonalizada(listaId, index);
-        });
-      } else {
-        eliminarTareaListaPersonalizada(listaId, index);
-      }
+      mostrarCuentaRegresiva(() => {
+        ejecutarEliminacionTareaListaPersonalizada(listaId, index);
+      });
     };
     div.appendChild(btnBorrar);
 
-    // Renderizar Subtareas
-    if (tarea.subtareas && tarea.subtareas.length > 0) {
-      const subtareasDiv = document.createElement('div');
-      subtareasDiv.className = 'subtareas-container';
-      subtareasDiv.style.marginLeft = '25px';
-      subtareasDiv.style.marginTop = '5px';
-      subtareasDiv.style.borderLeft = '2px solid #eee';
-      subtareasDiv.style.paddingLeft = '10px';
+    contenedor.appendChild(div);
 
-      tarea.subtareas.forEach((sub, subIndex) => {
+    // Renderizar Subtareas (IGUAL QUE EN TAREAS CRÍTICAS Y NORMALES)
+    if (tarea.subtareas && tarea.subtareas.length > 0) {
+      tarea.subtareas.forEach((subtarea, subIndex) => {
         const subDiv = document.createElement('div');
         subDiv.className = 'subtarea-item';
-        subDiv.style.display = 'flex';
-        subDiv.style.alignItems = 'center';
-        subDiv.style.gap = '8px';
-        subDiv.style.marginBottom = '4px';
-        subDiv.style.fontSize = '0.9em';
+        if (subtarea.completada) subDiv.classList.add('subtarea-completada');
 
-        const checkSub = document.createElement('input');
-        checkSub.type = 'checkbox';
-        checkSub.checked = sub.completada;
-        checkSub.onchange = () => toggleSubtareaListaPersonalizada(listaId, index, subIndex);
+        const subSimbolo = document.createElement('span');
+        subSimbolo.className = 'subtarea-simbolo';
+        subSimbolo.textContent = obtenerSimboloSubtarea(subtarea);
+        subSimbolo.onclick = () => cambiarEstadoSubtareaListaPersonalizada(listaId, index, subIndex);
 
-        const textoSub = document.createElement('span');
-        textoSub.textContent = sub.texto;
-        if (sub.completada) {
-          textoSub.style.textDecoration = 'line-through';
-          textoSub.style.color = '#999';
+        const subTexto = document.createElement('div');
+        subTexto.className = 'subtarea-texto';
+        subTexto.style.cursor = 'pointer';
+        let contenidoSub = subtarea.texto;
+        if (subtarea.persona || subtarea.fecha_migrar) {
+          contenidoSub += ' <span style="font-size: 11px; color: #9c27b0;">→ ';
+          if (subtarea.persona) {
+            contenidoSub += `<span style="background: #e3f2fd; color: #1976d2; padding: 2px 6px; border-radius: 3px; font-size: 10px;">👤 ${escapeHtml(subtarea.persona)}</span>`;
+          }
+          if (subtarea.fecha_migrar) {
+            contenidoSub += `<span style="background: #ffe5e5; color: #666; padding: 2px 6px; border-radius: 3px; font-size: 10px;">📅 ${subtarea.fecha_migrar}</span>`;
+          }
+          contenidoSub += '</span>';
         }
+        subTexto.innerHTML = contenidoSub;
+        subTexto.onclick = () => abrirEditorSubtareaListaPersonalizada(listaId, index, subIndex);
 
-        subDiv.appendChild(checkSub);
-        subDiv.appendChild(textoSub);
-        subtareasDiv.appendChild(subDiv);
+        const btnBorrarSub = document.createElement('button');
+        btnBorrarSub.className = 'btn-borrar-subtarea';
+        btnBorrarSub.textContent = '🗑️';
+        btnBorrarSub.onclick = (e) => {
+          e.stopPropagation();
+          eliminarSubtareaListaPersonalizada(listaId, index, subIndex);
+        };
+
+        subDiv.appendChild(subSimbolo);
+        subDiv.appendChild(subTexto);
+        subDiv.appendChild(btnBorrarSub);
+        contenedor.appendChild(subDiv);
       });
-      div.appendChild(subtareasDiv);
     }
-
-    contenedor.appendChild(div);
   });
 }
 
@@ -1934,7 +1932,7 @@ function guardarSubtareaListaPersonalizada(listaId, tareaIndex, texto) {
   guardarConfigEnFirebase();
 }
 
-function toggleSubtareaListaPersonalizada(listaId, tareaIndex, subIndex) {
+function cambiarEstadoSubtareaListaPersonalizada(listaId, tareaIndex, subIndex) {
   const configVisual = window.configVisual || {};
   const listas = configVisual.listasPersonalizadas || [];
   const listaIndex = listas.findIndex(l => l.id === listaId);
@@ -1942,18 +1940,150 @@ function toggleSubtareaListaPersonalizada(listaId, tareaIndex, subIndex) {
   if (listaIndex === -1) return;
 
   const tarea = listas[listaIndex].tareas[tareaIndex];
-  if (tarea.subtareas && tarea.subtareas[subIndex]) {
-    tarea.subtareas[subIndex].completada = !tarea.subtareas[subIndex].completada;
+  const subtarea = tarea.subtareas[subIndex];
+  if (!subtarea.estado) subtarea.estado = 'pendiente';
 
+  if (subtarea.estado === 'pendiente') {
+    subtarea.estado = 'migrada';
+    subtarea.completada = false;
+    appState.ui.subtareaSeleccionada = { tipo: 'lista_personalizada', listaId, tareaIndex, subIndex };
+    
     // Actualizar estado global
-    window.configVisual = {
-      ...configVisual,
-      listasPersonalizadas: listas
-    };
-
+    window.configVisual = { ...configVisual, listasPersonalizadas: listas };
     renderizarListaPersonalizada(listaId);
     guardarConfigEnFirebase();
+    
+    abrirModal('modal-migrar');
+    return;
+  } else if (subtarea.estado === 'migrada') {
+    if (subtarea.persona) {
+      subtarea.estado = 'completada';
+      subtarea.completada = true;
+      mostrarCelebracion();
+    } else {
+      subtarea.estado = 'programada';
+      subtarea.completada = false;
+    }
+  } else if (subtarea.estado === 'programada') {
+    subtarea.estado = 'completada';
+    subtarea.completada = true;
+    mostrarCelebracion();
+  } else {
+    subtarea.estado = 'pendiente';
+    subtarea.completada = false;
+    delete subtarea.persona;
+    delete subtarea.fecha_migrar;
   }
+
+  // Actualizar estado global
+  window.configVisual = { ...configVisual, listasPersonalizadas: listas };
+  renderizarListaPersonalizada(listaId);
+  guardarConfigEnFirebase();
+}
+
+function abrirEditorSubtareaListaPersonalizada(listaId, tareaIndex, subIndex) {
+  const configVisual = window.configVisual || {};
+  const listas = configVisual.listasPersonalizadas || [];
+  const lista = listas.find(l => l.id === listaId);
+  
+  if (!lista || !lista.tareas[tareaIndex] || !lista.tareas[tareaIndex].subtareas[subIndex]) return;
+  
+  const subtarea = lista.tareas[tareaIndex].subtareas[subIndex];
+
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.id = 'modal-editor-subtarea-lp';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h4>✏️ Editar Subtarea</h4>
+      <div class="form-group">
+        <label>Descripción:</label>
+        <input type="text" id="editor-subtarea-lp-texto" value="${escapeHtml(subtarea.texto)}">
+      </div>
+      <div class="form-group">
+        <label>Fecha límite:</label>
+        <input type="date" id="editor-subtarea-lp-fecha" value="${subtarea.fecha_fin || ''}">
+      </div>
+      <div class="form-group">
+        <label>Persona asignada:</label>
+        <input type="text" id="editor-subtarea-lp-persona" value="${subtarea.persona || ''}">
+      </div>
+      <div class="form-group">
+        <label>Fecha migración:</label>
+        <input type="date" id="editor-subtarea-lp-fecha-migrar" value="${subtarea.fecha_migrar || ''}">
+      </div>
+      <div class="modal-botones">
+        <button class="btn-primario" onclick="guardarEdicionSubtareaListaPersonalizada('${listaId}', ${tareaIndex}, ${subIndex})">Guardar</button>
+        <button class="btn-secundario" onclick="cerrarModal('modal-editor-subtarea-lp')">Cancelar</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.style.display = 'block';
+}
+
+function guardarEdicionSubtareaListaPersonalizada(listaId, tareaIndex, subIndex) {
+  const configVisual = window.configVisual || {};
+  const listas = configVisual.listasPersonalizadas || [];
+  const listaIndex = listas.findIndex(l => l.id === listaId);
+  
+  if (listaIndex === -1) return;
+  
+  const tarea = listas[listaIndex].tareas[tareaIndex];
+  const subtarea = tarea.subtareas[subIndex];
+  const texto = document.getElementById('editor-subtarea-lp-texto').value.trim();
+  const fecha = document.getElementById('editor-subtarea-lp-fecha').value;
+  const persona = document.getElementById('editor-subtarea-lp-persona').value.trim();
+  const fechaMigrar = document.getElementById('editor-subtarea-lp-fecha-migrar').value;
+
+  if (!texto) {
+    alert('El texto no puede estar vacío');
+    return;
+  }
+
+  subtarea.texto = texto;
+  subtarea.fecha_fin = fecha || null;
+  subtarea.persona = persona || null;
+  subtarea.fecha_migrar = fechaMigrar || null;
+
+  // Actualizar estado global
+  window.configVisual = { ...configVisual, listasPersonalizadas: listas };
+  
+  cerrarModal('modal-editor-subtarea-lp');
+  renderizarListaPersonalizada(listaId);
+  guardarConfigEnFirebase();
+  mostrarAlerta('✅ Subtarea actualizada', 'success');
+}
+
+function eliminarSubtareaListaPersonalizada(listaId, tareaIndex, subIndex) {
+  const configFuncionales = window.configFuncionales || {};
+  const necesitaConfirmacion = configFuncionales.confirmacionBorrar !== false;
+
+  if (necesitaConfirmacion && typeof mostrarCuentaRegresiva === 'function') {
+    mostrarCuentaRegresiva(() => {
+      ejecutarEliminacionSubtareaListaPersonalizada(listaId, tareaIndex, subIndex);
+    });
+  } else {
+    ejecutarEliminacionSubtareaListaPersonalizada(listaId, tareaIndex, subIndex);
+  }
+}
+
+function ejecutarEliminacionSubtareaListaPersonalizada(listaId, tareaIndex, subIndex) {
+  const configVisual = window.configVisual || {};
+  const listas = configVisual.listasPersonalizadas || [];
+  const listaIndex = listas.findIndex(l => l.id === listaId);
+  
+  if (listaIndex === -1) return;
+  
+  listas[listaIndex].tareas[tareaIndex].subtareas.splice(subIndex, 1);
+  
+  // Actualizar estado global
+  window.configVisual = { ...configVisual, listasPersonalizadas: listas };
+  
+  renderizarListaPersonalizada(listaId);
+  guardarConfigEnFirebase();
+  mostrarAlerta('🗑️ Subtarea eliminada', 'info');
 }
 
 function cargarConfigVisual() {
@@ -2094,7 +2224,7 @@ function guardarEdicionListaPersonalizada(listaId, index) {
   guardarConfigEnFirebase();
 }
 
-function eliminarTareaListaPersonalizada(listaId, tareaIndex) {
+function ejecutarEliminacionTareaListaPersonalizada(listaId, tareaIndex) {
   console.log('🗑️ ELIMINANDO TAREA DE LISTA PERSONALIZADA:', { listaId, tareaIndex });
 
   const configVisual = window.configVisual || {};
@@ -2132,7 +2262,7 @@ function eliminarTareaListaPersonalizada(listaId, tareaIndex) {
   renderizarListaPersonalizada(listaId);
 
   registrarAccion('Eliminar tarea (lista personalizada)', tareaEliminada.texto);
-  mostrarAlerta('✅ Tarea eliminada', 'success');
+  mostrarPopupCelebracion();
 }
 
 function eliminarListaPersonalizada(listaId) {
@@ -2269,28 +2399,7 @@ function completarTareaListaPersonalizada(listaId, tareaIndex) {
   renderizarListaPersonalizada(listaId);
 }
 
-function eliminarTareaListaPersonalizada(listaId, tareaIndex) {
-  const configVisual = window.configVisual || {};
-  const listasPersonalizadas = configVisual.listasPersonalizadas || [];
-  const lista = listasPersonalizadas.find(l => l.id === listaId);
 
-  if (!lista || !lista.tareas[tareaIndex]) return;
-
-  if (confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
-    lista.tareas.splice(tareaIndex, 1);
-
-    // Actualizar configuración global
-    window.configVisual = { ...configVisual, listasPersonalizadas };
-
-    // Guardar en Firebase
-    guardarConfigEnFirebase();
-
-    // Re-renderizar
-    renderizarListaPersonalizada(listaId);
-
-    mostrarAlerta('✅ Tarea eliminada', 'success');
-  }
-}
 
 window.agregarListaPersonalizada = agregarListaPersonalizada;
 window.eliminarListaPersonalizada = eliminarListaPersonalizada;
@@ -2302,7 +2411,7 @@ window.limpiarListaPersonalizada = limpiarListaPersonalizada;
 window.renderizarListaPersonalizada = renderizarListaPersonalizada;
 window.agregarTareaAListaPersonalizada = agregarTareaAListaPersonalizada;
 window.completarTareaListaPersonalizada = completarTareaListaPersonalizada;
-window.eliminarTareaListaPersonalizada = eliminarTareaListaPersonalizada;
+window.ejecutarEliminacionTareaListaPersonalizada = ejecutarEliminacionTareaListaPersonalizada;
 window.editarTareaListaPersonalizada = editarTareaListaPersonalizada;
 window.guardarEdicionListaPersonalizada = guardarEdicionListaPersonalizada;
 
@@ -2354,3 +2463,10 @@ window.inicializarListasPersonalizadas = inicializarListasPersonalizadas;
 window.modificarModalTareaParaListasPersonalizadas = modificarModalTareaParaListasPersonalizadas;
 window.asegurarListaPorHacerComoPersonalizada = asegurarListaPorHacerComoPersonalizada;
 window.ocultarSeccionListaPorHacerOriginal = ocultarSeccionListaPorHacerOriginal;
+window.cambiarEstadoSubtareaListaPersonalizada = cambiarEstadoSubtareaListaPersonalizada;
+window.abrirEditorSubtareaListaPersonalizada = abrirEditorSubtareaListaPersonalizada;
+window.guardarEdicionSubtareaListaPersonalizada = guardarEdicionSubtareaListaPersonalizada;
+window.eliminarSubtareaListaPersonalizada = eliminarSubtareaListaPersonalizada;
+window.abrirModalSubtareaListaPersonalizada = abrirModalSubtareaListaPersonalizada;
+window.guardarSubtareaListaPersonalizada = guardarSubtareaListaPersonalizada;
+window.toggleSubtareaListaPersonalizada = toggleSubtareaListaPersonalizada;

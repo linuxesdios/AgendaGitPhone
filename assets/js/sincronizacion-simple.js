@@ -772,8 +772,14 @@ function mostrarResumenDiario() {
 
   const hoy = new Date().toISOString().slice(0, 10);
   
-  // Si es 'una_vez', verificar si ya se mostró hoy
-  if (modoPopup === 'una_vez' && window.ultimoPopupDiario === hoy) return;
+  // Si es 'una_vez', verificar si ya se mostró hoy usando localStorage
+  if (modoPopup === 'una_vez') {
+    const ultimoPopup = localStorage.getItem('ultimo-popup-diario');
+    if (ultimoPopup === hoy) {
+      console.log('✅ Popup diario ya mostrado hoy:', hoy);
+      return;
+    }
+  }
 
   // Buscar tareas del día
   const tareasHoy = [...(appState.agenda.tareas_criticas || []), ...(appState.agenda.tareas || [])]
@@ -787,8 +793,8 @@ function mostrarResumenDiario() {
   const citasHoy = (appState.agenda.citas || []).filter(c => c.fecha === hoy);
 
   if (tareasHoy.length === 0 && citasHoy.length === 0 && tareasPasadas.length === 0) {
-    // Usar variable global (NO localStorage)
-    window.ultimoPopupDiario = hoy;
+    // Marcar como mostrado hoy en localStorage
+    localStorage.setItem('ultimo-popup-diario', hoy);
     return;
   }
 
@@ -841,9 +847,11 @@ function mostrarResumenDiario() {
   document.body.appendChild(overlay);
   overlay.classList.add('show');
 
-  // Marcar como mostrado hoy
-  // Usar variable global (NO localStorage)
-  window.ultimoPopupDiario = hoy;
+  // Marcar como mostrado hoy en localStorage
+  if (modoPopup === 'una_vez') {
+    localStorage.setItem('ultimo-popup-diario', hoy);
+    console.log('✅ Popup diario marcado como mostrado:', hoy);
+  }
 }
 
 function cerrarResumenDiario() {

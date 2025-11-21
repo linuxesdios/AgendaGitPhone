@@ -128,30 +128,15 @@ function renderizarCriticas() {
     btnBorrar.className = 'btn-borrar-tarea';
     btnBorrar.textContent = '🗑️';
     btnBorrar.title = 'Eliminar tarea crítica';
-    btnBorrar.onclick = async (e) => {
+    btnBorrar.onclick = (e) => {
       e.stopPropagation();
-
-      // Verificar configuración de confirmación
-      const configFuncionales = window.configFuncionales || {};
-      const necesitaConfirmacion = configFuncionales.confirmacionBorrar !== false; // Por defecto true
-
-      if (necesitaConfirmacion) {
-        mostrarCuentaRegresiva(() => {
-          moverAHistorial(tarea, 'tarea_critica');
-          registrarAccion('Eliminar tarea crítica', tarea.titulo);
-          appState.agenda.tareas_criticas.splice(realIndex, 1);
-          renderizar();
-          guardarJSON(true);
-          mostrarAlerta('🗑️ Tarea crítica movida al historial', 'info');
-        });
-      } else {
+      mostrarCuentaRegresiva(() => {
         moverAHistorial(tarea, 'tarea_critica');
         registrarAccion('Eliminar tarea crítica', tarea.titulo);
         appState.agenda.tareas_criticas.splice(realIndex, 1);
         renderizar();
-        await guardarJSON(true);
-        mostrarAlerta('🗑️ Tarea crítica movida al historial', 'info');
-      }
+        guardarJSON(true);
+      });
     };
     div.appendChild(btnBorrar);
 
@@ -342,30 +327,15 @@ function renderizarTareas() {
     btnBorrar.className = 'btn-borrar-tarea';
     btnBorrar.textContent = '🗑️';
     btnBorrar.title = 'Eliminar tarea';
-    btnBorrar.onclick = async (e) => {
+    btnBorrar.onclick = (e) => {
       e.stopPropagation();
-
-      // Verificar configuración de confirmación
-      const configFuncionales = window.configFuncionales || {};
-      const necesitaConfirmacion = configFuncionales.confirmacionBorrar !== false; // Por defecto true
-
-      if (necesitaConfirmacion) {
-        mostrarCuentaRegresiva(() => {
-          moverAHistorial(tarea, 'tarea');
-          registrarAccion('Eliminar tarea', tarea.texto);
-          appState.agenda.tareas.splice(realIndex, 1);
-          renderizar();
-          guardarJSON(true);
-          mostrarAlerta('🗑️ Tarea movida al historial', 'info');
-        });
-      } else {
+      mostrarCuentaRegresiva(() => {
         moverAHistorial(tarea, 'tarea');
         registrarAccion('Eliminar tarea', tarea.texto);
         appState.agenda.tareas.splice(realIndex, 1);
         renderizar();
-        await guardarJSON(true);
-        mostrarAlerta('🗑️ Tarea movida al historial', 'info');
-      }
+        guardarJSON(true);
+      });
     };
     div.appendChild(btnBorrar);
 
@@ -842,7 +812,43 @@ function guardarMigracion() {
 
   // Verificar si es una subtarea
   if (appState.ui.subtareaSeleccionada) {
-    const { tipo, tareaIndex, subIndex } = appState.ui.subtareaSeleccionada;
+    const { tipo, tareaIndex, subIndex, listaId } = appState.ui.subtareaSeleccionada;
+    
+    // Subtarea de lista personalizada
+    if (tipo === 'lista_personalizada') {
+      const configVisual = window.configVisual || {};
+      const listas = configVisual.listasPersonalizadas || [];
+      const lista = listas.find(l => l.id === listaId);
+      
+      if (lista && lista.tareas[tareaIndex] && lista.tareas[tareaIndex].subtareas[subIndex]) {
+        const subtarea = lista.tareas[tareaIndex].subtareas[subIndex];
+        
+        subtarea.fecha_migrar = fecha || null;
+        subtarea.persona = persona || null;
+        subtarea.estado = persona ? 'migrada' : (fecha ? 'programada' : 'pendiente');
+        
+        window.configVisual = { ...configVisual, listasPersonalizadas: listas };
+        
+        appState.ui.subtareaSeleccionada = null;
+        cerrarModal('modal-migrar');
+        
+        if (typeof renderizarListaPersonalizada === 'function') {
+          renderizarListaPersonalizada(listaId);
+        }
+        if (typeof guardarConfigEnFirebase === 'function') {
+          guardarConfigEnFirebase();
+        }
+        
+        if (persona) {
+          mostrarAlerta(`→ Subtarea asignada a ${persona}`, 'success');
+        } else if (fecha) {
+          mostrarAlerta(`→ Subtarea pospuesta para ${fecha}`, 'success');
+        }
+        return;
+      }
+    }
+    
+    // Subtarea de tarea crítica o normal
     const tarea = tipo === 'critica' ? appState.agenda.tareas_criticas[tareaIndex] : appState.agenda.tareas[tareaIndex];
     const subtarea = tarea.subtareas[subIndex];
 
@@ -1343,22 +1349,10 @@ function toggleSubtareaCritica(tareaIndex, subIndex) {
 }
 
 function eliminarSubtareaCritica(tareaIndex, subIndex) {
-  const configFuncionales = window.configFuncionales || {};
-  const necesitaConfirmacion = configFuncionales.confirmacionBorrar !== false;
-
-  if (necesitaConfirmacion) {
-    mostrarCuentaRegresiva(() => {
-      appState.agenda.tareas_criticas[tareaIndex].subtareas.splice(subIndex, 1);
-      renderizar();
-      guardarJSON(true);
-      mostrarAlerta('🗑️ Subtarea crítica eliminada', 'info');
-    });
-  } else {
-    appState.agenda.tareas_criticas[tareaIndex].subtareas.splice(subIndex, 1);
-    renderizar();
-    guardarJSON(true);
-    mostrarAlerta('🗑️ Subtarea crítica eliminada', 'info');
-  }
+  appState.agenda.tareas_criticas[tareaIndex].subtareas.splice(subIndex, 1);
+  renderizar();
+  guardarJSON(true);
+  mostrarAlerta('🗑️ Subtarea crítica eliminada', 'info');
 }
 
 function abrirModalSubtarea(tareaIndex) {
@@ -1420,22 +1414,10 @@ function toggleSubtarea(tareaIndex, subIndex) {
 }
 
 function eliminarSubtarea(tareaIndex, subIndex) {
-  const configFuncionales = window.configFuncionales || {};
-  const necesitaConfirmacion = configFuncionales.confirmacionBorrar !== false;
-
-  if (necesitaConfirmacion) {
-    mostrarCuentaRegresiva(() => {
-      appState.agenda.tareas[tareaIndex].subtareas.splice(subIndex, 1);
-      renderizar();
-      guardarJSON(true);
-      mostrarAlerta('🗑️ Subtarea eliminada', 'info');
-    });
-  } else {
-    appState.agenda.tareas[tareaIndex].subtareas.splice(subIndex, 1);
-    renderizar();
-    guardarJSON(true);
-    mostrarAlerta('🗑️ Subtarea eliminada', 'info');
-  }
+  appState.agenda.tareas[tareaIndex].subtareas.splice(subIndex, 1);
+  renderizar();
+  guardarJSON(true);
+  mostrarAlerta('🗑️ Subtarea eliminada', 'info');
 }
 
 // ========== CUENTA REGRESIVA PARA ELIMINAR ==========
@@ -1443,10 +1425,8 @@ function mostrarCuentaRegresiva(callback) {
   const frases = [
     '🤔 ¿Estás seguro?',
     '✨ Piensa bien...',
-    '💭 Reflexiona un momento',
-    '🚀 ¿Realmente quieres eliminarla?',
-    '🌱 Quizás puedas completarla',
-    '💪 ¿Y si la intentas una vez más?'
+    '💭 Reflexiona un momento se va a borrar',
+    '🚀 ¿Realmente quieres eliminarla?'
   ];
 
   const frase = frases[Math.floor(Math.random() * frases.length)];
@@ -1458,6 +1438,7 @@ function mostrarCuentaRegresiva(callback) {
       <div class="countdown-message">${frase}</div>
       <div class="countdown-number" id="countdown-number">3</div>
       <div class="countdown-actions">
+        <button class="btn-primario" onclick="confirmarEliminacion()" style="margin-right:10px;">Sí, eliminar</button>
         <button class="btn-cancelar" onclick="cancelarEliminacion()">Cancelar</button>
       </div>
     </div>
@@ -1477,10 +1458,22 @@ function mostrarCuentaRegresiva(callback) {
       clearInterval(intervalo);
       overlay.remove();
       callback();
+      mostrarPopupCelebracion();
     }
   }, 1000);
 
-  window.currentCountdown = { overlay, intervalo };
+  window.currentCountdown = { overlay, intervalo, callback };
+}
+
+function confirmarEliminacion() {
+  if (window.currentCountdown) {
+    clearInterval(window.currentCountdown.intervalo);
+    window.currentCountdown.overlay.remove();
+    const callback = window.currentCountdown.callback;
+    window.currentCountdown = null;
+    callback();
+    mostrarPopupCelebracion();
+  }
 }
 
 function cancelarEliminacion() {
@@ -1490,6 +1483,39 @@ function cancelarEliminacion() {
     window.currentCountdown = null;
     mostrarAlerta('❌ Eliminación cancelada', 'info');
   }
+}
+
+function mostrarPopupCelebracion() {
+  const configVisual = window.configVisual || {};
+  const frasesPersonalizadas = configVisual.frases || [];
+
+  const mensajesDefault = [
+    '🎉 ¡Muy bien!',
+    '✨ ¡Tarea eliminada!',
+    '🚀 ¡Excelente!',
+    '⭐ ¡Fantástico!',
+    '🎯 ¡Listo!',
+    '💪 ¡Sigue así!',
+    '🏆 ¡Genial!',
+    '🌟 ¡Increíble!'
+  ];
+
+  const mensajes = frasesPersonalizadas.length > 0 ? frasesPersonalizadas : mensajesDefault;
+  const mensaje = mensajes[Math.floor(Math.random() * mensajes.length)];
+
+  const popup = document.createElement('div');
+  popup.className = 'celebration-popup';
+  popup.textContent = mensaje;
+
+  document.body.appendChild(popup);
+
+  if (navigator.vibrate) {
+    navigator.vibrate([100, 50, 100]);
+  }
+
+  setTimeout(() => {
+    popup.remove();
+  }, 1000);
 }
 
 // ========== EDITOR Y MIGRACIÓN DE SUBTAREAS ==========
@@ -1887,3 +1913,4 @@ window.guardarSubtareaCompletada = guardarSubtareaCompletada;
 window.manejarSeleccionPersona = manejarSeleccionPersona;
 window.cargarPersonasEnSelect = cargarPersonasEnSelect;
 window.aplicarColorVisualizacion = aplicarColorVisualizacion;
+window.mostrarPopupCelebracion = mostrarPopupCelebracion;
