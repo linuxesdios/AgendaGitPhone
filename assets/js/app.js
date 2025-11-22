@@ -1054,6 +1054,7 @@ function toggleConfigFloating() {
 
 // ========== SISTEMA DE CONTRASEÑAS ENCRIPTADAS ==========
 let contrasenaMaestra = null;
+let mantenerSesion = false;
 const SALT = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
 
 // Función para generar clave de encriptación desde contraseña maestra
@@ -1138,7 +1139,14 @@ async function solicitarContrasenaMaestra(proposito = 'acceder a las contraseña
         </p>
         <div style="margin: 20px 0;">
           <input type="password" id="password-maestra-input" placeholder="Contraseña maestra"
-                 style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px;">
+                 style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; margin-bottom: 15px;">
+
+          <div style="display: flex; align-items: center; gap: 8px; background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #e9ecef;">
+            <input type="checkbox" id="mantener-sesion-checkbox" style="margin: 0;">
+            <label for="mantener-sesion-checkbox" style="margin: 0; cursor: pointer; color: #495057; font-size: 14px;">
+              🔒 Mantener durante esta sesión (hasta actualizar la página)
+            </label>
+          </div>
         </div>
         <div style="display: flex; gap: 10px; justify-content: flex-end;">
           <button onclick="cerrarModalContrasenaMaestra(false)"
@@ -1166,11 +1174,15 @@ async function solicitarContrasenaMaestra(proposito = 'acceder a las contraseña
 
     window.confirmarContrasenaMaestra = () => {
       const password = document.getElementById('password-maestra-input').value;
+      const mantenerCheckbox = document.getElementById('mantener-sesion-checkbox');
+
       if (password.trim() === '') {
-        alert('Por favor, ingresa la contraseña maestra.');
+        mostrarModalError('Campo requerido', 'Por favor, ingresa la contraseña maestra.');
         return;
       }
+
       contrasenaMaestra = password;
+      mantenerSesion = mantenerCheckbox.checked;
       cerrarModalContrasenaMaestra(true);
     };
 
@@ -1283,7 +1295,7 @@ async function revelarCampoContrasena(button, id, campo) {
 
     const contrasena = appState.agenda.contrasenas.find(c => c.id === id);
     if (!contrasena) {
-      alert('Contraseña no encontrada');
+      mostrarModalError('Error', 'Contraseña no encontrada');
       return;
     }
 
@@ -1321,9 +1333,73 @@ async function revelarCampoContrasena(button, id, campo) {
     }, 10000);
 
   } catch (error) {
-    alert('Error al revelar el campo: ' + error.message);
-    contrasenaMaestra = null; // Reset para solicitar nuevamente
+    mostrarModalError('Error al revelar el campo', error.message);
+    if (!mantenerSesion) {
+      contrasenaMaestra = null; // Reset solo si no se mantiene la sesión
+    }
   }
+}
+
+// Función para mostrar modales de error estéticos
+function mostrarModalError(titulo, mensaje) {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.style.display = 'block';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+      <h4 style="color: #e74c3c; margin: 0 0 15px 0;">${titulo}</h4>
+      <p style="margin: 15px 0 25px 0; color: #555; line-height: 1.5;">${mensaje}</p>
+      <button onclick="cerrarModalError()"
+              style="background: #e74c3c; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 500;">
+        Entendido
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  window.cerrarModalError = () => {
+    document.body.removeChild(modal);
+  };
+
+  // Auto-cerrar después de 5 segundos
+  setTimeout(() => {
+    if (modal.parentNode) {
+      cerrarModalError();
+    }
+  }, 5000);
+}
+
+// Función para mostrar modales de éxito estéticos
+function mostrarModalExito(titulo, mensaje) {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.style.display = 'block';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <div style="font-size: 48px; margin-bottom: 20px;">✅</div>
+      <h4 style="color: #27ae60; margin: 0 0 15px 0;">${titulo}</h4>
+      <p style="margin: 15px 0 25px 0; color: #555; line-height: 1.5;">${mensaje}</p>
+      <button onclick="cerrarModalExito()"
+              style="background: #27ae60; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 500;">
+        ¡Genial!
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  window.cerrarModalExito = () => {
+    document.body.removeChild(modal);
+  };
+
+  // Auto-cerrar después de 3 segundos
+  setTimeout(() => {
+    if (modal.parentNode) {
+      cerrarModalExito();
+    }
+  }, 3000);
 }
 
 // Función para abrir modal de nueva contraseña
@@ -1410,7 +1486,7 @@ async function abrirModalNuevaContrasena() {
     }, 100);
 
   } catch (error) {
-    alert('No se puede crear contraseña sin la contraseña maestra');
+    mostrarModalError('Acceso denegado', 'No se puede crear contraseña sin la contraseña maestra');
   }
 }
 
@@ -1423,7 +1499,7 @@ async function guardarNuevaContrasena() {
     const notas = document.getElementById('nuevas-notas').value.trim();
 
     if (!servicio || !usuario || !contrasena) {
-      alert('Por favor, completa todos los campos obligatorios');
+      mostrarModalError('Campos incompletos', 'Por favor, completa todos los campos obligatorios');
       return;
     }
 
@@ -1456,29 +1532,54 @@ async function guardarNuevaContrasena() {
     cerrarModalNuevaContrasena();
 
     // Mostrar confirmación
-    alert('✅ Contraseña guardada y encriptada exitosamente');
+    mostrarModalExito('¡Contraseña guardada!', 'La contraseña se ha guardado y encriptado exitosamente en Firebase');
 
   } catch (error) {
-    alert('Error al guardar la contraseña: ' + error.message);
+    mostrarModalError('Error al guardar', 'No se pudo guardar la contraseña: ' + error.message);
   }
 }
 
 // Función para eliminar contraseña
 async function eliminarContrasena(id) {
-  if (!confirm('¿Estás seguro de que quieres eliminar esta contraseña? Esta acción no se puede deshacer.')) {
-    return;
-  }
+  try {
+    // Pedir contraseña maestra para eliminar
+    if (!contrasenaMaestra) {
+      contrasenaMaestra = await solicitarContrasenaMaestra('eliminar una contraseña');
+    }
 
-  appState.agenda.contrasenas = appState.agenda.contrasenas.filter(c => c.id !== id);
-  scheduleAutoSave();
-  await renderizarContrasenas();
+    // Buscar la contraseña para mostrar el nombre del servicio
+    const contrasena = appState.agenda.contrasenas.find(c => c.id === id);
+    if (!contrasena) {
+      mostrarModalError('Error', 'Contraseña no encontrada');
+      return;
+    }
+
+    // Confirmar eliminación
+    if (!confirm(`🔐 ¿Estás seguro de que quieres eliminar permanentemente la contraseña de "${contrasena.servicio}"?\n\nEsta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    // Eliminar la contraseña
+    appState.agenda.contrasenas = appState.agenda.contrasenas.filter(c => c.id !== id);
+    scheduleAutoSave();
+    await renderizarContrasenas();
+
+    // Mostrar confirmación
+    mostrarModalExito('¡Contraseña eliminada!', `La contraseña de "${contrasena.servicio}" ha sido eliminada permanentemente`);
+
+  } catch (error) {
+    mostrarModalError('Error al eliminar', 'No se pudo eliminar la contraseña: ' + error.message);
+    if (!mantenerSesion) {
+      contrasenaMaestra = null; // Reset solo si no se mantiene la sesión
+    }
+  }
 }
 
 // Función para editar contraseña
 async function editarContrasena(id) {
   // Por simplicidad, por ahora solo permitimos eliminar
   // En el futuro se puede implementar edición completa
-  alert('Función de edición en desarrollo. Por ahora puedes eliminar y crear una nueva.');
+  mostrarModalError('Función en desarrollo', 'La edición de contraseñas está en desarrollo. Por ahora puedes eliminar y crear una nueva.');
 }
 
 window.guardarConfigVisualPanel = guardarConfigVisualPanel;
@@ -1495,6 +1596,8 @@ window.revelarCampoContrasena = revelarCampoContrasena;
 window.eliminarContrasena = eliminarContrasena;
 window.editarContrasena = editarContrasena;
 window.toggleMostrarContrasena = toggleMostrarContrasena;
+window.mostrarModalError = mostrarModalError;
+window.mostrarModalExito = mostrarModalExito;
 
 // ========== EDITOR DE BASE DE DATOS ==========
 function abrirEditorBaseDatos() {
