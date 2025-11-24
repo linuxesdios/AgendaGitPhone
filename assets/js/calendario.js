@@ -292,8 +292,8 @@ async function confirmarCita() {
     return;
   }
 
-  if (!window.isFirebaseInitialized) {
-    alert('❌ Firebase no está disponible. No se puede crear la cita.');
+  if (!window.supabaseClient && window.currentSyncMethod === 'supabase') {
+    alert('❌ La sincronización no está disponible. No se puede crear la cita.');
     return;
   }
 
@@ -305,7 +305,7 @@ async function confirmarCita() {
     etiqueta: null
   };
 
-  console.log('🔥 Creando cita directamente en Firebase:', nuevaCita);
+  console.log('💾 Creando cita directamente en la nube:', nuevaCita);
 
   try {
     // Limpiar modal primero
@@ -314,37 +314,37 @@ async function confirmarCita() {
     document.getElementById('minuto-select').value = '00';
     cerrarModal('modal-hora');
 
-    mostrarAlerta('🔄 Creando cita en Firebase...', 'info');
+    mostrarAlerta('🔄 Creando cita...', 'info');
 
-    // Obtener citas actuales de Firebase
-    const citasDoc = await window.db.collection('citas').doc('data').get();
-    const citasExistentes = citasDoc.exists ? (citasDoc.data().citas || []) : [];
+    // Agregar nueva cita al estado local
+    appState.agenda.citas.push(nuevaCita);
 
-    // Agregar nueva cita
-    citasExistentes.push(nuevaCita);
+    // Guardar cambios
+    if (typeof guardarJSON === 'function') {
+      await guardarJSON(false);
+    }
 
-    // Guardar en Firebase
-    await window.db.collection('citas').doc('data').set({
-      citas: citasExistentes,
-      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    console.log('✅ Cita guardada en Firebase');
+    console.log('✅ Cita guardada correctamente');
 
     // Registrar acción
     if (typeof registrarAccion === 'function') {
       registrarAccion('Crear cita', citaCompleta);
     }
 
-    // Sincronizar desde Firebase
-    if (typeof extendsClassPull === 'function') {
-      extendsClassPull();
+    // Actualizar interfaz
+    renderCalendar();
+    renderAllAppointmentsList();
+    renderCitasPanel();
+
+    const calendarioIntegrado = document.getElementById('calendario-citas-integrado');
+    if (calendarioIntegrado && calendarioIntegrado.style.display === 'block') {
+      renderCalendarioIntegrado();
     }
 
-    mostrarAlerta('✅ Cita creada y sincronizada desde Firebase', 'success');
+    mostrarAlerta('✅ Cita creada correctamente', 'success');
 
   } catch (error) {
-    console.error('❌ Error creando cita en Firebase:', error);
+    console.error('❌ Error creando cita:', error);
     mostrarAlerta(`❌ Error: ${error.message}`, 'error');
   }
 }
@@ -385,26 +385,23 @@ async function deleteCita(fecha, nombre) {
       }
 
       appState.agenda.citas.splice(index, 1);
-      
-      // Guardar SOLO en Firebase
-      if (window.db) {
-        window.db.collection('citas').doc('data').set({
-          citas: appState.agenda.citas,
-          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-          renderCalendar();
-          renderAllAppointmentsList();
-          showAppointments(fecha);
-          renderCitasPanel();
-          
-          const calendarioIntegrado = document.getElementById('calendario-citas-integrado');
-          if (calendarioIntegrado && calendarioIntegrado.style.display === 'block') {
-            renderCalendarioIntegrado();
-          }
-          
-          mostrarAlerta('🗑️ Cita eliminada', 'info');
-        });
+
+      // Guardar cambios
+      if (typeof guardarJSON === 'function') {
+        guardarJSON(true);
       }
+
+      renderCalendar();
+      renderAllAppointmentsList();
+      showAppointments(fecha);
+      renderCitasPanel();
+
+      const calendarioIntegrado = document.getElementById('calendario-citas-integrado');
+      if (calendarioIntegrado && calendarioIntegrado.style.display === 'block') {
+        renderCalendarioIntegrado();
+      }
+
+      mostrarAlerta('🗑️ Cita eliminada', 'info');
     };
 
     if (necesitaConfirmacion && typeof mostrarCuentaRegresiva === 'function') {
@@ -616,25 +613,22 @@ function guardarNuevaCita() {
   console.log('✅ Cita añadida al estado. Total citas:', appState.agenda.citas.length);
   
   cerrarModal('modal-nueva-cita');
-  
-  // Guardar SOLO en Firebase
-  if (window.db) {
-    window.db.collection('citas').doc('data').set({
-      citas: appState.agenda.citas,
-      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(() => {
-      renderCalendar();
-      renderAllAppointmentsList();
-      renderCitasPanel();
-      
-      const calendarioIntegrado = document.getElementById('calendario-citas-integrado');
-      if (calendarioIntegrado && calendarioIntegrado.style.display === 'block') {
-        renderCalendarioIntegrado();
-      }
-      
-      mostrarAlerta('📅 Cita añadida', 'success');
-    });
+
+  // Guardar cambios
+  if (typeof guardarJSON === 'function') {
+    guardarJSON(true);
   }
+
+  renderCalendar();
+  renderAllAppointmentsList();
+  renderCitasPanel();
+
+  const calendarioIntegrado = document.getElementById('calendario-citas-integrado');
+  if (calendarioIntegrado && calendarioIntegrado.style.display === 'block') {
+    renderCalendarioIntegrado();
+  }
+
+  mostrarAlerta('📅 Cita añadida', 'success');
   
   // Programar notificaciones para esta nueva cita
   programarNotificacionesCita(nuevaCita);
@@ -962,19 +956,16 @@ function crearCitaPeriodica() {
   }
   
   cerrarModal('modal-cita-periodica');
-  
-  // Guardar SOLO en Firebase
-  if (window.db) {
-    window.db.collection('citas').doc('data').set({
-      citas: appState.agenda.citas,
-      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(() => {
-      renderCalendar();
-      renderAllAppointmentsList();
-      renderCitasPanel();
-      mostrarAlerta(`📅 ${citasCreadas.length} citas periódicas creadas`, 'success');
-    });
+
+  // Guardar cambios
+  if (typeof guardarJSON === 'function') {
+    guardarJSON(true);
   }
+
+  renderCalendar();
+  renderAllAppointmentsList();
+  renderCitasPanel();
+  mostrarAlerta(`📅 ${citasCreadas.length} citas periódicas creadas`, 'success');
 }
 
 // ========== CITAS RELATIVAS ==========
@@ -1095,20 +1086,17 @@ function guardarCitasRelativas() {
   });
   
   cerrarModal('modal-citas-relativas');
-  
-  // Guardar SOLO en Firebase
-  if (window.db) {
-    window.db.collection('citas').doc('data').set({
-      citas: appState.agenda.citas,
-      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(() => {
-      renderCalendar();
-      renderAllAppointmentsList();
-      renderCitasPanel();
-      mostrarAlerta(`📅 ${citasRelativasTemp.length} citas guardadas`, 'success');
-      citasRelativasTemp = [];
-    });
+
+  // Guardar cambios
+  if (typeof guardarJSON === 'function') {
+    guardarJSON(true);
   }
+
+  renderCalendar();
+  renderAllAppointmentsList();
+  renderCitasPanel();
+  mostrarAlerta(`📅 ${citasRelativasTemp.length} citas guardadas`, 'success');
+  citasRelativasTemp = [];
 }
 
 // ========== PROGRAMACIÓN DE NOTIFICACIONES ==========
@@ -1316,25 +1304,22 @@ function guardarEdicionCita(fechaOriginal, nombreOriginal) {
 
     cerrarModal('modal-editor-cita');
 
-    // Guardar SOLO en Firebase
-    if (window.db) {
-      window.db.collection('citas').doc('data').set({
-        citas: appState.agenda.citas,
-        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(() => {
-        renderCalendar();
-        renderAllAppointmentsList();
-        renderCitasPanel();
-        showAppointments(nuevaFecha);
-
-        const calendarioIntegrado = document.getElementById('calendario-citas-integrado');
-        if (calendarioIntegrado && calendarioIntegrado.style.display === 'block') {
-          renderCalendarioIntegrado();
-        }
-
-        mostrarAlerta('✅ Cita actualizada', 'success');
-      });
+    // Guardar cambios
+    if (typeof guardarJSON === 'function') {
+      guardarJSON(true);
     }
+
+    renderCalendar();
+    renderAllAppointmentsList();
+    renderCitasPanel();
+    showAppointments(nuevaFecha);
+
+    const calendarioIntegrado = document.getElementById('calendario-citas-integrado');
+    if (calendarioIntegrado && calendarioIntegrado.style.display === 'block') {
+      renderCalendarioIntegrado();
+    }
+
+    mostrarAlerta('✅ Cita actualizada', 'success');
   } else {
     console.error('❌ No se encontró la cita para editar');
     mostrarAlerta('❌ Error: No se encontró la cita para actualizar', 'error');

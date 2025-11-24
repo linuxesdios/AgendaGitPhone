@@ -1,9 +1,9 @@
-// ========== SUPABASE SYNC - ALTERNATIVA A FIREBASE ==========
-// Mantiene la misma estructura de datos pero sin límites de peticiones
+// ========== SUPABASE SYNC ==========
+// Sistema de sincronización en la nube sin límites de peticiones
 
 // ========== CONFIGURACIÓN GLOBAL ==========
 window.supabaseClient = null;
-window.currentSyncMethod = localStorage.getItem('syncMethod') || 'firebase';
+window.currentSyncMethod = localStorage.getItem('syncMethod') || 'supabase';
 window.supabaseRealtimeChannel = null;
 
 // ========== CONFIGURACIÓN DE SUPABASE ==========
@@ -254,9 +254,9 @@ async function crearTablasSupabase() {
   }
 }
 
-// ========== FUNCIONES DE SINCRONIZACIÓN (PARALELAS A FIREBASE) ==========
+// ========== FUNCIONES DE SINCRONIZACIÓN ==========
 
-// Equivalente a extendsClassPull() pero para Supabase
+// Función para sincronizar datos desde la nube
 async function supabasePull() {
   if (window.currentSyncMethod !== 'supabase') return;
 
@@ -293,7 +293,7 @@ async function supabasePull() {
 
     const results = await Promise.all(promises);
 
-    // Aplicar datos a las variables globales (igual que Firebase)
+    // Aplicar datos a las variables globales
     console.log('📥 Aplicando datos cargados de Supabase:');
     results.forEach(({ collection, data }) => {
       console.log(`  - ${collection}:`, data);
@@ -354,7 +354,7 @@ async function supabasePull() {
 
     console.log('✅ Pull de Supabase completado');
 
-    // Renderizar interfaz igual que Firebase
+    // Renderizar interfaz
     if (typeof renderizarInterfaz === 'function') {
       renderizarInterfaz();
     }
@@ -366,7 +366,7 @@ async function supabasePull() {
   }
 }
 
-// Equivalente a guardarJSON() pero para Supabase
+// Función para guardar datos en la nube
 async function supabasePush(isAutomatic = false) {
   if (window.currentSyncMethod !== 'supabase') return;
 
@@ -380,7 +380,7 @@ async function supabasePush(isAutomatic = false) {
     const logPrefix = isAutomatic ? '🔄 [AUTO-SYNC SUPABASE]' : '💾 [MANUAL SYNC SUPABASE]';
     console.log(`${logPrefix} Iniciando...`);
 
-    // Preparar datos usando la misma estructura que Firebase
+    // Preparar datos para sincronización
     console.log('💾 Preparando datos para Supabase:');
     console.log('  - Tareas críticas:', window.appState?.tareasCriticas?.length || 0);
     console.log('  - Tareas normales:', window.appState?.tareas?.length || 0);
@@ -517,13 +517,9 @@ function actualizarInterfazMetodo(metodo) {
   const realtimeStatus = document.getElementById('realtime-status');
 
   if (statusCurrent && realtimeStatus) {
-    if (metodo === 'firebase') {
-      statusCurrent.textContent = '🔥 Usando Firebase';
-      realtimeStatus.textContent = '❌ Desactivado';
-      stopSupabaseRealtime();
-    } else {
-      statusCurrent.textContent = '⚡ Usando Supabase';
-      realtimeStatus.textContent = '✅ Activado';
+    statusCurrent.textContent = '⚡ Usando Supabase';
+    realtimeStatus.textContent = '✅ Activado';
+    if (metodo === 'supabase') {
       startSupabaseRealtime();
     }
   }
@@ -535,102 +531,45 @@ function actualizarInterfazMetodo(metodo) {
   }
 }
 
-// ========== SISTEMA DE FALLBACK AUTOMÁTICO ==========
+// ========== VERIFICACIÓN DE CONEXIÓN ==========
 async function verificarMetodoSync(metodo) {
-  console.log(`🔍 Verificando que ${metodo} funcione...`);
+  console.log(`🔍 Verificando conexión...`);
 
-  let funcionaMetodoPrincipal = false;
+  let funcionaConexion = false;
 
   try {
-    if (metodo === 'firebase') {
-      // Verificar Firebase (puede estar agotada la cuota)
-      if (window.db && typeof window.verificarConectividad === 'function') {
-        funcionaMetodoPrincipal = await window.verificarConectividad();
-
-        // Si Firebase da error de cuota, es un fallo definitivo
-        if (!funcionaMetodoPrincipal) {
-          console.warn('⚠️ Firebase falló (posiblemente cuota agotada)');
-        }
-      }
-    } else {
-      // Verificar Supabase (no reinicializar si ya existe)
-      if (window.supabaseClient || await initSupabase()) {
-        const { error } = await window.supabaseClient
-          .from('agenda_data')
-          .select('id')
-          .limit(1);
-        funcionaMetodoPrincipal = !error;
-      }
+    // Verificar Supabase (no reinicializar si ya existe)
+    if (window.supabaseClient || await initSupabase()) {
+      const { error } = await window.supabaseClient
+        .from('agenda_data')
+        .select('id')
+        .limit(1);
+      funcionaConexion = !error;
     }
   } catch (error) {
-    // Detectar específicamente error de cuota de Firebase
-    if (error.message && error.message.includes('Quota exceeded')) {
-      console.warn(`🔥 Firebase agotó la cuota diaria - necesario cambiar a Supabase`);
-      funcionaMetodoPrincipal = false;
-    } else {
-      console.warn(`⚠️ Error verificando ${metodo}:`, error);
-      funcionaMetodoPrincipal = false;
-    }
+    console.warn(`⚠️ Error verificando conexión:`, error);
+    funcionaConexion = false;
   }
 
-  if (!funcionaMetodoPrincipal) {
-    console.warn(`⚠️ ${metodo} no está funcionando, intentando método alternativo...`);
-    await intentarFallback(metodo);
+  if (!funcionaConexion) {
+    console.warn(`⚠️ No hay conexión disponible`);
+    actualizarEstadoSincronizacion(`❌ Sin conexión - Configurar Supabase`);
+    if (typeof showSupabaseStatus === 'function') {
+      showSupabaseStatus('❌ Sin conexión - Verifica configuración de Supabase', 'error');
+    }
   } else {
-    console.log(`✅ ${metodo} funcionando correctamente`);
-    actualizarEstadoSincronizacion(`✅ Conectado con ${metodo === 'firebase' ? 'Firebase' : 'Supabase'}`);
+    console.log(`✅ Conexión funcionando correctamente`);
+    actualizarEstadoSincronizacion(`✅ Conectado con Supabase`);
   }
 }
 
+// Función legacy para compatibilidad
 async function intentarFallback(metodoFallido) {
-  const metodoAlternativo = metodoFallido === 'firebase' ? 'supabase' : 'firebase';
-  console.log(`🔄 Intentando fallback a ${metodoAlternativo}...`);
+  console.log(`⚠️ Sistema de sincronización no disponible`);
+  actualizarEstadoSincronizacion(`❌ Sin conexión - Configurar Supabase`);
 
-  let funcionaAlternativo = false;
-
-  try {
-    if (metodoAlternativo === 'firebase') {
-      // Verificar Firebase alternativo
-      if (window.db && typeof window.verificarConectividad === 'function') {
-        funcionaAlternativo = await window.verificarConectividad();
-      }
-    } else {
-      // Verificar Supabase alternativo
-      const connected = await initSupabase();
-      if (connected) {
-        const { error } = await window.supabaseClient
-          .from('agenda_data')
-          .select('id')
-          .limit(1);
-        funcionaAlternativo = !error;
-      }
-    }
-  } catch (error) {
-    console.warn(`⚠️ Error verificando ${metodoAlternativo}:`, error);
-    funcionaAlternativo = false;
-  }
-
-  if (funcionaAlternativo) {
-    console.log(`✅ Fallback exitoso: Cambiando a ${metodoAlternativo}`);
-
-    // Cambiar automáticamente al método que funciona
-    window.currentSyncMethod = metodoAlternativo;
-    localStorage.setItem('syncMethod', metodoAlternativo);
-
-    actualizarInterfazMetodo(metodoAlternativo);
-    actualizarEstadoSincronizacion(`🔄 Auto-cambiado a ${metodoAlternativo === 'firebase' ? 'Firebase' : 'Supabase'} (principal falló)`);
-
-    // Mostrar notificación discreta al usuario
-    if (typeof showSupabaseStatus === 'function') {
-      showSupabaseStatus(`🔄 Cambiado automáticamente a ${metodoAlternativo} porque ${metodoFallido} no respondía`, 'info');
-    }
-  } else {
-    console.error(`❌ Ningún método de sincronización está funcionando`);
-    actualizarEstadoSincronizacion(`❌ Sin conexión - Configurar Firebase o Supabase`);
-
-    if (typeof showSupabaseStatus === 'function') {
-      showSupabaseStatus('❌ Sin conexión - Verifica configuración de Firebase o Supabase', 'error');
-    }
+  if (typeof showSupabaseStatus === 'function') {
+    showSupabaseStatus('❌ Sin conexión - Verifica configuración de Supabase', 'error');
   }
 }
 
@@ -704,69 +643,13 @@ function showSupabaseStatus(message, type) {
 
 // ========== INTEGRACIÓN CON EL SISTEMA EXISTENTE ==========
 
-// Sobrescribir funciones globales para soportar ambos métodos CON FALLBACK
-const originalGuardarJSON = window.guardarJSON;
+// Funciones globales de sincronización
 window.guardarJSON = async function(isAutomatic = false) {
-  // Intentar método principal
-  let resultado = false;
-
-  if (window.currentSyncMethod === 'supabase') {
-    resultado = await supabasePush(isAutomatic);
-  } else {
-    resultado = originalGuardarJSON ? await originalGuardarJSON(isAutomatic) : false;
-  }
-
-  // Si falla, intentar método alternativo automáticamente
-  if (!resultado && !isAutomatic) {
-    console.warn('⚠️ Método principal falló, intentando alternativo...');
-    const metodoAlternativo = window.currentSyncMethod === 'supabase' ? 'firebase' : 'supabase';
-
-    if (metodoAlternativo === 'supabase') {
-      resultado = await supabasePush(isAutomatic);
-    } else {
-      resultado = originalGuardarJSON ? await originalGuardarJSON(isAutomatic) : false;
-    }
-
-    if (resultado) {
-      // Cambiar automáticamente al método que funciona
-      console.log(`✅ Fallback exitoso: Cambiando a ${metodoAlternativo}`);
-      cambiarMetodoSync(metodoAlternativo);
-    }
-  }
-
-  return resultado;
+  return await supabasePush(isAutomatic);
 };
 
-const originalExtendsClassPull = window.extendsClassPull;
 window.extendsClassPull = async function() {
-  // Intentar método principal
-  let resultado = false;
-
-  if (window.currentSyncMethod === 'supabase') {
-    resultado = await supabasePull();
-  } else {
-    resultado = originalExtendsClassPull ? await originalExtendsClassPull() : false;
-  }
-
-  // Si falla, intentar método alternativo automáticamente
-  if (!resultado) {
-    console.warn('⚠️ Método principal falló en pull, intentando alternativo...');
-    const metodoAlternativo = window.currentSyncMethod === 'supabase' ? 'firebase' : 'supabase';
-
-    if (metodoAlternativo === 'supabase') {
-      resultado = await supabasePull();
-    } else {
-      resultado = originalExtendsClassPull ? await originalExtendsClassPull() : false;
-    }
-
-    if (resultado) {
-      // Cambiar automáticamente al método que funciona
-      console.log(`✅ Fallback exitoso en pull: Cambiando a ${metodoAlternativo}`);
-      cambiarMetodoSync(metodoAlternativo);
-    }
-  }
-
-  return resultado;
+  return await supabasePull();
 };
 
 // ========== CARGAR CONFIGURACIÓN EN FORMULARIOS ==========
@@ -802,11 +685,11 @@ function detectarPrimeraVezSupabase() {
 
 function mostrarAyudaPrimeraVez() {
   const shouldShow = confirm(
-    '🎉 ¡Bienvenido a Supabase!\n\n' +
-    'Supabase es la alternativa moderna a Firebase con:\n' +
-    '✅ ILIMITADAS peticiones (vs 50K/día Firebase)\n' +
+    '🎉 ¡Bienvenido a la sincronización en la nube!\n\n' +
+    'Características de Supabase:\n' +
+    '✅ Peticiones ilimitadas\n' +
     '✅ Real-time automático\n' +
-    '✅ Más rápido y mejor dashboard\n\n' +
+    '✅ Rápido y con buen dashboard\n\n' +
     '¿Quieres una guía rápida de 2 minutos para configurarlo?\n\n' +
     'Click "Aceptar" para ver los pasos\n' +
     'Click "Cancelar" para configurar después'
@@ -834,8 +717,7 @@ function mostrarGuiaRapidaSupabase() {
   );
 }
 
-function mostrarEstadoFirebaseSupabase() {
-  // Solo mostrar si Firebase está fallando y Supabase está disponible
+function mostrarEstadoSincronizacion() {
   const configSupabase = getSupabaseConfig();
 
   if (window.currentSyncMethod === 'supabase' && configSupabase.url) {
@@ -843,18 +725,12 @@ function mostrarEstadoFirebaseSupabase() {
       '✅ Usando Supabase - Sin límites de peticiones, real-time activado',
       'success'
     );
-  } else if (window.currentSyncMethod === 'firebase') {
-    // Verificar si Firebase está dando errores
-    showSupabaseStatus(
-      '⚠️ Si Firebase da errores de cuota, cambiar a Supabase (sin límites)',
-      'info'
-    );
   }
 }
 
 // ========== INICIALIZACIÓN ==========
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('🚀 Inicializando sistema de sincronización dual...');
+  console.log('🚀 Inicializando sistema de sincronización...');
 
   // Asegurar que las variables globales existan
   if (!window.appState) {
@@ -880,7 +756,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   cargarConfigSupabaseEnFormulario();
 
   // Cargar método de sincronización guardado
-  const savedMethod = localStorage.getItem('syncMethod') || localStorage.getItem('lastSyncMethod') || 'firebase';
+  const savedMethod = localStorage.getItem('syncMethod') || localStorage.getItem('lastSyncMethod') || 'supabase';
   console.log(`📥 Método guardado en localStorage: ${savedMethod}`);
 
   // Establecer método actual
@@ -905,16 +781,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Actualizar interfaz
     actualizarInterfazMetodo(savedMethod);
 
-    // Verificar que el método funcione (con fallback automático)
+    // Verificar que el método funcione
     setTimeout(() => {
       verificarMetodoSync(savedMethod);
 
-      // Mostrar notificación específica si Firebase falló
-      if (savedMethod === 'firebase') {
-        setTimeout(() => {
-          mostrarEstadoFirebaseSupabase();
-        }, 3000);
-      }
+      // Mostrar estado de conexión
+      setTimeout(() => {
+        mostrarEstadoSincronizacion();
+      }, 3000);
     }, 2000);
   }, 500);
 
@@ -942,4 +816,4 @@ window.cargarConfigSupabaseEnFormulario = cargarConfigSupabaseEnFormulario;
 window.verificarMetodoSync = verificarMetodoSync;
 window.intentarFallback = intentarFallback;
 window.actualizarInterfazMetodo = actualizarInterfazMetodo;
-window.mostrarEstadoFirebaseSupabase = mostrarEstadoFirebaseSupabase;
+window.mostrarEstadoSincronizacion = mostrarEstadoSincronizacion;

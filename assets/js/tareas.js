@@ -798,7 +798,6 @@ function guardarMigracion() {
       }
       if (!window.personasAsignadas.includes(persona)) {
         window.personasAsignadas.push(persona);
-        // Guardar DIRECTAMENTE en Firebase
         if (typeof guardarPersonasEnFirebase === 'function') {
           guardarPersonasEnFirebase();
         }

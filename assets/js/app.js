@@ -49,8 +49,7 @@ const appState = {
   }
 };
 
-// ========== CONFIGURACIÓN EXTENDSCLASS ==========
-// Compatibilidad con Firebase
+// ========== CONFIGURACIÓN ==========
 function getExtendsClassConfig() {
   return { configured: true };
 }
@@ -99,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Verificar modo oscuro automático cada minuto
   setInterval(verificarModoOscuroAutomatico, 60000);
 
-  // Firebase se inicializa automáticamente en sincronizacion-simple.js
+  // La sincronización se inicializa automáticamente en supabase-sync.js
 
   // Inicialización del calendario integrado si es necesario
   setTimeout(() => {
@@ -164,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     headerTimer = setTimeout(collapseHeader, 5000);
   }
 
-  // Firebase maneja la sincronización automática
+  // La sincronización en la nube se maneja automáticamente
 });
 
 function actualizarFecha() {
@@ -284,44 +283,8 @@ function setupAutoCapitalize() {
 
 // ========== AUTO-SAVE ==========
 function scheduleAutoSave() {
-  // Auto-guardado DIRECTO en Firebase cada 5 segundos después de cambios
-  if (appState.sync.autoSaveTimer) clearTimeout(appState.sync.autoSaveTimer);
-  appState.sync.autoSaveTimer = setTimeout(() => {
-    if (window.db && window.isFirebaseInitialized) {
-      const batch = window.db.batch();
-
-      const tareasRef = window.db.collection('tareas').doc('data');
-      batch.set(tareasRef, {
-        tareas_criticas: appState.agenda.tareas_criticas || [],
-        tareas: appState.agenda.tareas || [],
-        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      const notasRef = window.db.collection('notas').doc('data');
-      batch.set(notasRef, {
-        notas: appState.agenda.notas || '',
-        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      const sentimientosRef = window.db.collection('sentimientos').doc('data');
-      batch.set(sentimientosRef, {
-        sentimientos: appState.agenda.sentimientos || '',
-        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Guardar contraseñas encriptadas
-      const contrasenasRef = window.db.collection('contrasenas').doc('data');
-      batch.set(contrasenasRef, {
-        lista: appState.agenda.contrasenas || [],
-        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      batch.commit().then(() => {
-      }).catch(error => {
-        console.error('❌ Error en auto-guardado:', error);
-      });
-    }
-  }, 5000);
+  // La sincronización se maneja automáticamente con Supabase
+  console.log('Auto-guardado programado');
 }
 
 // Cerrar modal al hacer clic fuera
@@ -332,7 +295,7 @@ window.onclick = (e) => {
 };
 
 function cargarConfigOpciones() {
-  // Cargar configuración DESDE FIREBASE (variables globales)
+  // Cargar configuración desde variables globales
   const config = window.configOpciones || {};
 
   // Aplicar configuración por defecto si no existe
@@ -344,7 +307,7 @@ function cargarConfigOpciones() {
       botonesBorrar: false
     };
 
-    // Guardar configuración por defecto en Firebase
+    // Guardar configuración por defecto en la nube
     if (typeof guardarConfigEnFirebase === 'function') {
       guardarConfigEnFirebase();
     }
@@ -358,9 +321,9 @@ function cargarConfigVisual() {
   console.log('🚀 EJECUTANDO cargarConfigVisual()');
 
   try {
-    // Cargar configuración DESDE FIREBASE (variables globales)
+    // Cargar configuración desde variables globales
     const config = window.configVisual || {};
-    console.log('📊 Cargando configuración visual desde Firebase:', config);
+    console.log('📊 Cargando configuración visual:', config);
 
     // CREAR LISTA POR HACER COMO LISTA PERSONALIZADA PREDETERMINADA
     asegurarListaPorHacerComoPersonalizada();
@@ -632,7 +595,7 @@ function asegurarListaPorHacerComoPersonalizada() {
 
   console.log('💾 Lista por hacer convertida a personalizada:', listaPorHacer);
 
-  // Guardar en Firebase
+  // Guardar en la nube
   if (typeof guardarConfigEnFirebase === 'function') {
     guardarConfigEnFirebase();
   }
@@ -727,7 +690,7 @@ function cambiarModoCalendario(modo) {
     }
   }
 
-  // Guardar en configuración y Firebase
+  // Guardar configuración
   guardarConfigVisualPanel();
 }
 
@@ -990,7 +953,7 @@ async function guardarConfigVisualPanel() {
     listasPersonalizadas: (window.configVisual && window.configVisual.listasPersonalizadas) || []
   };
 
-  console.log('💾 Guardando configuración visual en Firebase:', config);
+  console.log('💾 Guardando configuración visual:', config);
   console.log('🔍 GUARDADO - Valores de checkboxes que se van a guardar:', {
     mostrarNotas: config.mostrarNotas,
     mostrarSentimientos: config.mostrarSentimientos,
@@ -1003,7 +966,7 @@ async function guardarConfigVisualPanel() {
   // Verificar conectividad
   const conectado = await verificarConectividad();
   if (!conectado) {
-    mostrarAlertaConectividad('🔴 No se puede guardar la configuración<br><br>⚠️ Sin conexión a Firebase', 'error');
+    mostrarAlertaConectividad('🔴 No se puede guardar la configuración<br><br>⚠️ Sin conexión a la nube', 'error');
     return;
   }
 
@@ -1019,9 +982,9 @@ async function guardarConfigVisualPanel() {
     mostrarResumen: window.configVisual.mostrarResumen
   });
 
-  // Guardar en Firebase PRIMERO
+  // Guardar en la nube PRIMERO
   if (typeof guardarConfigEnFirebase === 'function') {
-    console.log('🔥 Guardando en Firebase...');
+    console.log('💾 Guardando en la nube...');
     const guardado = await guardarConfigEnFirebase();
     if (guardado) {
       // APLICAR tema INMEDIATAMENTE
@@ -1032,7 +995,7 @@ async function guardarConfigVisualPanel() {
       console.log('✅ Clases del body:', document.body.className);
 
       // APLICAR configuración DESPUÉS del guardado exitoso
-      console.log('✅ Firebase guardado OK - Aplicando configuración visual...');
+      console.log('✅ Guardado correcto - Aplicando configuración visual...');
       cargarConfigVisual();
       // Aplicar configuración de columnas inmediatamente
       aplicarConfiguracionColumnas();
@@ -1057,13 +1020,13 @@ async function guardarConfigVisualPanel() {
           renderCalendarTareas();
         }
       }
-      mostrarAlerta('✅ Configuración visual guardada en Firebase', 'success');
+      mostrarAlerta('✅ Configuración visual guardada correctamente', 'success');
     } else {
-      console.warn('❌ Error guardando en Firebase');
+      console.warn('❌ Error guardando en la nube');
     }
   } else {
     console.warn('⚠️ guardarConfigEnFirebase no disponible');
-    // Si no hay Firebase, aplicar directamente
+    // Si no hay sincronización, aplicar directamente
     cargarConfigVisual();
     // Aplicar visibilidad de secciones inmediatamente
     if (typeof aplicarVisibilidadSecciones === 'function') {
@@ -1080,7 +1043,7 @@ async function guardarConfigVisualPanel() {
     if (typeof renderCalendarTareas === 'function') {
       renderCalendarTareas();
     }
-    mostrarAlerta('⚠️ No se pudo sincronizar con Firebase', 'warning');
+    mostrarAlerta('⚠️ No se pudo sincronizar con la nube', 'warning');
   }
 }
 
@@ -1154,9 +1117,9 @@ function switchTab(tabName) {
 }
 
 function cargarConfigVisualEnFormulario() {
-  // Cargar configuración DESDE FIREBASE (variables globales)
+  // Cargar configuración desde variables globales
   const config = window.configVisual || {};
-  console.log('📝 Cargando configuración visual en formulario desde Firebase:', config);
+  console.log('📝 Cargando configuración visual en formulario:', config);
 
   const temaSelect = document.getElementById('config-tema-select');
   if (temaSelect) temaSelect.value = config.tema || 'verde';
@@ -1230,7 +1193,7 @@ function cargarConfigVisualEnFormulario() {
 }
 
 function cargarConfigFuncionalesEnFormulario() {
-  // Cargar configuración DESDE FIREBASE (variables globales)
+  // Cargar configuración desde variables globales
   const config = window.configFuncionales || {};
 
   const fechaObligatoria = document.getElementById('config-fecha-obligatoria');
@@ -1273,21 +1236,21 @@ async function guardarConfigFuncionales() {
   // Verificar conectividad
   const conectado = await verificarConectividad();
   if (!conectado) {
-    mostrarAlertaConectividad('🔴 No se puede guardar la configuración funcional<br><br>⚠️ Sin conexión a Firebase', 'error');
+    mostrarAlertaConectividad('🔴 No se puede guardar la configuración funcional<br><br>⚠️ Sin conexión a la nube', 'error');
     return;
   }
 
   // Guardar DIRECTAMENTE en variables globales (NO localStorage)
   window.configFuncionales = config;
 
-  // Guardar en Firebase
+  // Guardar en la nube
   if (typeof guardarConfigEnFirebase === 'function') {
     const guardado = await guardarConfigEnFirebase();
     if (guardado) {
-      mostrarAlerta('✅ Configuración funcional guardada en Firebase', 'success');
+      mostrarAlerta('✅ Configuración funcional guardada correctamente', 'success');
     }
   } else {
-    mostrarAlerta('⚠️ No se pudo sincronizar con Firebase', 'warning');
+    mostrarAlerta('⚠️ No se pudo sincronizar con la nube', 'warning');
   }
 }
 
@@ -1845,7 +1808,7 @@ async function guardarNuevaContrasena() {
     cerrarModalNuevaContrasena();
 
     // Mostrar confirmación
-    mostrarModalExito('¡Contraseña guardada!', 'La contraseña se ha guardado y encriptado exitosamente en Firebase');
+    mostrarModalExito('¡Contraseña guardada!', 'La contraseña se ha guardado y encriptado exitosamente');
 
   } catch (error) {
     mostrarModalError('Error al guardar', 'No se pudo guardar la contraseña: ' + error.message);
@@ -2282,15 +2245,9 @@ window.actualizarEstadoSeguridadContrasenas = actualizarEstadoSeguridadContrasen
 
 // ========== EDITOR DE BASE DE DATOS ==========
 function abrirEditorBaseDatos() {
-  // Verificar si Firebase está disponible de múltiples formas
-  const firebaseDisponible = window.db &&
-    (window.isFirebaseInitialized ||
-      (typeof window.firebase !== 'undefined' && window.firebase.apps && window.firebase.apps.length > 0));
-
-  if (!firebaseDisponible) {
-    mostrarAlerta('❌ Firebase no está inicializado. No se puede acceder a la base de datos.', 'error');
-    return;
-  }
+  // Función deshabilitada - usar panel de Supabase
+  mostrarAlerta('❌ Esta función ha sido deshabilitada. Usa la configuración de Supabase para gestionar los datos.', 'error');
+  return;
 
   const modal = document.createElement('div');
   modal.className = 'modal';
@@ -2299,15 +2256,15 @@ function abrirEditorBaseDatos() {
 
   modal.innerHTML = `
     <div class="modal-content" style="max-width:900px;height:85vh;">
-      <h4>🔧 Editor de Base de Datos Firebase</h4>
+      <h4>🔧 Editor de Base de Datos</h4>
       <p style="font-size:12px;color:#666;margin-bottom:15px;">
-        ⚠️ <strong>Advertencia:</strong> Estás editando directamente Firebase.
+        ⚠️ <strong>Advertencia:</strong> Estás editando directamente la base de datos.
         Los cambios se aplicarán inmediatamente en la nube.
       </p>
 
       <div style="display:flex;gap:10px;margin-bottom:15px;">
         <label style="font-weight:bold;align-self:center;">📋 Tabla:</label>
-        <select id="selector-tabla" onchange="cargarTablaFirebase()" style="flex:1;padding:8px;border-radius:4px;border:1px solid #ddd;">
+        <select id="selector-tabla" onchange="cargarTablaDB()" style="flex:1;padding:8px;border-radius:4px;border:1px solid #ddd;">
           <option value="">Selecciona una tabla...</option>
           <option value="tareas">📝 Tareas</option>
           <option value="citas">📅 Citas</option>
@@ -2318,14 +2275,14 @@ function abrirEditorBaseDatos() {
           <option value="personas/asignadas">👥 Personas</option>
           <option value="log/acciones">📊 Log de Acciones</option>
         </select>
-        <button class="btn-secundario" onclick="cargarTablaFirebase()" style="padding:8px 12px;">🔄 Cargar</button>
+        <button class="btn-secundario" onclick="cargarTablaDB()" style="padding:8px 12px;">🔄 Cargar</button>
       </div>
 
       <div id="info-tabla" style="margin-bottom:15px;padding:8px;background:#f5f5f5;border-radius:4px;display:none;"></div>
 
       <div style="margin-bottom:15px;">
         <textarea
-          id="editor-firebase-datos"
+          id="editor-db-datos"
           style="width:100%;height:400px;font-family:monospace;font-size:12px;border:1px solid #ddd;border-radius:4px;padding:10px;resize:vertical;"
           placeholder="Selecciona una tabla para comenzar a editar..."
           readonly
@@ -2333,19 +2290,19 @@ function abrirEditorBaseDatos() {
       </div>
 
       <div style="display:flex;gap:10px;margin-bottom:15px;">
-        <button class="btn-secundario" onclick="validarJSONFirebase()" style="flex:1;">✅ Validar</button>
-        <button class="btn-secundario" onclick="formatearJSONFirebase()" style="flex:1;">🎨 Formatear</button>
-        <button class="btn-secundario" onclick="restaurarTablaFirebase()" style="flex:1;">🔄 Restaurar</button>
+        <button class="btn-secundario" onclick="validarJSONDB()" style="flex:1;">✅ Validar</button>
+        <button class="btn-secundario" onclick="formatearJSONDB()" style="flex:1;">🎨 Formatear</button>
+        <button class="btn-secundario" onclick="restaurarTablaDB()" style="flex:1;">🔄 Restaurar</button>
       </div>
       <div style="display:flex;gap:10px;margin-bottom:15px;">
         <button class="btn-secundario" onclick="forzarSincronizacion()" style="flex:1;">⚡ Sincronizar App</button>
         <button class="btn-secundario" onclick="limpiarDatosLocales()" style="flex:1;">🧹 Limpiar Local</button>
       </div>
 
-      <div id="estado-firebase" style="margin-bottom:15px;padding:10px;border-radius:4px;display:none;"></div>
+      <div id="estado-db" style="margin-bottom:15px;padding:10px;border-radius:4px;display:none;"></div>
 
       <div class="modal-botones">
-        <button id="btn-guardar-firebase" class="btn-primario" onclick="guardarTablaFirebase()" disabled>💾 Guardar en Firebase</button>
+        <button id="btn-guardar-db" class="btn-primario" onclick="guardarTablaDB()" disabled>💾 Guardar en la nube</button>
         <button class="btn-secundario" onclick="cerrarModal('modal-editor-db')">❌ Cerrar</button>
       </div>
     </div>
@@ -2355,10 +2312,10 @@ function abrirEditorBaseDatos() {
   modal.style.display = 'block';
 }
 
-let datosOriginalesFirebase = null;
-let tablaActualFirebase = null;
+let datosOriginalesDB = null;
+let tablaActualDB = null;
 
-async function cargarTablaFirebase() {
+async function cargarTablaDB() {
   const selector = document.getElementById('selector-tabla');
   const textarea = document.getElementById('editor-firebase-datos');
   const info = document.getElementById('info-tabla');
@@ -2496,123 +2453,9 @@ function restaurarTablaFirebase() {
 }
 
 async function guardarTablaFirebase() {
-  const textarea = document.getElementById('editor-firebase-datos');
-  const estado = document.getElementById('estado-firebase');
 
-  if (!textarea || !tablaActualFirebase) {
-    mostrarAlerta('❌ No hay tabla seleccionada', 'error');
-    return;
-  }
-
-  try {
-    const nuevosDatos = JSON.parse(textarea.value);
-
-    const confirmacion = confirm(`
-🔥 ¿Guardar cambios en Firebase?
-
-📋 Tabla: ${tablaActualFirebase}
-📊 Campos: ${Object.keys(nuevosDatos).length}
-📏 Tamaño: ${JSON.stringify(nuevosDatos).length} caracteres
-
-⚠️ Esta acción actualizará directamente la base de datos en la nube.
-¿Continuar?`);
-
-    if (!confirmacion) return;
-
-    estado.style.display = 'block';
-    estado.style.background = '#fff3cd';
-    estado.innerHTML = '🔄 Procesando y guardando cambios en Firebase...';
-
-    const [collection, documento] = tablaActualFirebase.includes('/') ?
-      tablaActualFirebase.split('/') : [tablaActualFirebase, 'data'];
-
-    // Normalizar datos específicos para citas
-    let datosNormalizados = { ...nuevosDatos };
-    if (collection === 'citas' && datosNormalizados.citas && Array.isArray(datosNormalizados.citas)) {
-      console.log('📝 Normalizando estructura de citas...');
-
-      datosNormalizados.citas = datosNormalizados.citas.map(cita => {
-        // Si la cita tiene la estructura nueva (hora, descripcion separadas)
-        if (cita.hora && cita.descripcion && !cita.nombre) {
-          return {
-            id: cita.id || Date.now().toString(),
-            fecha: cita.fecha,
-            nombre: `${cita.hora} - ${cita.descripcion}`,
-            etiqueta: cita.etiqueta || null
-          };
-        }
-        // Si ya tiene la estructura correcta (nombre con formato "hora - descripcion")
-        else if (cita.nombre && cita.fecha) {
-          return {
-            id: cita.id || Date.now().toString(),
-            fecha: cita.fecha,
-            nombre: cita.nombre,
-            etiqueta: cita.etiqueta || null
-          };
-        }
-        // Estructura fallback
-        else {
-          console.warn('⚠️ Cita con estructura inconsistente:', cita);
-          return {
-            id: cita.id || Date.now().toString(),
-            fecha: cita.fecha || new Date().toISOString().slice(0, 10),
-            nombre: cita.nombre || cita.titulo || cita.descripcion || 'Sin descripción',
-            etiqueta: cita.etiqueta || null
-          };
-        }
-      });
-
-      console.log(`✅ ${datosNormalizados.citas.length} citas normalizadas`);
-    }
-
-    // Añadir timestamp de última actualización
-    const datosConTimestamp = {
-      ...datosNormalizados,
-      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-    };
-
-    console.log('💾 Guardando en Firebase:', { collection, documento, datos: datosConTimestamp });
-
-    await window.db.collection(collection).doc(documento).set(datosConTimestamp);
-
-    // Actualizar los datos originales con los normalizados
-    datosOriginalesFirebase = JSON.parse(JSON.stringify(datosNormalizados));
-
-    // Registrar la acción
-    if (typeof registrarAccion === 'function') {
-      registrarAccion('Editar Firebase', `Tabla ${tablaActualFirebase} actualizada manualmente`);
-    }
-
-    estado.style.display = 'block';
-    estado.style.background = '#e8f5e8';
-    estado.style.color = '#2e7d32';
-    estado.innerHTML = '✅ Cambios guardados exitosamente en Firebase';
-
-    mostrarAlerta('💾 Tabla actualizada en Firebase', 'success');
-
-    // Si es una tabla que afecta la aplicación local, sincronizar
-    if (['tareas', 'citas', 'notas'].includes(collection)) {
-      setTimeout(() => {
-        if (typeof extendsClassPull === 'function') {
-          extendsClassPull();
-          mostrarAlerta('🔄 Sincronizando cambios localmente...', 'info');
-        }
-      }, 1500);
-    }
-
-    // Recargar los datos desde Firebase para confirmar que se guardaron
-    setTimeout(() => {
-      cargarTablaFirebase();
-    }, 2000);
-
-  } catch (error) {
-    console.error('Error guardando en Firebase:', error);
-    estado.style.display = 'block';
-    estado.style.background = '#ffe6e6';
-    estado.style.color = '#d32f2f';
-    estado.innerHTML = `❌ Error guardando: ${error.message}`;
-    mostrarAlerta(`❌ Error: ${error.message}`, 'error');
-  }
+  mostrarAlerta('❌ Firebase ha sido removido. Usa la configuración de Supabase para gestionar los datos.', 'error');
+  return;
 }
 
 // ========== FUNCIÓN DE SINCRONIZACIÓN FORZADA ==========
@@ -2814,7 +2657,7 @@ async function agregarListaPersonalizada() {
       mostrarAlerta('❌ Error al guardar en Firebase', 'error');
     }
   } else {
-    mostrarAlerta('⚠️ No se pudo sincronizar con Firebase', 'warning');
+    mostrarAlerta('⚠️ No se pudo sincronizar con la nube', 'warning');
   }
 }
 
@@ -2840,7 +2683,7 @@ function eliminarListaPersonalizada(id) {
     // Re-renderizar
     renderizarListasPersonalizadas();
 
-    // Guardar en Firebase
+
     guardarConfigEnFirebase();
 
     mostrarAlerta(`✅ Lista "${lista.nombre}" eliminada`, 'success');
@@ -3327,6 +3170,21 @@ function cambiarEstadoSubtareaListaPersonalizada(listaId, tareaIndex, subIndex) 
   guardarConfigEnFirebase();
 }
 
+// ========== FUNCIONES DE DASHBOARD Y RESUMEN ==========
+function mostrarDashboardMotivacional() {
+  mostrarAlerta('📊 Dashboard de progreso en desarrollo', 'info');
+  console.log('📊 mostrarDashboardMotivacional llamada');
+}
+
+function mostrarResumenDiarioManual() {
+  mostrarAlerta('🌅 Resumen del día en desarrollo', 'info');
+  console.log('🌅 mostrarResumenDiarioManual llamada');
+}
+
+// Exponer funciones globalmente
+window.mostrarDashboardMotivacional = mostrarDashboardMotivacional;
+window.mostrarResumenDiarioManual = mostrarResumenDiarioManual;
+
 function abrirEditorSubtareaListaPersonalizada(listaId, tareaIndex, subIndex) {
   const configVisual = window.configVisual || {};
   const listas = configVisual.listasPersonalizadas || [];
@@ -3476,7 +3334,7 @@ function agregarTareaAListaPersonalizada(listaId, texto, fecha = null, etiqueta 
   // Actualizar configuración global
   window.configVisual = { ...configVisual, listasPersonalizadas };
 
-  // Guardar en Firebase
+ 
   guardarConfigEnFirebase();
 
   // Re-renderizar
@@ -3602,7 +3460,7 @@ function ejecutarEliminacionTareaListaPersonalizada(listaId, tareaIndex) {
     listasPersonalizadas
   };
 
-  // Guardar en Firebase
+
   guardarConfigEnFirebase();
 
   // Renderizar
@@ -3664,7 +3522,7 @@ function eliminarListaPersonalizada(listaId) {
     listasPersonalizadas
   };
 
-  // Guardar en Firebase
+
   guardarConfigEnFirebase();
 
   // Re-renderizar las secciones de listas personalizadas
@@ -3753,7 +3611,6 @@ function completarTareaListaPersonalizada(listaId, tareaIndex) {
   // Actualizar configuración global
   window.configVisual = { ...configVisual, listasPersonalizadas };
 
-  // Guardar en Firebase
   guardarConfigEnFirebase();
 
   // Re-renderizar

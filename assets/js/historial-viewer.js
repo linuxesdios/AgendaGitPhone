@@ -1,10 +1,6 @@
-// ========== VISOR DE HISTORIAL FIREBASE ==========
+// ========== VISOR DE HISTORIAL ==========
 
 function abrirVisorHistorial() {
-  if (!isFirebaseInitialized) {
-    mostrarAlerta('⚠️ Firebase no disponible', 'warning');
-    return;
-  }
   
   // Crear modal de historial
   const modal = document.createElement('div');
