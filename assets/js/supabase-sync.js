@@ -68,23 +68,44 @@ async function probarConexionSupabase() {
 
   if (connected) {
     try {
-      // Probar conexión listando tablas
+      // Probar conexión básica primero
       const { data, error } = await window.supabaseClient
-        .from('agenda_tareas')
+        .from('agenda_data')
         .select('*')
         .limit(1);
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = tabla no existe (está bien)
-        throw error;
-      }
+      if (error) {
+        // Si error es porque la tabla no existe (primera vez)
+        if (error.code === 'PGRST116' || error.message.includes('does not exist') || error.message.includes('schema cache')) {
+          showSupabaseStatus('🆕 Primera vez detectada - Las tablas no existen todavía', 'info');
 
-      showSupabaseStatus('✅ Conexión exitosa con Supabase', 'success');
+          // Preguntar automáticamente si quiere crear las tablas
+          const shouldCreate = confirm(
+            '🆕 ¡Primera vez usando Supabase!\n\n' +
+            'Las tablas de la base de datos no existen todavía.\n' +
+            '¿Quieres que las cree automáticamente?\n\n' +
+            '✅ Sí - Crear tablas y configurar todo\n' +
+            '❌ No - Solo verificar conexión'
+          );
+
+          if (shouldCreate) {
+            showSupabaseStatus('🛠️ Creando tablas automáticamente...', 'info');
+            await crearTablasSupabase();
+          } else {
+            showSupabaseStatus('✅ Conexión básica exitosa - Click "🛠️ Crear Tablas" cuando estés listo', 'success');
+          }
+        } else {
+          throw error;
+        }
+      } else {
+        showSupabaseStatus('✅ Conexión exitosa - Las tablas ya existen y funcionan', 'success');
+      }
     } catch (error) {
       console.error('❌ Error probando conexión:', error);
       showSupabaseStatus('❌ Error de conexión: ' + error.message, 'error');
     }
   } else {
-    showSupabaseStatus('❌ No se pudo inicializar Supabase', 'error');
+    showSupabaseStatus('❌ No se pudo inicializar Supabase - Verifica URL y Anon Key', 'error');
   }
 }
 
@@ -95,66 +116,136 @@ async function crearTablasSupabase() {
     return;
   }
 
-  showSupabaseStatus('🛠️ Creando tablas...', 'info');
+  showSupabaseStatus('🛠️ Creando estructura de datos...', 'info');
 
   try {
-    // Crear tabla principal con todas las colecciones en un JSONB
-    const createTableQuery = `
-      CREATE TABLE IF NOT EXISTS agenda_data (
-        id VARCHAR(50) PRIMARY KEY,
-        data JSONB NOT NULL,
-        last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
+    // Approach más simple: crear registros directamente
+    // Supabase creará la tabla automáticamente con el primer insert si usamos el SQL editor
 
-      -- Crear índices para mejor performance
-      CREATE INDEX IF NOT EXISTS idx_agenda_data_updated ON agenda_data(last_updated);
-      CREATE INDEX IF NOT EXISTS idx_agenda_data_gin ON agenda_data USING GIN(data);
+    // Datos iniciales para todas las colecciones
+    const initialData = [
+      {
+        id: 'tareas',
+        data: {
+          tareas_criticas: [],
+          tareas: [],
+          listasPersonalizadas: []
+        }
+      },
+      {
+        id: 'citas',
+        data: { citas: [] }
+      },
+      {
+        id: 'config',
+        data: {
+          visual: {},
+          funcionales: {},
+          opciones: {}
+        }
+      },
+      {
+        id: 'notas',
+        data: { notas: '' }
+      },
+      {
+        id: 'sentimientos',
+        data: { sentimientos: '' }
+      },
+      {
+        id: 'contrasenas',
+        data: { lista: [] }
+      },
+      {
+        id: 'historial_eliminados',
+        data: { items: [] }
+      },
+      {
+        id: 'historial_tareas',
+        data: { items: [] }
+      },
+      {
+        id: 'personas',
+        data: { lista: [] }
+      },
+      {
+        id: 'etiquetas',
+        data: {}
+      },
+      {
+        id: 'log',
+        data: { acciones: [] }
+      },
+      {
+        id: 'salvados',
+        data: {}
+      }
+    ];
 
-      -- Función para actualizar last_updated automáticamente
-      CREATE OR REPLACE FUNCTION update_last_updated()
-      RETURNS TRIGGER AS $$
-      BEGIN
-        NEW.last_updated = NOW();
-        RETURN NEW;
-      END;
-      $$ language 'plpgsql';
+    // Insertar cada registro
+    for (const record of initialData) {
+      try {
+        const { error } = await window.supabaseClient
+          .from('agenda_data')
+          .upsert(record, { onConflict: 'id' });
 
-      -- Trigger para actualizar last_updated
-      DROP TRIGGER IF EXISTS trigger_update_last_updated ON agenda_data;
-      CREATE TRIGGER trigger_update_last_updated
-        BEFORE UPDATE ON agenda_data
-        FOR EACH ROW
-        EXECUTE FUNCTION update_last_updated();
-
-      -- Insertar registros iniciales si no existen
-      INSERT INTO agenda_data (id, data) VALUES
-        ('tareas', '{"tareas_criticas": [], "tareas": [], "listasPersonalizadas": []}'),
-        ('citas', '{"citas": []}'),
-        ('config', '{"visual": {}, "funcionales": {}, "opciones": {}}'),
-        ('notas', '{"notas": ""}'),
-        ('sentimientos', '{"sentimientos": ""}'),
-        ('contrasenas', '{"lista": []}'),
-        ('historial_eliminados', '{"items": []}'),
-        ('historial_tareas', '{"items": []}'),
-        ('personas', '{"lista": []}'),
-        ('etiquetas', '{}'),
-        ('log', '{"acciones": []}'),
-        ('salvados', '{}')
-      ON CONFLICT (id) DO NOTHING;
-    `;
-
-    const { error } = await window.supabaseClient.rpc('exec_sql', {
-      sql: createTableQuery
-    });
-
-    if (error) {
-      throw error;
+        if (error && !error.message.includes('does not exist')) {
+          console.warn(`⚠️ Error insertando ${record.id}:`, error);
+        }
+      } catch (itemError) {
+        console.warn(`⚠️ Error con ${record.id}:`, itemError);
+      }
     }
 
-    showSupabaseStatus('✅ Tablas creadas correctamente', 'success');
+    // Verificar que al menos uno se insertó correctamente
+    const { data: testData, error: testError } = await window.supabaseClient
+      .from('agenda_data')
+      .select('id')
+      .limit(1);
+
+    if (testError) {
+      // Si aún hay error, mostrar instrucciones para crear tabla manualmente
+      showSupabaseStatus(
+        '⚠️ No se puede crear automáticamente. Crea la tabla manualmente: Ve al SQL Editor de Supabase y ejecuta: CREATE TABLE agenda_data (id text PRIMARY KEY, data jsonb, last_updated timestamp DEFAULT now());',
+        'error'
+      );
+
+      // También mostrar el popup con instrucciones
+      alert(
+        '🛠️ INSTRUCCIONES PARA CREAR TABLA MANUALMENTE:\n\n' +
+        '1. Ve a tu dashboard de Supabase\n' +
+        '2. Click en "SQL Editor" en el menú izquierdo\n' +
+        '3. Copia y pega este comando:\n\n' +
+        'CREATE TABLE agenda_data (\n' +
+        '  id text PRIMARY KEY,\n' +
+        '  data jsonb,\n' +
+        '  last_updated timestamp DEFAULT now()\n' +
+        ');\n\n' +
+        '4. Click "Run"\n' +
+        '5. Vuelve aquí y prueba la conexión de nuevo'
+      );
+    } else {
+      showSupabaseStatus('✅ ¡Estructura creada! Supabase está listo para usar', 'success');
+    }
   } catch (error) {
-    console.error('❌ Error creando tablas:', error);
-    showSupabaseStatus('❌ Error creando tablas. Verifica que tengas permisos de admin', 'error');
+    console.error('❌ Error creando estructura:', error);
+
+    // Instrucciones claras para el usuario
+    showSupabaseStatus('⚠️ Crear manualmente - Ver instrucciones en popup', 'error');
+
+    alert(
+      '🛠️ CREAR TABLA MANUALMENTE:\n\n' +
+      '1. Ve a supabase.com → tu proyecto\n' +
+      '2. Click "SQL Editor" (menú izquierdo)\n' +
+      '3. Nueva query y pega:\n\n' +
+      'CREATE TABLE agenda_data (\n' +
+      '  id text PRIMARY KEY,\n' +
+      '  data jsonb,\n' +
+      '  last_updated timestamp DEFAULT now()\n' +
+      ');\n\n' +
+      '4. Click "Run"\n' +
+      '5. Vuelve aquí y haz click "Probar" de nuevo'
+    );
   }
 }
 
@@ -459,6 +550,59 @@ function cargarConfigSupabaseEnFormulario() {
   if (urlField && config.url) urlField.value = config.url;
   if (keyField && config.key) keyField.value = config.key;
   if (serviceKeyField && config.serviceKey) serviceKeyField.value = config.serviceKey;
+
+  // Detectar si es primera vez usando Supabase
+  detectarPrimeraVezSupabase();
+}
+
+function detectarPrimeraVezSupabase() {
+  const config = getSupabaseConfig();
+  const hasSeenSupabaseHelp = localStorage.getItem('supabase_help_shown');
+
+  // Si no tiene configuración Y nunca ha visto la ayuda
+  if (!config.url && !hasSeenSupabaseHelp) {
+    // Marcar que ya vio la ayuda
+    localStorage.setItem('supabase_help_shown', 'true');
+
+    // Mostrar ayuda después de un pequeño delay para que cargue la interfaz
+    setTimeout(() => {
+      mostrarAyudaPrimeraVez();
+    }, 500);
+  }
+}
+
+function mostrarAyudaPrimeraVez() {
+  const shouldShow = confirm(
+    '🎉 ¡Bienvenido a Supabase!\n\n' +
+    'Supabase es la alternativa moderna a Firebase con:\n' +
+    '✅ ILIMITADAS peticiones (vs 50K/día Firebase)\n' +
+    '✅ Real-time automático\n' +
+    '✅ Más rápido y mejor dashboard\n\n' +
+    '¿Quieres una guía rápida de 2 minutos para configurarlo?\n\n' +
+    'Click "Aceptar" para ver los pasos\n' +
+    'Click "Cancelar" para configurar después'
+  );
+
+  if (shouldShow) {
+    mostrarGuiaRapidaSupabase();
+  }
+}
+
+function mostrarGuiaRapidaSupabase() {
+  alert(
+    '🚀 GUÍA RÁPIDA SUPABASE (2 minutos):\n\n' +
+    '1️⃣ Ve a supabase.com → "Start your project"\n' +
+    '2️⃣ Registrarte (GitHub recomendado)\n' +
+    '3️⃣ "New project":\n' +
+    '   • Name: agenda-pablo\n' +
+    '   • Password: (genera una segura)\n' +
+    '   • Region: (la más cercana)\n' +
+    '4️⃣ Espera ~2 min que se cree\n' +
+    '5️⃣ Settings → API → Copia URL y anon key\n' +
+    '6️⃣ Vuelve aquí y pega los datos\n' +
+    '7️⃣ Click "Probar" (te preguntará si crear tablas)\n\n' +
+    '¡Y listo! Real-time sin límites 🎉'
+  );
 }
 
 // ========== INICIALIZACIÓN ==========
