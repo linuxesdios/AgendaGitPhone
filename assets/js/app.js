@@ -1105,6 +1105,11 @@ function switchTab(tabName) {
     tabContent.classList.add('active');
   }
 
+  // Cargar configuraciones específicas según la pestaña
+  if (tabName === 'supabase' && typeof cargarConfigSupabaseEnFormulario === 'function') {
+    setTimeout(() => cargarConfigSupabaseEnFormulario(), 100);
+  }
+
   // Activar el botón correspondiente (manejo robusto de evento)
   if (window.event && window.event.target && window.event.target.classList.contains('config-tab')) {
     window.event.target.classList.add('active');
