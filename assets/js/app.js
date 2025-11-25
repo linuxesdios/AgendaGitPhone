@@ -75,8 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Aplicar clases adaptativas
   document.body.classList.add(isMobile() ? 'mobile-device' : 'desktop-device');
 
-  // Cargar configuración visual guardada
-  cargarConfigVisual();
+  // NOTA: cargarConfigVisual() ahora se llama desde supabase-sync.js DESPUÉS de cargar los datos
 
   // Cargar configuración de opciones
   cargarConfigOpciones();
@@ -98,6 +97,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Verificar modo oscuro automático cada minuto
   setInterval(verificarModoOscuroAutomatico, 60000);
+
+  // Verificar salvado automático diario
+  if (typeof verificarSalvadoDiario === 'function') {
+    setTimeout(() => verificarSalvadoDiario(), 2000); // Esperar a que Supabase se cargue
+  }
 
   // Supabase se inicializa automáticamente en supabase-sync.js
 
@@ -330,19 +334,65 @@ function cargarConfigOpciones() {
 function cargarConfigVisual() {
   console.log('🚀 CARGANDO configuración visual desde Supabase');
   try {
-    // Utilizar la función existente que carga la configuración del formulario desde Supabase
-    cargarConfigSupabaseEnFormulario();
-    // Después de cargar los valores en los campos, aplicar la configuración a la UI
+    const config = window.configVisual || {};
+    console.log('📋 Configuración visual cargada:', config);
+
+    // APLICAR TEMA INMEDIATAMENTE
+    const tema = config.tema || 'verde';
+    console.log(`🎨 Aplicando tema: ${tema}`);
+    document.body.className = document.body.className.replace(/tema-\w+/g, '').trim();
+    document.body.classList.add('tema-' + tema);
+
+    // Aplicar visibilidad de secciones
     if (typeof aplicarVisibilidadSecciones === 'function') {
       aplicarVisibilidadSecciones();
     }
-    // Configurar columnas y modo oscuro como antes
+
+    // Configurar columnas y modo oscuro
     aplicarConfiguracionColumnas();
     verificarModoOscuroAutomatico();
-    console.log('✅ cargarConfigVisual completado con Supabase');
+
+    // Cargar valores en el formulario de configuración
+    cargarConfigVisualEnFormulario();
+
+    console.log('✅ cargarConfigVisual completado - tema aplicado');
   } catch (error) {
     console.error('❌ Error al cargar configuración visual desde Supabase:', error);
   }
+}
+
+// ========== NOTIFICACIONES ==========
+function solicitarPermisoNotificaciones() {
+  console.log('🔔 Solicitando permisos de notificaciones...');
+
+  if (!("Notification" in window)) {
+    mostrarAlerta('❌ Tu navegador no soporta notificaciones', 'error');
+    return;
+  }
+
+  if (Notification.permission === "granted") {
+    mostrarAlerta('✅ Ya tienes permisos de notificaciones activados', 'success');
+    return;
+  }
+
+  if (Notification.permission === "denied") {
+    mostrarAlerta('❌ Permisos de notificaciones denegados. Ve a configuración del navegador para activarlos manualmente.', 'warning');
+    return;
+  }
+
+  // Solicitar permiso
+  Notification.requestPermission().then(function (permission) {
+    if (permission === "granted") {
+      mostrarAlerta('✅ ¡Permisos de notificaciones activados!', 'success');
+      // Mostrar notificación de prueba
+      new Notification('🎉 ¡Notificaciones activadas!', {
+        body: 'Ya puedes recibir recordatorios de tu agenda',
+        icon: '/favicon.ico'
+      });
+    } else {
+      mostrarAlerta('❌ Permisos de notificaciones denegados', 'error');
+    }
+  });
 }
 
 // ========== CONFIGURACIÓN DE COLUMNAS ==========
@@ -595,6 +645,7 @@ window.setupAutoCapitalize = setupAutoCapitalize;
 window.scheduleAutoSave = scheduleAutoSave;
 window.cargarConfigOpciones = cargarConfigOpciones;
 window.cargarConfigVisual = cargarConfigVisual;
+window.solicitarPermisoNotificaciones = solicitarPermisoNotificaciones;
 window.cambiarModoCalendario = cambiarModoCalendario;
 window.aplicarConfiguracionColumnas = aplicarConfiguracionColumnas;
 window.insertarIcono = insertarIcono;
@@ -837,9 +888,9 @@ async function guardarConfigVisualPanel() {
   window.configVisual = config;
 
   // Guardar en Supabase
-  if (typeof supabasePush === 'function') {
+  if (typeof window.supabasePush === 'function') {
     console.log('⚡ Guardando en Supabase...');
-    const guardado = await supabasePush();
+    const guardado = await window.supabasePush();
     if (guardado) {
       // APLICAR tema INMEDIATAMENTE
       const tema = config.tema || 'verde';
@@ -1083,6 +1134,11 @@ function toggleConfigFloating() {
   const forzarRenderizado = () => {
     if (typeof renderizarListasPersonalizadas === 'function') {
       renderizarListasPersonalizadas();
+    }
+    // Cargar etiquetas en la configuración
+    if (typeof window.renderizarListaEtiquetas === 'function') {
+      window.renderizarListaEtiquetas('etiquetas-tareas-lista', 'tareas');
+      window.renderizarListaEtiquetas('etiquetas-citas-lista', 'citas');
     }
   };
 
@@ -2111,6 +2167,16 @@ function abrirEditorBaseDatos() {
 
   document.body.appendChild(modal);
   modal.style.display = 'block';
+
+  // Auto-cargar si había una tabla seleccionada previamente
+  setTimeout(() => {
+    const selector = document.getElementById('selector-tabla');
+    if (selector && tablaActualSupabase) {
+      console.log('🔄 Auto-cargando tabla previamente seleccionada:', tablaActualSupabase);
+      selector.value = tablaActualSupabase;
+      cargarTablaSupabase();
+    }
+  }, 100);
 }
 
 let datosOriginalesSupabase = null;
@@ -2137,17 +2203,28 @@ async function cargarTablaSupabase() {
 
   estado.style.display = 'block';
   estado.style.background = '#fff3cd';
+  estado.style.color = '#856404';
   estado.innerHTML = '🔄 Cargando datos de Supabase...';
 
   try {
     tablaActualSupabase = idColeccion;
     console.log(`🔍 Cargando colección: ${idColeccion}`);
 
-    const { data, error } = await window.supabaseClient
-      .from('agenda_data')
-      .select('data')
-      .eq('id', idColeccion)
-      .single();
+    // Verificar conexión antes de intentar cargar
+    if (!window.supabaseClient) {
+      throw new Error('Cliente de Supabase no está inicializado');
+    }
+
+    const { data, error } = await Promise.race([
+      window.supabaseClient
+        .from('agenda_data')
+        .select('data')
+        .eq('id', idColeccion)
+        .single(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout: La consulta tardó más de 10 segundos')), 10000)
+      )
+    ]);
 
     if (error && error.code !== 'PGRST116') {
       throw error;
@@ -2809,6 +2886,24 @@ function renderizarListaPersonalizada(listaId) {
     btnBorrar.onclick = (e) => {
       e.stopPropagation();
       mostrarCuentaRegresiva(() => {
+        // Verificar índice actualizado en tiempo real
+        const configVisualActual = window.configVisual || {};
+        const listasActuales = configVisualActual.listasPersonalizadas || [];
+        const listaActual = listasActuales.find(l => l.id === listaId);
+
+        if (!listaActual || !listaActual.tareas || index >= listaActual.tareas.length) {
+          // No interferir si ya hay una eliminación en progreso
+          if (window.eliminandoTarea) {
+            console.log('🔄 Eliminación en progreso, saltando validación de índice');
+            return;
+          }
+
+          console.warn('⚠️ Índice obsoleto detectado, re-renderizando lista');
+          mostrarAlerta('🔄 Actualizando interfaz...', 'info');
+          renderizarListasPersonalizadas();
+          return;
+        }
+
         ejecutarEliminacionTareaListaPersonalizada(listaId, index);
       });
     };
@@ -3212,8 +3307,14 @@ function guardarEdicionListaPersonalizada(listaId, index) {
   supabasePush();
 }
 
+// Variable para evitar interferencias durante eliminación
+window.eliminandoTarea = false;
+
 function ejecutarEliminacionTareaListaPersonalizada(listaId, tareaIndex) {
   console.log('🗑️ ELIMINANDO TAREA DE LISTA PERSONALIZADA:', { listaId, tareaIndex });
+
+  // Marcar que estamos eliminando para evitar interferencias
+  window.eliminandoTarea = true;
 
   const configVisual = window.configVisual || {};
   const listasPersonalizadas = configVisual.listasPersonalizadas || [];
@@ -3221,13 +3322,32 @@ function ejecutarEliminacionTareaListaPersonalizada(listaId, tareaIndex) {
 
   if (listaIndex === -1) {
     console.error('❌ Lista no encontrada:', listaId);
+    mostrarAlerta('❌ Error: Lista no encontrada', 'error');
     return;
   }
 
   const lista = listasPersonalizadas[listaIndex];
 
+  // Logging adicional para diagnóstico
+  console.log('📋 Estado de la lista:', {
+    nombre: lista.nombre,
+    totalTareas: lista.tareas?.length || 0,
+    tareaIndex: tareaIndex,
+    tareas: lista.tareas?.map((t, i) => `${i}: ${t.texto}`) || []
+  });
+
   if (!lista.tareas || tareaIndex < 0 || tareaIndex >= lista.tareas.length) {
-    console.error('❌ Índice de tarea inválido:', tareaIndex);
+    console.error('❌ Índice de tarea inválido:', {
+      tareaIndex,
+      longitudLista: lista.tareas?.length || 0,
+      tareasDisponibles: lista.tareas?.map((t, i) => `${i}: ${t.texto}`) || 'Sin tareas'
+    });
+    mostrarAlerta('❌ Error: Tarea no encontrada. La interfaz se actualizará automáticamente.', 'warning');
+
+    // Forzar re-renderizado para sincronizar interfaz con datos
+    setTimeout(() => {
+      renderizarListasPersonalizadas();
+    }, 100);
     return;
   }
 
@@ -3243,14 +3363,40 @@ function ejecutarEliminacionTareaListaPersonalizada(listaId, tareaIndex) {
     listasPersonalizadas
   };
 
-  // Guardar en Supabase
-  supabasePush();
+  // Guardar en Supabase PRIMERO, luego renderizar
+  console.log('🔵 ELIMINACIÓN: Iniciando guardado en Supabase...');
 
-  // Renderizar
-  renderizarListaPersonalizada(listaId);
+  if (typeof window.supabasePush === 'function') {
+    window.supabasePush().then(() => {
+      console.log('🔵 ELIMINACIÓN: ✅ Guardado completado, renderizando...');
 
-  registrarAccion('Eliminar tarea (lista personalizada)', tareaEliminada.texto);
-  mostrarPopupCelebracion();
+      // Solo renderizar después de guardar exitosamente
+      renderizarListaPersonalizada(listaId);
+
+      registrarAccion('Eliminar tarea (lista personalizada)', tareaEliminada.texto);
+      mostrarPopupCelebracion();
+      mostrarAlerta('✅ Tarea eliminada correctamente', 'success');
+
+      // Limpiar flag de eliminación
+      window.eliminandoTarea = false;
+
+    }).catch((error) => {
+      console.error('🔵 ELIMINACIÓN: ❌ Error guardando:', error);
+      mostrarAlerta('❌ Error eliminando tarea', 'error');
+
+      // Limpiar flag de eliminación incluso en caso de error
+      eliminandoTarea = false;
+    });
+  } else {
+    // Fallback si no hay Supabase
+    renderizarListaPersonalizada(listaId);
+    registrarAccion('Eliminar tarea (lista personalizada)', tareaEliminada.texto);
+    mostrarPopupCelebracion();
+    mostrarAlerta('✅ Tarea eliminada correctamente', 'success');
+
+    // Limpiar flag de eliminación
+    eliminandoTarea = false;
+  }
 }
 
 function eliminarListaPersonalizada(listaId) {

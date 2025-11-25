@@ -53,9 +53,21 @@ async function initSupabase() {
 
 // ========== FUNCIONES DE INTERFAZ ==========
 function guardarConfigSupabase() {
-  const url = document.getElementById('supabase-url').value;
-  const key = document.getElementById('supabase-key').value;
-  const serviceKey = document.getElementById('supabase-service-key').value;
+  console.log('🔧 FUNCIÓN CORREGIDA: guardarConfigSupabase iniciada');
+  // Verificamos que todos los elementos existan antes de acceder a sus valores
+  const urlElement = document.getElementById('supabase-url');
+  const keyElement = document.getElementById('supabase-key');
+  const serviceKeyElement = document.getElementById('supabase-service-key');
+
+  if (!urlElement || !keyElement) {
+    alert('⚠️ Error: Formulario de Supabase no encontrado');
+    console.error('Elementos del formulario no encontrados:', { urlElement, keyElement });
+    return;
+  }
+
+  const url = urlElement.value;
+  const key = keyElement.value;
+  const serviceKey = serviceKeyElement ? serviceKeyElement.value : '';
 
   if (!url || !key) {
     alert('⚠️ URL y Anon Key son obligatorios');
@@ -64,6 +76,33 @@ function guardarConfigSupabase() {
 
   saveSupabaseConfig(url, key, serviceKey);
   showSupabaseStatus('✅ Configuración guardada correctamente', 'success');
+}
+
+// ========== FUNCIONES DE INTERFAZ AUXILIARES ==========
+function toggleSupabaseKeyVisibility() {
+  const keyInput = document.getElementById('supabase-key');
+  const toggleButton = document.getElementById('toggle-supabase-key');
+
+  if (!keyInput || !toggleButton) return;
+
+  if (keyInput.type === 'password') {
+    keyInput.type = 'text';
+    toggleButton.textContent = '🙈';
+    toggleButton.title = 'Ocultar contraseña';
+
+    // Ocultar automáticamente después de 3 segundos
+    setTimeout(() => {
+      if (keyInput.type === 'text') {
+        keyInput.type = 'password';
+        toggleButton.textContent = '👁️';
+        toggleButton.title = 'Mostrar contraseña';
+      }
+    }, 3000);
+  } else {
+    keyInput.type = 'password';
+    toggleButton.textContent = '👁️';
+    toggleButton.title = 'Mostrar contraseña';
+  }
 }
 
 async function probarConexionSupabase() {
@@ -353,7 +392,13 @@ async function supabasePull() {
           if (data.items) window.historialTareas = data.items;
           break;
         case 'personas':
-          if (data.lista) window.personasAsignadas = data.lista;
+          if (data.lista) {
+            window.personasAsignadas = data.lista;
+            // Sincronizar con tareasData.personas para compatibilidad
+            if (!window.tareasData) window.tareasData = {};
+            window.tareasData.personas = [...data.lista];
+            console.log('👥 Personas cargadas desde Supabase:', data.lista);
+          }
           break;
         case 'etiquetas':
           window.etiquetasData = data;
@@ -498,10 +543,6 @@ async function supabasePush(isAutomatic = false) {
       {
         id: 'etiquetas',
         data: window.etiquetasData || {}
-      },
-      {
-        id: 'log',
-        data: { acciones: window.logAcciones || [] }
       }
     ];
 
@@ -846,8 +887,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       await supabasePull();
       console.log('✅ Datos cargados automáticamente desde Supabase');
+
+      // 🎨 APLICAR CONFIGURACIÓN VISUAL después de cargar datos
+      if (typeof window.cargarConfigVisual === 'function') {
+        console.log('🎨 Aplicando configuración visual después de cargar datos...');
+        window.cargarConfigVisual();
+        console.log('✅ Configuración visual aplicada correctamente');
+      }
     } catch (error) {
       console.warn('⚠️ Error al cargar datos:', error);
+    }
+  } else {
+    // 🎨 FALLBACK: Si no hay Supabase configurado, cargar configuración local
+    console.log('📄 Supabase no configurado, cargando configuración visual con valores por defecto');
+    if (typeof window.cargarConfigVisual === 'function') {
+      // Pequeña espera para asegurar que el DOM esté listo
+      setTimeout(() => {
+        window.cargarConfigVisual();
+      }, 100);
     }
   }
 
@@ -893,10 +950,24 @@ window.crearTablasSupabase = crearTablasSupabase;
 window.cambiarMetodoSync = cambiarMetodoSync;
 window.supabasePull = supabasePull;
 window.supabasePush = supabasePush;
+window.guardarEnSupabaseWrapper = guardarEnSupabaseWrapper;
 
 // Función alias para guardar configuración (llamada desde app.js)
 function guardarConfigEnSupabase() {
   console.log('💾 guardarConfigEnSupabase() - Guardando configuración...');
+  return supabasePush();
+}
+
+// Función wrapper para guardar en Supabase (llamada desde sincronizacion-simple.js)
+function guardarEnSupabaseWrapper() {
+  console.log('🔄 guardarEnSupabaseWrapper() - Sincronizando datos con Supabase...');
+
+  // Sincronizar personas antes de guardar
+  if (window.tareasData && window.tareasData.personas) {
+    window.personasAsignadas = [...window.tareasData.personas];
+    console.log('👥 Personas sincronizadas:', window.personasAsignadas);
+  }
+
   return supabasePush();
 }
 

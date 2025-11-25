@@ -224,6 +224,7 @@ function renderizarCriticas() {
 
 function renderizarTareas() {
   const lista = document.getElementById('lista-metodo');
+  // Esta función ya no es necesaria ya que las tareas se manejan a través de listas personalizadas
   if (!lista) return;
 
   lista.innerHTML = '';
@@ -1073,6 +1074,9 @@ function limpiarFiltros(tipo) {
 function toggleFiltros(tipo) {
   const content = document.getElementById(`filtros-content-${tipo}`);
   const icon = document.getElementById(`filtros-icon-${tipo}`);
+
+  // Verificar que los elementos existan antes de usarlos
+  if (!content || !icon) return;
 
   if (content.classList.contains('visible')) {
     content.classList.remove('visible');

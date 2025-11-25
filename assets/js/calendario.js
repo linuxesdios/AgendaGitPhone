@@ -570,12 +570,17 @@ function abrirModalNuevaCita() {
   // Establecer fecha de hoy por defecto
   const hoy = new Date().toISOString().slice(0, 10);
   document.getElementById('nueva-cita-fecha').value = hoy;
-  
+
   // Limpiar campos
   document.getElementById('nueva-cita-desc').value = '';
   document.getElementById('nueva-cita-hora').value = '14';
   document.getElementById('nueva-cita-minutos').value = '00';
-  
+
+  // Cargar etiquetas existentes en el dropdown
+  if (typeof window.cargarEtiquetasEnSelect === 'function') {
+    window.cargarEtiquetasEnSelect('nueva-cita-etiqueta', 'citas');
+  }
+
   abrirModal('modal-nueva-cita');
   setTimeout(() => document.getElementById('nueva-cita-desc').focus(), 100);
 }
@@ -583,7 +588,6 @@ function abrirModalNuevaCita() {
 function guardarNuevaCita() {
   const fecha = document.getElementById('nueva-cita-fecha').value;
   const descripcion = document.getElementById('nueva-cita-desc').value.trim();
-  const lugar = document.getElementById('nueva-cita-lugar').value.trim();
   const hora = document.getElementById('nueva-cita-hora').value;
   const minutos = document.getElementById('nueva-cita-minutos').value;
   const etiqueta = document.getElementById('nueva-cita-etiqueta').value;
@@ -605,7 +609,7 @@ function guardarNuevaCita() {
     id: Date.now(),
     fecha: fecha.split('-').map(n => parseInt(n)),
     nombre: citaCompleta,
-    lugar: lugar || null,
+    lugar: null,
     etiqueta: etiqueta || null
   };
 

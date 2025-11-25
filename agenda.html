@@ -239,67 +239,7 @@
       </div>
 
       <div class="columna-derecha">
-        <section class="drop-zone" data-target="tareas">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="margin: 0;">✅ Lista para hacer</h3>
-            <div style="display: flex; gap: 3px; flex-wrap: wrap;">
-              <button onclick="abrirEditorTarea(null, 'tarea')" class="boton-cargar"
-                style="padding: 4px 8px; font-size: 10px; background: #4ecdc4; color: white;">+</button>
-              <button onclick="abrirCalendarioTareas()" class="boton-cargar calendar-btn"
-                style="padding: 4px 8px; font-size: 10px; background: #ff9800; color: white;">📅</button>
-            </div>
-          </div>
-
-          <div class="filtros-container">
-            <button class="filtros-toggle" onclick="toggleFiltros('tareas')">
-              <span>🔍 Filtros</span>
-              <span id="filtros-icon-tareas">▼</span>
-            </button>
-            <div id="filtros-content-tareas" class="filtros-content">
-              <div class="filtros-grid">
-                <div class="filtro-grupo">
-                  <label class="filtro-label">Estado</label>
-                  <select id="filtro-estado-tareas" class="filtro-select" onchange="aplicarFiltros()">
-                    <option value="">Todos</option>
-                    <option value="pendiente">Pendientes</option>
-                    <option value="migrada">Migradas</option>
-                    <option value="programada">Programadas</option>
-                    <option value="completada">Completadas</option>
-                  </select>
-                </div>
-                <div class="filtro-grupo">
-                  <label class="filtro-label">Fecha</label>
-                  <select id="filtro-fecha-tareas" class="filtro-select" onchange="aplicarFiltros()">
-                    <option value="">Todas</option>
-                    <option value="hoy">Hoy</option>
-                    <option value="pasadas">Pasadas</option>
-                    <option value="proximas">Próximas</option>
-                    <option value="sin-fecha">Sin fecha</option>
-                  </select>
-                </div>
-                <div class="filtro-grupo">
-                  <label class="filtro-label">Persona</label>
-                  <select id="filtro-persona-tareas" class="filtro-select" onchange="aplicarFiltros()">
-                    <option value="">Todas</option>
-                  </select>
-                </div>
-                <div class="filtro-grupo">
-                  <label class="filtro-label">Etiqueta</label>
-                  <select id="filtro-etiqueta-tareas" class="filtro-select" onchange="aplicarFiltros()">
-                    <option value="">Todas</option>
-                  </select>
-                </div>
-                <div class="filtro-grupo">
-                  <button class="btn-limpiar-filtros" onclick="limpiarFiltros('tareas')">Limpiar</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div id="lista-metodo"></div>
-          <button class="boton-agregar tooltip" onclick="nuevaTarea()" data-tooltip="Crear nueva tarea">➕ Añadir
-            tarea</button>
-        </section>
+        <!-- La Lista para hacer ahora se maneja dinámicamente a través de las listas personalizadas -->
       </div>
     </div>
 
@@ -611,8 +551,18 @@
           </div>
           <div class="form-group">
             <label>API Key (anon/public):</label>
-            <input type="password" id="supabase-key" class="form-control"
-              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+            <div style="position: relative;">
+              <input type="password" id="supabase-key" class="form-control"
+                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                style="padding-right: 50px;">
+              <button type="button" id="toggle-supabase-key" onclick="toggleSupabaseKeyVisibility()"
+                style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+                       background: none; border: none; font-size: 16px; cursor: pointer;
+                       color: #666; padding: 0; width: 30px; height: 30px;
+                       display: flex; align-items: center; justify-content: center;">
+                👁️
+              </button>
+            </div>
             <small style="color: #666;">Esta clave es segura de usar en el cliente.</small>
           </div>
 
@@ -652,7 +602,7 @@
               <div>
                 <label style="color:rgba(255,255,255,0.9);font-weight:500;margin-bottom:5px;display:block;">Tema de
                   color:</label>
-                <select id="config-tema-select"
+                <select id="config-tema-select" onchange="guardarConfigVisualPanel()"
                   style="width:100%;padding:8px 12px;border:none;border-radius:6px;background:rgba(255,255,255,0.95);color:#333;">
                   <option value="verde">🌿 Verde suave</option>
                   <option value="azul">💙 Azul suave</option>
@@ -726,7 +676,7 @@
                 <button type="button" onclick="insertarIcono('🏆')" class="btn-icono" title="Trofeo">🏆</button>
               </div>
 
-              <input type="text" id="config-titulo-input" placeholder="🧠 Agenda de Pablo 😊"
+              <input type="text" id="config-titulo-input" placeholder="🧠 Agenda de Pablo 😊" onchange="guardarConfigVisualPanel()"
                 style="width:100%;padding:8px 12px;border:none;border-radius:6px;background:rgba(255,255,255,0.95);color:#333;">
             </div>
 
