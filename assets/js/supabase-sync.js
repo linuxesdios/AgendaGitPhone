@@ -423,41 +423,40 @@ async function supabasePull() {
       window.sincronizarEstructurasEtiquetas();
     }
 
-    // ✅ FORZAR RENDERIZADO después de que los datos estén cargados
-    setTimeout(() => {
-      console.log('🎨 Forzando renderizado DESPUÉS del pull...');
+    // ✅ APLICAR CONFIGURACIÓN VISUAL INMEDIATAMENTE (sin setTimeout)
+    console.log('🎨 Aplicando configuración visual INMEDIATAMENTE después del pull...');
 
-      // Recargar datos en la interfaz
-      if (typeof window.renderizarPanelCitas === 'function') {
-        window.renderizarPanelCitas();
-      }
-      if (typeof window.renderizarTareas === 'function') {
-        window.renderizarTareas();
-      }
-      if (typeof window.renderizarCriticas === 'function') {
-        window.renderizarCriticas();
-      }
-      if (typeof window.renderizar === 'function') {
-        window.renderizar();
-      }
+    // Aplicar configuración visual cargada PRIMERO
+    if (typeof window.cargarConfigVisual === 'function') {
+      console.log('🎨 Llamando a cargarConfigVisual()...');
+      window.cargarConfigVisual();
+    }
 
-      // Aplicar configuración visual cargada
-      if (typeof window.cargarConfigVisual === 'function') {
-        console.log('🎨 Aplicando configuración visual desde Supabase...');
-        window.cargarConfigVisual();
-      }
+    if (typeof window.aplicarVisibilidadSecciones === 'function') {
+      window.aplicarVisibilidadSecciones();
+    }
 
-      if (typeof window.aplicarVisibilidadSecciones === 'function') {
-        window.aplicarVisibilidadSecciones();
-      }
+    // Luego renderizar contenido
+    if (typeof window.renderizarPanelCitas === 'function') {
+      window.renderizarPanelCitas();
+    }
+    if (typeof window.renderizarTareas === 'function') {
+      window.renderizarTareas();
+    }
+    if (typeof window.renderizarCriticas === 'function') {
+      window.renderizarCriticas();
+    }
+    if (typeof window.renderizar === 'function') {
+      window.renderizar();
+    }
 
-      // Actualizar log si está visible
-      if (typeof window.cargarLog === 'function') {
-        window.cargarLog();
-      }
+    // Actualizar log si está visible
+    if (typeof window.cargarLog === 'function') {
+      window.cargarLog();
+    }
 
-      console.log('✅ Renderizado forzado completado');
-    }, 100);
+    console.log('✅ Configuración y renderizado completados');
+
 
     return true;
   } catch (error) {
@@ -888,24 +887,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       await supabasePull();
       console.log('✅ Datos cargados automáticamente desde Supabase');
 
-      // 🎨 APLICAR CONFIGURACIÓN VISUAL después de cargar datos
-      if (typeof window.cargarConfigVisual === 'function') {
-        console.log('🎨 Aplicando configuración visual después de cargar datos...');
-        window.cargarConfigVisual();
-        console.log('✅ Configuración visual aplicada correctamente');
-      }
+      // 🎨 DISPARAR EVENTO para que app.js aplique la configuración
+      console.log('🎨 Disparando evento de configuración cargada...');
+      const evento = new CustomEvent('supabaseConfigLoaded', {
+        detail: {
+          config: window.configVisual,
+          timestamp: Date.now()
+        }
+      });
+      document.dispatchEvent(evento);
+      console.log('✅ Evento supabaseConfigLoaded disparado');
     } catch (error) {
       console.warn('⚠️ Error al cargar datos:', error);
     }
   } else {
-    // 🎨 FALLBACK: Si no hay Supabase configurado, cargar configuración local
-    console.log('📄 Supabase no configurado, cargando configuración visual con valores por defecto');
-    if (typeof window.cargarConfigVisual === 'function') {
-      // Pequeña espera para asegurar que el DOM esté listo
-      setTimeout(() => {
-        window.cargarConfigVisual();
-      }, 100);
-    }
+    // 🎨 FALLBACK: Si no hay Supabase configurado, disparar evento con valores por defecto
+    console.log('📄 Supabase no configurado, disparando evento con configuración por defecto');
+    setTimeout(() => {
+      const evento = new CustomEvent('supabaseConfigLoaded', {
+        detail: {
+          config: window.configVisual || { tema: 'verde' },
+          timestamp: Date.now(),
+          fallback: true
+        }
+      });
+      document.dispatchEvent(evento);
+      console.log('✅ Evento fallback supabaseConfigLoaded disparado');
+    }, 100);
   }
 
   // Esperar un poco para que se cargue la interfaz

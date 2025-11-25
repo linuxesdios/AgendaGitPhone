@@ -75,8 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Aplicar clases adaptativas
   document.body.classList.add(isMobile() ? 'mobile-device' : 'desktop-device');
 
-  // NOTA: cargarConfigVisual() ahora se llama desde supabase-sync.js DESPUÉS de cargar los datos
-
   // Cargar configuración de opciones
   cargarConfigOpciones();
 
@@ -332,16 +330,51 @@ function cargarConfigOpciones() {
 }
 
 function cargarConfigVisual() {
-  console.log('🚀 CARGANDO configuración visual desde Supabase');
+  console.log('🚀 ========== CARGANDO CONFIGURACIÓN VISUAL ==========');
+  console.log('🚀 window.configVisual existe:', !!window.configVisual);
+  console.log('🚀 Stack trace:', new Error().stack.split('\n')[1]);
+
   try {
     const config = window.configVisual || {};
     console.log('📋 Configuración visual cargada:', config);
+    console.log('📋 Tema específico:', config.tema);
 
     // APLICAR TEMA INMEDIATAMENTE
     const tema = config.tema || 'verde';
-    console.log(`🎨 Aplicando tema: ${tema}`);
+    console.log(`🎨 ========== APLICANDO TEMA ==========`);
+    console.log(`🎨 Tema en config:`, tema);
+    console.log(`🎨 Config completa:`, config);
+    console.log(`🎨 DOM estado:`, {
+      readyState: document.readyState,
+      bodyExists: !!document.body,
+      bodyClassName: document.body?.className || 'SIN BODY'
+    });
+    console.log(`🎨 Body classes ANTES:`, document.body.className);
+
+    // Verificar que el body existe
+    if (!document.body) {
+      console.error('❌ document.body no existe! Esperando...');
+      setTimeout(() => cargarConfigVisual(), 100);
+      return;
+    }
+
+    // Limpiar clases de tema existentes
     document.body.className = document.body.className.replace(/tema-\w+/g, '').trim();
+    console.log(`🎨 Body classes DESPUÉS de limpiar:`, document.body.className);
+
+    // Agregar nueva clase de tema
     document.body.classList.add('tema-' + tema);
+    console.log(`🎨 Body classes FINAL:`, document.body.className);
+    console.log(`🎨 Tema aplicado: tema-${tema}`);
+    console.log(`🎨 =====================================`);
+
+    // APLICAR TÍTULO PERSONALIZADO INMEDIATAMENTE
+    const tituloPersonalizado = config.titulo || '🧠 Agenda de Pablo 😊';
+    const tituloElement = document.getElementById('titulo-agenda');
+    if (tituloElement) {
+      tituloElement.textContent = tituloPersonalizado;
+      console.log(`📝 Título aplicado: ${tituloPersonalizado}`);
+    }
 
     // Aplicar visibilidad de secciones
     if (typeof aplicarVisibilidadSecciones === 'function') {
@@ -352,6 +385,18 @@ function cargarConfigVisual() {
     aplicarConfiguracionColumnas();
     verificarModoOscuroAutomatico();
 
+    // Regenerar y renderizar listas personalizadas (funcionalidad de la función duplicada)
+    if (!config.listasPersonalizadas) {
+      config.listasPersonalizadas = [];
+      window.configVisual.listasPersonalizadas = [];
+    }
+    if (typeof regenerarSeccionesListasPersonalizadas === 'function') {
+      regenerarSeccionesListasPersonalizadas();
+    }
+    if (typeof renderizarTodasLasListasPersonalizadas === 'function') {
+      renderizarTodasLasListasPersonalizadas();
+    }
+
     // Cargar valores en el formulario de configuración
     cargarConfigVisualEnFormulario();
 
@@ -360,6 +405,17 @@ function cargarConfigVisual() {
     console.error('❌ Error al cargar configuración visual desde Supabase:', error);
   }
 }
+
+// ========== ESCUCHAR EVENTO DE CONFIGURACIÓN CARGADA ==========
+document.addEventListener('supabaseConfigLoaded', (evento) => {
+  console.log('🎧 Evento supabaseConfigLoaded recibido:', evento.detail);
+
+  const config = evento.detail.config || {};
+  console.log('🎨 Configuración recibida en evento:', config);
+
+  // Aplicar configuración visual inmediatamente
+  cargarConfigVisual();
+});
 
 // ========== NOTIFICACIONES ==========
 function solicitarPermisoNotificaciones() {
@@ -681,7 +737,10 @@ function insertarIcono(icono) {
 function verificarModoOscuroAutomatico() {
   const config = window.configVisual || {};
 
-  if (!config.modoOscuroAuto) return;
+  if (!config.modoOscuroAuto) {
+    console.log('🌙 Modo oscuro automático desactivado en config');
+    return;
+  }
 
   const ahora = new Date();
   const horaActual = ahora.getHours() * 60 + ahora.getMinutes(); // Minutos desde medianoche
@@ -704,19 +763,33 @@ function verificarModoOscuroAutomatico() {
     debeSerOscuro = horaActual >= inicioMinutos && horaActual <= finMinutos;
   }
 
-  const temaActual = config.tema || 'verde';
+  console.log(`🌙 Verificación modo oscuro automático:`, {
+    horaActual: `${Math.floor(horaActual / 60)}:${(horaActual % 60).toString().padStart(2, '0')}`,
+    horaInicio,
+    horaFin,
+    debeSerOscuro
+  });
 
-  if (debeSerOscuro && temaActual !== 'oscuro') {
-    // Cambiar a modo oscuro automáticamente
+  // Guardar tema original si no existe
+  if (!config.temaOriginal) {
+    config.temaOriginal = config.tema || 'verde';
+    window.configVisual.temaOriginal = config.temaOriginal;
+  }
+
+  const claseActual = document.body.className;
+  const tieneOscuro = claseActual.includes('tema-oscuro');
+
+  if (debeSerOscuro && !tieneOscuro) {
+    // Cambiar a modo oscuro automáticamente (sobrescribir cualquier tema)
     document.body.className = document.body.className.replace(/tema-\w+/g, '').trim();
     document.body.classList.add('tema-oscuro');
-    console.log('🌙 Modo oscuro automático activado');
-  } else if (!debeSerOscuro && temaActual === 'oscuro') {
-    // Volver al tema original (solo si fue cambiado automáticamente)
-    const temaOriginal = config.temaOriginal || 'verde';
+    console.log(`🌙 Modo oscuro automático ACTIVADO (tema original: ${config.temaOriginal})`);
+  } else if (!debeSerOscuro && tieneOscuro) {
+    // Volver al tema original guardado
+    const temaOriginal = config.temaOriginal || config.tema || 'verde';
     document.body.className = document.body.className.replace(/tema-\w+/g, '').trim();
     document.body.classList.add('tema-' + temaOriginal);
-    console.log('☀️ Modo oscuro automático desactivado');
+    console.log(`☀️ Modo oscuro automático DESACTIVADO - Restaurado tema: ${temaOriginal}`);
   }
 }
 
@@ -862,8 +935,12 @@ function nuevoPomodoro() {
 
 // ========== CONFIGURACIÓN VISUAL ==========
 async function guardarConfigVisualPanel() {
+  const temaSeleccionado = document.getElementById('config-tema-select')?.value || 'verde';
+  console.log(`💾 ========== GUARDANDO TEMA ==========`);
+  console.log(`💾 Tema seleccionado en UI:`, temaSeleccionado);
+
   const config = {
-    tema: document.getElementById('config-tema-select')?.value || 'verde',
+    tema: temaSeleccionado,
     titulo: document.getElementById('config-titulo-input')?.value || '🧠 Agenda de Pablo 😊',
     modoVisualizacion: document.getElementById('config-modo-visualizacion')?.value || 'estado',
     popupCelebracion: document.getElementById('config-popup-celebracion')?.checked !== false,
@@ -894,8 +971,15 @@ async function guardarConfigVisualPanel() {
     if (guardado) {
       // APLICAR tema INMEDIATAMENTE
       const tema = config.tema || 'verde';
+      console.log(`💾 Aplicando tema después de guardar: ${tema}`);
+      console.log(`💾 Body classes antes de aplicar:`, document.body.className);
+
       document.body.className = document.body.className.replace(/tema-\w+/g, '').trim();
       document.body.classList.add('tema-' + tema);
+
+      console.log(`💾 Body classes después de aplicar:`, document.body.className);
+      console.log(`💾 Tema aplicado exitosamente: tema-${tema}`);
+      console.log(`💾 ===================================`);
 
       // APLICAR configuración
       cargarConfigVisual();
@@ -3168,28 +3252,8 @@ function ejecutarEliminacionSubtareaListaPersonalizada(listaId, tareaIndex, subI
   mostrarAlerta('🗑️ Subtarea eliminada', 'info');
 }
 
-function cargarConfigVisual() {
-  const configVisual = window.configVisual || {};
-
-  // Listas Personalizadas - NO crear lista por defecto
-  // La lista "Por hacer" original (appState.agenda.tareas) debe mantenerse como la principal
-  // Las listas personalizadas son adicionales, no reemplazan la lista nativa
-
-  if (!configVisual.listasPersonalizadas) {
-    configVisual.listasPersonalizadas = [];
-  }
-
-  // Actualizar configuración global
-  window.configVisual = configVisual;
-
-  // Regenerar y renderizar listas personalizadas
-  if (typeof regenerarSeccionesListasPersonalizadas === 'function') {
-    regenerarSeccionesListasPersonalizadas();
-  }
-  if (typeof renderizarTodasLasListasPersonalizadas === 'function') {
-    renderizarTodasLasListasPersonalizadas();
-  }
-}
+// FUNCIÓN ELIMINADA: cargarConfigVisual() duplicada estaba aquí
+// La función correcta está en la línea 332 con aplicación de tema y título
 
 function agregarTareaAListaPersonalizada(listaId, texto, fecha = null, etiqueta = null) {
   const listasPersonalizadas = obtenerListasPersonalizadas();
