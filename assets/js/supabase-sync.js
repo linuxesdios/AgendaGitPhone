@@ -466,13 +466,25 @@ async function supabasePull() {
 }
 
 // Función para guardar datos en la nube
-async function supabasePush(isAutomatic = false) {
+async function supabasePush(isAutomatic = false, skipPullBefore = false) {
   if (window.currentSyncMethod !== 'supabase') return;
 
   const connected = await initSupabase();
   if (!connected) {
     console.warn('⚠️ Supabase no está configurado');
     return;
+  }
+
+  // ⚠️ IMPORTANTE: Siempre hacer Pull antes de Push (salvo que se indique explícitamente)
+  if (!skipPullBefore) {
+    console.log('📥 Pull automático antes de guardar...');
+    try {
+      await supabasePull();
+      console.log('✅ Pull completado, procediendo a guardar');
+    } catch (error) {
+      console.warn('⚠️ Error en Pull antes de Push:', error);
+      // Continuar con Push de todas formas
+    }
   }
 
   try {
@@ -913,6 +925,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }, 500);
 
   console.log('⚡ Sistema de sincronización inicializado');
+
+  // ========== SINCRONIZACIÓN PERIÓDICA CADA MINUTO ==========
+  iniciarSincronizacionPeriodica();
 });
 
 // ========== PERSISTENCIA ADICIONAL ==========
@@ -1691,3 +1706,109 @@ window.restaurarBackupDesdeSupabase = restaurarBackupDesdeSupabase;
 window.eliminarBackup = eliminarBackup;
 window.limpiarBackupsAntiguos = limpiarBackupsAntiguos;
 window.crearTablaBackups = crearTablaBackups;
+
+// ========== SINCRONIZACIÓN PERIÓDICA ==========
+let intervaloSincronizacion = null;
+let ultimoTimestampVerificado = null;
+
+// Iniciar sincronización periódica (cada minuto)
+function iniciarSincronizacionPeriodica() {
+  // Limpiar intervalo previo si existe
+  if (intervaloSincronizacion) {
+    clearInterval(intervaloSincronizacion);
+  }
+
+  console.log('🔄 Iniciando sincronización periódica (cada 60 segundos)...');
+
+  // Verificar cambios cada minuto
+  intervaloSincronizacion = window.intervaloSincronizacion = setInterval(async () => {
+    if (window.currentSyncMethod !== 'supabase') {
+      console.log('⏭️ Sincronización periódica omitida: método no es Supabase');
+      return;
+    }
+
+    const connected = await initSupabase();
+    if (!connected) {
+      console.log('⏭️ Sincronización periódica omitida: Supabase no conectado');
+      return;
+    }
+
+    try {
+      console.log('🔍 Verificando cambios en Supabase...');
+
+      // Verificar si hay cambios comparando last_updated
+      const hayCambios = await verificarCambiosEnSupabase();
+
+      if (hayCambios) {
+        console.log('📥 Cambios detectados, descargando datos...');
+        await supabasePull();
+        console.log('✅ Sincronización periódica completada');
+      } else {
+        console.log('✅ No hay cambios nuevos');
+      }
+    } catch (error) {
+      console.warn('⚠️ Error en sincronización periódica:', error);
+    }
+  }, 60000); // 60 segundos = 1 minuto
+
+  console.log('✅ Sincronización periódica activada');
+}
+
+// Verificar si hay cambios en Supabase
+async function verificarCambiosEnSupabase() {
+  try {
+    // Obtener timestamp más reciente de cualquier registro
+    const { data, error } = await window.supabaseClient
+      .from('agenda_data')
+      .select('id, last_updated')
+      .order('last_updated', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.warn('⚠️ Error al verificar cambios:', error);
+      return true; // Asumir que hay cambios si hay error
+    }
+
+    if (!data || data.length === 0) {
+      console.log('ℹ️ No hay datos en Supabase');
+      return false;
+    }
+
+    const ultimoTimestampRemoto = data[0].last_updated;
+
+    // Si es la primera verificación, guardar timestamp y no sincronizar
+    if (!ultimoTimestampVerificado) {
+      ultimoTimestampVerificado = ultimoTimestampRemoto;
+      console.log('📝 Timestamp inicial guardado:', ultimoTimestampRemoto);
+      return false;
+    }
+
+    // Comparar timestamps
+    if (ultimoTimestampRemoto !== ultimoTimestampVerificado) {
+      console.log('🔄 Cambio detectado:', {
+        anterior: ultimoTimestampVerificado,
+        nuevo: ultimoTimestampRemoto
+      });
+      ultimoTimestampVerificado = ultimoTimestampRemoto;
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('❌ Error verificando cambios:', error);
+    return true; // Asumir que hay cambios por seguridad
+  }
+}
+
+// Detener sincronización periódica
+function detenerSincronizacionPeriodica() {
+  if (intervaloSincronizacion) {
+    clearInterval(intervaloSincronizacion);
+    intervaloSincronizacion = null;
+    console.log('🛑 Sincronización periódica detenida');
+  }
+}
+
+window.iniciarSincronizacionPeriodica = iniciarSincronizacionPeriodica;
+window.detenerSincronizacionPeriodica = detenerSincronizacionPeriodica;
+window.verificarCambiosEnSupabase = verificarCambiosEnSupabase;

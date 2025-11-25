@@ -1334,7 +1334,13 @@ function cargarConfigFuncionalesEnFormulario() {
   const config = window.configFuncionales || {};
 
   // 🔍 LOG DE DEPURACIÓN: Ver qué se está cargando
-  console.log('🔍 DEBUG - Config funcional cargada desde Supabase:', config);
+  console.log('📥 CARGANDO Config Funcional desde Supabase:', config);
+  console.log('📋 Detalles:', {
+    fechaObligatoria: config.fechaObligatoria,
+    confirmacionBorrar: config.confirmacionBorrar,
+    autoMayuscula: config.autoMayuscula,
+    popupDiario: config.popupDiario
+  });
 
   const fechaObligatoria = document.getElementById('config-fecha-obligatoria');
   if (fechaObligatoria) fechaObligatoria.checked = config.fechaObligatoria === true;
@@ -1359,6 +1365,8 @@ function cargarConfigFuncionalesEnFormulario() {
 
   const notif30Min = document.getElementById('config-notif-30-min');
   if (notif30Min) notif30Min.checked = config.notif30Min === true;
+
+  console.log('✅ Config funcional cargada en formulario');
 }
 
 async function guardarConfigFuncionales() {
@@ -1383,16 +1391,28 @@ async function guardarConfigFuncionales() {
   };
 
   // 🔍 LOG DE DEPURACIÓN: Ver qué se está guardando
-  console.log('🔍 DEBUG - Config funcional que se va a guardar:', config);
+  console.log('💾 GUARDANDO Config Funcional:', config);
+  console.log('📋 Detalles:', {
+    fechaObligatoria: config.fechaObligatoria,
+    confirmacionBorrar: config.confirmacionBorrar,
+    autoMayuscula: config.autoMayuscula,
+    popupDiario: config.popupDiario
+  });
 
   // Guardar DIRECTAMENTE en variables globales
   window.configFuncionales = config;
 
-  // Guardar en Supabase
+  // ⚠️ IMPORTANTE: Guardar en Supabase SIN hacer Pull antes
+  // Esto evita que se sobrescriban los cambios del usuario
   if (typeof supabasePush === 'function') {
-    const guardado = await supabasePush();
+    console.log('☁️ Guardando en Supabase (skipPullBefore = true)...');
+    const guardado = await supabasePush(false, true); // skipPullBefore = true
     if (guardado) {
+      console.log('✅ Configuración funcional guardada exitosamente');
       mostrarAlerta('✅ Configuración funcional guardada en Supabase', 'success');
+    } else {
+      console.warn('⚠️ Error al guardar en Supabase');
+      mostrarAlerta('⚠️ Error al guardar en Supabase', 'warning');
     }
   } else {
     mostrarAlerta('⚠️ No se pudo sincronizar con Supabase', 'warning');
