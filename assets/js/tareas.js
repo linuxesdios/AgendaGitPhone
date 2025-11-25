@@ -223,20 +223,12 @@ function renderizarCriticas() {
 }
 
 function renderizarTareas() {
-  console.log('🔄 EJECUTANDO renderizarTareas()');
-  const lista = document.getElementById('lista-tareas');
-  console.log('📍 Elemento lista-tareas encontrado:', !!lista);
-
-  if (!lista) {
-    console.log('❌ No se encontró el elemento lista-tareas');
-    return;
-  }
+  const lista = document.getElementById('lista-metodo');
+  if (!lista) return;
 
   lista.innerHTML = '';
 
-  console.log('📊 Tareas en appState:', appState.agenda?.tareas?.length || 0);
   if (!appState.agenda.tareas || appState.agenda.tareas.length === 0) {
-    console.log('⚠️ No hay tareas para mostrar');
     lista.innerHTML = '<div style="color:#777;padding:10px;text-align:center;">No hay tareas</div>';
     return;
   }
@@ -538,14 +530,10 @@ function cambiarEstadoTarea(index) {
 
 // ========== MODALES ==========
 function abrirModal(id) {
-  const modal = document.getElementById(id);
-  if (!modal) {
-    console.warn(`Modal con ID '${id}' no encontrado`);
-    return;
-  }
-  modal.style.display = 'block';
+  document.getElementById(id).style.display = 'block';
   // Poner foco en el primer input del modal
   setTimeout(() => {
+    const modal = document.getElementById(id);
     const firstInput = modal.querySelector('input[type="text"], textarea');
     if (firstInput) {
       firstInput.focus();
@@ -629,7 +617,6 @@ async function agregarTareaCritica() {
       fecha_creacion: new Date().toISOString()
     };
     appState.agenda.tareas_criticas.push(nuevaTarea);
-    console.log('✅ Tarea crítica agregada al array local:', appState.agenda.tareas_criticas.length);
     registrarAccion('Crear tarea crítica', `"${titulo}" ${etiqueta ? `[${etiqueta}]` : ''} ${fecha ? `(vence: ${fecha})` : ''}`.trim());
   }
 
@@ -708,8 +695,8 @@ async function agregarTarea() {
         appState.ui.tareaEditando = null;
 
         // Guardar configuración actualizada
-        if (typeof guardarConfigEnSupabase === 'function') {
-          guardarConfigEnSupabase();
+        if (typeof supabasePush === 'function') {
+          supabasePush();
         }
 
         // Re-renderizar
@@ -759,7 +746,7 @@ async function agregarTarea() {
       fecha_creacion: new Date().toISOString()
     };
     appState.agenda.tareas.push(nuevaTarea);
-    registrarAccion('Crear tarea', `"${texto}" ${etiqueta ? `[${etiqueta}]` : ''} ${fecha ? `(vence: ${fecha})` : ''}`.trim());
+    registrarAccion('Crear tarea', `"${texto}" ${etiqueta ? `[${etiqueta}]` : ''} ${fechaFin ? `(vence: ${fechaFin})` : ''}`.trim());
   }
 
   cerrarModal('modal-tarea');
@@ -811,8 +798,9 @@ function guardarMigracion() {
       }
       if (!window.personasAsignadas.includes(persona)) {
         window.personasAsignadas.push(persona);
-        if (typeof guardarPersonasEnSupabase === 'function') {
-          guardarPersonasEnSupabase();
+        // Guardar DIRECTAMENTE en Supabase
+        if (typeof supabasePush === 'function') {
+          supabasePush();
         }
         registrarAccion('Añadir persona (desde tarea)', persona);
       }
@@ -847,8 +835,8 @@ function guardarMigracion() {
         if (typeof renderizarListaPersonalizada === 'function') {
           renderizarListaPersonalizada(listaId);
         }
-        if (typeof guardarConfigEnSupabase === 'function') {
-          guardarConfigEnSupabase();
+        if (typeof supabasePush === 'function') {
+          supabasePush();
         }
 
         if (persona) {
@@ -905,8 +893,8 @@ function guardarMigracion() {
       tarea.estado = persona ? 'migrada' : (fecha ? 'programada' : 'pendiente');
 
       window.configVisual = { ...configVisual, listasPersonalizadas };
-      if (typeof guardarConfigEnSupabase === 'function') {
-        guardarConfigEnSupabase();
+      if (typeof supabasePush === 'function') {
+        supabasePush();
       }
 
       console.log('✅ Tarea de lista personalizada migrada:', tarea);
@@ -1926,4 +1914,3 @@ window.manejarSeleccionPersona = manejarSeleccionPersona;
 window.cargarPersonasEnSelect = cargarPersonasEnSelect;
 window.aplicarColorVisualizacion = aplicarColorVisualizacion;
 window.mostrarPopupCelebracion = mostrarPopupCelebracion;
-

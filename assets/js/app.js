@@ -1,4 +1,4 @@
-﻿// ========== FUNCIONES HELPER ==========
+// ========== FUNCIONES HELPER ==========
 function obtenerListasPersonalizadas() {
   // TEMPORALMENTE: usar estructura antigua hasta completar migración
   const listas = window.configVisual?.listasPersonalizadas || [];
@@ -49,10 +49,8 @@ const appState = {
   }
 };
 
-// Variables globales para renderizado
-let renderizarListasTimeout = null;
-
-// ========== CONFIGURACIÓN ==========
+// ========== CONFIGURACIÓN EXTENDSCLASS ==========
+// Compatibilidad con Supabase
 function getExtendsClassConfig() {
   return { configured: true };
 }
@@ -101,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Verificar modo oscuro automático cada minuto
   setInterval(verificarModoOscuroAutomatico, 60000);
 
-  // La sincronización se inicializa automáticamente en supabase-sync.js
+  // Supabase se inicializa automáticamente en supabase-sync.js
 
   // Inicialización del calendario integrado si es necesario
   setTimeout(() => {
@@ -145,12 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Configurar auto-capitalización
   setupAutoCapitalize();
 
-  // Configurar event handlers para selectores de modal de configuración
-  setTimeout(() => {
-    setupEmojiSelectors();
-    setupColorSelectors();
-  }, 500);
-
   // Configurar header colapsable en móvil
   if (isMobile()) {
     const headerCenter = document.querySelector('.header-center');
@@ -172,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
     headerTimer = setTimeout(collapseHeader, 5000);
   }
 
-  // La sincronización en la nube se maneja automáticamente
+  // Supabase maneja la sincronización automática
 });
 
 function actualizarFecha() {
@@ -290,94 +282,19 @@ function setupAutoCapitalize() {
   });
 }
 
-// ========== SETUP EMOJI SELECTORS ==========
-function setupEmojiSelectors() {
-  console.log('🎭 Configurando selectores de emoji...');
-
-  // Event delegation para botones de emoji en etiquetas
-  document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('emoji-option')) {
-      const emoji = e.target.getAttribute('data-emoji');
-      const hiddenInput = document.getElementById('nueva-etiqueta-simbolo');
-
-      if (hiddenInput) {
-        hiddenInput.value = emoji;
-        console.log('✅ Emoji seleccionado para etiqueta:', emoji);
-
-        // Visual feedback - remover selección previa
-        document.querySelectorAll('.emoji-option').forEach(btn => {
-          btn.style.borderColor = '#ddd';
-          btn.style.transform = 'scale(1)';
-        });
-
-        // Aplicar visual feedback al seleccionado
-        e.target.style.borderColor = '#4ecdc4';
-        e.target.style.transform = 'scale(1.2)';
-      }
-    }
-  });
-
-  console.log('✅ Selectores de emoji configurados');
-}
-
-// ========== SETUP COLOR SELECTORS ==========
-function setupColorSelectors() {
-  console.log('🎨 Configurando selectores de color...');
-
-  // Event delegation para botones de color en etiquetas
-  document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('color-etiqueta-option')) {
-      const color = e.target.getAttribute('data-color');
-      const hiddenInput = document.getElementById('nueva-etiqueta-color');
-
-      if (hiddenInput) {
-        hiddenInput.value = color;
-        console.log('✅ Color seleccionado para etiqueta:', color);
-
-        // Visual feedback - remover selección previa
-        document.querySelectorAll('.color-etiqueta-option').forEach(btn => {
-          btn.style.border = '2px solid transparent';
-          btn.style.transform = 'scale(1)';
-        });
-
-        // Aplicar visual feedback al seleccionado
-        e.target.style.border = `3px solid ${color}`;
-        e.target.style.transform = 'scale(1.2)';
-        e.target.style.boxShadow = `0 0 10px ${color}`;
-      }
-    }
-
-    // Event delegation para botones de color en listas personalizadas
-    if (e.target.classList.contains('color-option')) {
-      const color = e.target.getAttribute('data-color');
-      const hiddenInput = document.getElementById('nueva-lista-color');
-
-      if (hiddenInput) {
-        hiddenInput.value = color;
-        console.log('✅ Color seleccionado para lista:', color);
-
-        // Visual feedback - remover selección previa
-        document.querySelectorAll('.color-option').forEach(btn => {
-          btn.style.border = '3px solid transparent';
-          btn.style.transform = 'scale(1)';
-        });
-
-        // Aplicar visual feedback al seleccionado
-        e.target.style.border = `3px solid ${color}`;
-        e.target.style.transform = 'scale(1.2)';
-        e.target.style.boxShadow = `0 0 10px ${color}`;
-      }
-    }
-  });
-
-  console.log('✅ Selectores de color configurados');
-}
-
-
 // ========== AUTO-SAVE ==========
 function scheduleAutoSave() {
-  // La sincronización se maneja automáticamente con Supabase
-  console.log('Auto-guardado programado');
+  // Auto-guardado usando Supabase cada 5 segundos después de cambios
+  if (appState.sync.autoSaveTimer) clearTimeout(appState.sync.autoSaveTimer);
+  appState.sync.autoSaveTimer = setTimeout(() => {
+    // Utilizar supabasePush para guardar todos los datos
+    if (window.supabaseClient) {
+      console.log('🔄 Auto-guardado via Supabase (push)');
+      supabasePush();
+    } else {
+      console.warn('⚠️ Supabase no está inicializado, no se puede auto-guardar');
+    }
+  }, 5000);
 }
 
 // Cerrar modal al hacer clic fuera
@@ -388,7 +305,7 @@ window.onclick = (e) => {
 };
 
 function cargarConfigOpciones() {
-  // Cargar configuración desde variables globales
+  // Cargar configuración de opciones desde Supabase (si está disponible)
   const config = window.configOpciones || {};
 
   // Aplicar configuración por defecto si no existe
@@ -399,165 +316,32 @@ function cargarConfigOpciones() {
       mostrarTodo: false,
       botonesBorrar: false
     };
-
-    // Guardar configuración por defecto en la nube
-    if (typeof guardarConfigEnSupabase === 'function') {
-      guardarConfigEnSupabase();
+    // Guardar configuración en Supabase (si está disponible)
+    if (window.supabaseClient) {
+      if (typeof guardarConfigEnSupabase === 'function') {
+        guardarConfigEnSupabase();
+      }
     }
   }
-
   // Aplicar configuración de columnas
   aplicarConfiguracionColumnas();
 }
 
 function cargarConfigVisual() {
-  console.log('🚀 EJECUTANDO cargarConfigVisual()');
-
+  console.log('🚀 CARGANDO configuración visual desde Supabase');
   try {
-    // Cargar configuración desde variables globales
-    const config = window.configVisual || {};
-    console.log('📊 Cargando configuración visual:', config);
-
-    // CREAR LISTA POR HACER COMO LISTA PERSONALIZADA PREDETERMINADA
-    asegurarListaPorHacerComoPersonalizada();
-
-    const tema = config.tema || 'verde';
-    console.log('🎨 Aplicando tema:', tema);
-    console.log('📊 Config completa:', config);
-    document.body.className = document.body.className.replace(/tema-\w+/g, '').trim();
-    document.body.classList.add('tema-' + tema);
-    console.log('✅ Tema aplicado. Clases del body:', document.body.className);
-
-    // Actualizar título completo si hay configuración
-    const tituloCompleto = config.titulo || '🧠 Agenda de Pablo 😊';
-    const titulo = document.getElementById('titulo-agenda');
-    if (titulo) titulo.textContent = tituloCompleto;
-
-    // Aplicar visibilidad de secciones usando la función centralizada
+    // Utilizar la función existente que carga la configuración del formulario desde Supabase
+    cargarConfigSupabaseEnFormulario();
+    // Después de cargar los valores en los campos, aplicar la configuración a la UI
     if (typeof aplicarVisibilidadSecciones === 'function') {
       aplicarVisibilidadSecciones();
     }
-
-    // Cargar configuración de listas personalizadas
-    if (typeof cargarConfigListasPersonalizadas === 'function') {
-      cargarConfigListasPersonalizadas();
-    }
-
-    // Configurar visualización del calendario de citas
-    const calendarioCitas = config.calendarioCitas || 'boton';
-    const btnCalendario = document.getElementById('btn-calendario-citas');
-    const calendarioIntegrado = document.getElementById('calendario-citas-integrado');
-
-    console.log('📅 DEBUG - Configuración calendario:');
-    console.log('  - Modo configurado:', calendarioCitas);
-    console.log('  - Botón encontrado:', !!btnCalendario);
-    console.log('  - Div calendario encontrado:', !!calendarioIntegrado);
-    console.log('  - Config completa:', config);
-
-    if (calendarioCitas === 'integrado') {
-      console.log('🔧 ACTIVANDO MODO INTEGRADO');
-
-      // MODO INTEGRADO: Ocultar botón y mostrar calendario fijo
-      if (btnCalendario) {
-        btnCalendario.style.display = 'none';
-        console.log('  ✅ Botón ocultado');
-      } else {
-        console.log('  ❌ No se encontró el botón');
-      }
-
-      if (calendarioIntegrado) {
-        // FORZAR VISIBILIDAD COMPLETA CON !important usando CSS
-        calendarioIntegrado.style.cssText = `
-          display: block !important;
-          visibility: visible !important;
-          opacity: 1 !important;
-          height: auto !important;
-          margin-top: 15px;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          padding: 10px;
-          background: #f9f9f9;
-        `;
-        console.log('  ✅ Calendario mostrado con CSS forzado');
-
-        // Asegurar que los elementos internos también sean visibles
-        const calendarGrid = calendarioIntegrado.querySelector('#calendarGridIntegrado');
-        if (calendarGrid) {
-          calendarGrid.style.cssText = 'display: grid !important; grid-template-columns: repeat(7,1fr); gap: 2px; min-height: 200px;';
-        }
-
-        // Inicializar calendario integrado MÚLTIPLES VECES para asegurar que funcione
-        setTimeout(() => {
-          console.log('  🚀 Inicializando calendario integrado (1er intento)...');
-          if (typeof initializeCalendarioIntegrado === 'function') {
-            initializeCalendarioIntegrado();
-            console.log('  ✅ Calendario integrado inicializado (1er intento)');
-          }
-
-          // Verificar estado después de 200ms
-          setTimeout(() => {
-            const computedStyle = window.getComputedStyle(calendarioIntegrado);
-            console.log('  📊 Estado después de 1er intento:');
-            console.log('    - Display computed:', computedStyle.display);
-            console.log('    - Visibility computed:', computedStyle.visibility);
-
-            // Si sigue sin verse, forzar de nuevo
-            if (computedStyle.display === 'none') {
-              console.log('  🔄 Forzando nuevamente...');
-              calendarioIntegrado.style.cssText = `
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                height: auto !important;
-                margin-top: 15px;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                padding: 10px;
-                background: #f9f9f9;
-                position: relative !important;
-                z-index: 1 !important;
-              `;
-
-              // Intentar nuevamente la inicialización
-              if (typeof initializeCalendarioIntegrado === 'function') {
-                initializeCalendarioIntegrado();
-                console.log('  ✅ Calendario re-inicializado');
-              }
-
-              // Llamar al renderizado específico del calendario
-              if (typeof renderCalendarioIntegrado === 'function') {
-                renderCalendarioIntegrado();
-                console.log('  ✅ Calendario renderizado');
-              }
-            }
-          }, 200);
-        }, 100);
-      } else {
-        console.log('  ❌ No se encontró el div del calendario integrado');
-      }
-    } else {
-      console.log('🔧 ACTIVANDO MODO BOTÓN');
-
-      // MODO BOTÓN: Mostrar botón y ocultar calendario integrado
-      if (btnCalendario) {
-        btnCalendario.style.display = 'inline-block';
-        console.log('  ✅ Botón mostrado');
-      }
-      if (calendarioIntegrado) {
-        calendarioIntegrado.style.display = 'none';
-        console.log('  ✅ Calendario ocultado');
-      }
-    }
-
-    // Aplicar configuración de columnas
+    // Configurar columnas y modo oscuro como antes
     aplicarConfiguracionColumnas();
-
-    // Verificar modo oscuro automático
     verificarModoOscuroAutomatico();
-
-    console.log('✅ cargarConfigVisual() ejecutado correctamente');
+    console.log('✅ cargarConfigVisual completado con Supabase');
   } catch (error) {
-    console.error('❌ Error en cargarConfigVisual():', error);
+    console.error('❌ Error al cargar configuración visual desde Supabase:', error);
   }
 }
 
@@ -687,15 +471,15 @@ function asegurarListaPorHacerComoPersonalizada() {
 
   // Actualizar configuración global
   window.configVisual = {
-    ...window.configVisual,
+    ...configVisual,
     listasPersonalizadas: listasPersonalizadas
   };
 
   console.log('💾 Lista por hacer convertida a personalizada:', listaPorHacer);
 
-  // Guardar en la nube
-  if (typeof guardarConfigEnSupabase === 'function') {
-    guardarConfigEnSupabase();
+  // Guardar en Supabase
+  if (typeof supabasePush === 'function') {
+    supabasePush();
   }
 
   console.log('✅ Conversión completada exitosamente');
@@ -788,7 +572,7 @@ function cambiarModoCalendario(modo) {
     }
   }
 
-  // Guardar configuración
+  // Guardar en configuración con Supabase
   guardarConfigVisualPanel();
 }
 
@@ -808,8 +592,6 @@ window.esLargoPlazo = esLargoPlazo;
 window.autoResizeTextarea = autoResizeTextarea;
 window.autoCapitalize = autoCapitalize;
 window.setupAutoCapitalize = setupAutoCapitalize;
-window.setupEmojiSelectors = setupEmojiSelectors;
-window.setupColorSelectors = setupColorSelectors;
 window.scheduleAutoSave = scheduleAutoSave;
 window.cargarConfigOpciones = cargarConfigOpciones;
 window.cargarConfigVisual = cargarConfigVisual;
@@ -871,15 +653,14 @@ function verificarModoOscuroAutomatico() {
     debeSerOscuro = horaActual >= inicioMinutos && horaActual <= finMinutos;
   }
 
-  // Verificar tema actual del DOM, no de la configuración
-  const esOscuroActualmente = document.body.classList.contains('tema-oscuro');
+  const temaActual = config.tema || 'verde';
 
-  if (debeSerOscuro && !esOscuroActualmente) {
+  if (debeSerOscuro && temaActual !== 'oscuro') {
     // Cambiar a modo oscuro automáticamente
     document.body.className = document.body.className.replace(/tema-\w+/g, '').trim();
     document.body.classList.add('tema-oscuro');
     console.log('🌙 Modo oscuro automático activado');
-  } else if (!debeSerOscuro && esOscuroActualmente) {
+  } else if (!debeSerOscuro && temaActual === 'oscuro') {
     // Volver al tema original (solo si fue cambiado automáticamente)
     const temaOriginal = config.temaOriginal || 'verde';
     document.body.className = document.body.className.replace(/tema-\w+/g, '').trim();
@@ -1041,124 +822,46 @@ async function guardarConfigVisualPanel() {
     mostrarPomodoro: document.getElementById('config-mostrar-pomodoro')?.checked === true,
     mostrarProgreso: document.getElementById('config-mostrar-progreso')?.checked === true,
     mostrarResumen: document.getElementById('config-mostrar-resumen')?.checked === true,
-    mostrarTareaUniversal: document.getElementById('config-mostrar-tarea-universal')?.checked === true,
     modoOscuroAuto: document.getElementById('config-modo-oscuro-auto')?.checked !== false,
     horaInicioOscuro: document.getElementById('config-hora-inicio-oscuro')?.value || '20:00',
     horaFinOscuro: document.getElementById('config-hora-fin-oscuro')?.value || '07:00',
     calendarioCitas: document.getElementById('config-calendario-citas')?.value || 'boton',
-    calendarioMostrarCitas: document.getElementById('config-calendario-mostrar-citas')?.checked !== false,
-    calendarioMostrarTareas: document.getElementById('config-calendario-mostrar-tareas')?.checked !== false,
     columnas: parseInt(document.getElementById('config-columnas')?.value) || 2,
     frases: document.getElementById('config-frases-motivacionales')?.value.split('\n').filter(f => f.trim()) || [],
     listasPersonalizadas: (window.configVisual && window.configVisual.listasPersonalizadas) || []
   };
 
-  console.log('💾 Guardando configuración visual:', config);
-  console.log('🔍 GUARDADO - Valores de checkboxes que se van a guardar:', {
-    mostrarNotas: config.mostrarNotas,
-    mostrarSentimientos: config.mostrarSentimientos,
-    mostrarContrasenas: config.mostrarContrasenas,
-    mostrarPomodoro: config.mostrarPomodoro,
-    mostrarProgreso: config.mostrarProgreso,
-    mostrarResumen: config.mostrarResumen
-  });
+  console.log('💾 Guardando configuración visual en Supabase:', config);
 
-  // Guardar DIRECTAMENTE en variables globales PRIMERO (NO localStorage)
+  // Guardar DIRECTAMENTE en variables globales
   window.configVisual = config;
 
-  // APLICAR INMEDIATAMENTE los cambios visuales ANTES de verificar conexión
-  const tema = config.tema || 'verde';
-  console.log('🎨 Aplicando tema inmediatamente:', tema);
-  document.body.className = document.body.className.replace(/tema-\w+/g, '').trim();
-  document.body.classList.add('tema-' + tema);
-
-  // Aplicar visibilidad de secciones inmediatamente
-  if (typeof aplicarVisibilidadSecciones === 'function') {
-    console.log('✅ Aplicando visibilidad de secciones inmediatamente');
-    aplicarVisibilidadSecciones();
-  }
-
-  // Verificar conectividad para guardar en la nube
-  const conectado = await probarConexionSupabase();
-  if (!conectado) {
-    mostrarAlertaConectividad('🔴 No se puede guardar en la nube<br><br>⚠️ Sin conexión, pero cambios aplicados localmente', 'warning');
-    return;
-  }
-  console.log('💾 Configuración guardada en variables globales:', window.configVisual);
-  console.log('🔍 GUARDADO - Confirmación en window.configVisual:', {
-    mostrarNotas: window.configVisual.mostrarNotas,
-    mostrarSentimientos: window.configVisual.mostrarSentimientos,
-    mostrarContrasenas: window.configVisual.mostrarContrasenas,
-    mostrarPomodoro: window.configVisual.mostrarPomodoro,
-    mostrarProgreso: window.configVisual.mostrarProgreso,
-    mostrarResumen: window.configVisual.mostrarResumen
-  });
-
-  // Guardar en la nube PRIMERO
-  if (typeof guardarConfigEnSupabase === 'function') {
-    console.log('💾 Guardando en la nube...');
-    const guardado = await guardarConfigEnSupabase();
+  // Guardar en Supabase
+  if (typeof supabasePush === 'function') {
+    console.log('⚡ Guardando en Supabase...');
+    const guardado = await supabasePush();
     if (guardado) {
       // APLICAR tema INMEDIATAMENTE
       const tema = config.tema || 'verde';
-      console.log('🎨 Aplicando tema:', tema);
       document.body.className = document.body.className.replace(/tema-\w+/g, '').trim();
       document.body.classList.add('tema-' + tema);
-      console.log('✅ Clases del body:', document.body.className);
 
-      // APLICAR configuración DESPUÉS del guardado exitoso
-      console.log('✅ Guardado correcto - Aplicando configuración visual...');
+      // APLICAR configuración
       cargarConfigVisual();
-      // Aplicar configuración de columnas inmediatamente
       aplicarConfiguracionColumnas();
-      // Aplicar visibilidad de secciones inmediatamente
       if (typeof aplicarVisibilidadSecciones === 'function') {
         aplicarVisibilidadSecciones();
-
-        // Verificar modo oscuro automático inmediatamente
-        if (typeof verificarModoOscuroAutomatico === 'function') {
-          verificarModoOscuroAutomatico();
-          console.log('🌙 Verificación de modo oscuro automático aplicada');
-        }
-
-        // Actualizar calendarios con la nueva configuración
-        if (typeof renderCalendar === 'function') {
-          renderCalendar();
-        }
-        if (typeof renderCalendarioIntegrado === 'function') {
-          renderCalendarioIntegrado();
-        }
-        if (typeof renderCalendarTareas === 'function') {
-          renderCalendarTareas();
-        }
       }
-      mostrarAlerta('✅ Configuración visual guardada correctamente', 'success');
-      if (typeof registrarAccion === 'function') {
-        registrarAccion('Actualizar configuración visual', 'Cambios guardados en panel visual');
-      }
+      mostrarAlerta('✅ Configuración visual guardada en Supabase', 'success');
     } else {
-      console.warn('❌ Error guardando en la nube');
+      console.warn('❌ Error guardando en Supabase');
+      mostrarAlerta('❌ Error guardando en Supabase', 'error');
     }
   } else {
-    console.warn('⚠️ guardarConfigEnSupabase no disponible');
-    // Si no hay sincronización, aplicar directamente
+    console.warn('⚠️ supabasePush no disponible');
     cargarConfigVisual();
-    // Aplicar visibilidad de secciones inmediatamente
-    if (typeof aplicarVisibilidadSecciones === 'function') {
-      aplicarVisibilidadSecciones();
-    }
-
-    // Actualizar calendarios con la nueva configuración
-    if (typeof renderCalendar === 'function') {
-      renderCalendar();
-    }
-    if (typeof renderCalendarioIntegrado === 'function') {
-      renderCalendarioIntegrado();
-    }
-    if (typeof renderCalendarTareas === 'function') {
-      renderCalendarTareas();
-    }
-    mostrarAlerta('⚠️ No se pudo sincronizar con la nube', 'warning');
+    aplicarConfiguracionColumnas();
+    mostrarAlerta('⚠️ No se pudo sincronizar con Supabase', 'warning');
   }
 }
 
@@ -1183,11 +886,6 @@ function switchTab(tabName) {
     tabContent.classList.add('active');
   }
 
-  // Cargar configuraciones específicas según la pestaña
-  if (tabName === 'supabase' && typeof cargarConfigSupabaseEnFormulario === 'function') {
-    setTimeout(() => cargarConfigSupabaseEnFormulario(), 100);
-  }
-
   // Activar el botón correspondiente (manejo robusto de evento)
   if (window.event && window.event.target && window.event.target.classList.contains('config-tab')) {
     window.event.target.classList.add('active');
@@ -1203,12 +901,8 @@ function switchTab(tabName) {
     cargarConfigVisualEnFormulario();
     // Renderizar listas personalizadas inmediatamente
     console.log('📋 Intentando renderizar listas...');
-    console.log('  - Función disponible:', typeof renderizarListasPersonalizadas);
-    console.log('  - Listas en memoria:', window.configVisual?.listasPersonalizadas?.length || 0);
     if (typeof renderizarListasPersonalizadas === 'function') {
       renderizarListasPersonalizadas();
-    } else {
-      console.error('❌ renderizarListasPersonalizadas NO está disponible');
     }
   } else if (tabName === 'funcionales') {
     cargarConfigFuncionalesEnFormulario();
@@ -1228,11 +922,15 @@ function switchTab(tabName) {
     if (typeof cargarLog === 'function') {
       cargarLog();
     }
+  } else if (tabName === 'supabase') {
+    if (typeof cargarConfigSupabaseEnFormulario === 'function') {
+      cargarConfigSupabaseEnFormulario();
+    }
   }
 }
 
 function cargarConfigVisualEnFormulario() {
-  // Cargar configuración desde variables globales
+  // Cargar configuración DESDE VARIABLES GLOBALES (sincronizadas con Supabase)
   const config = window.configVisual || {};
   console.log('📝 Cargando configuración visual en formulario:', config);
 
@@ -1270,9 +968,6 @@ function cargarConfigVisualEnFormulario() {
   const mostrarResumen = document.getElementById('config-mostrar-resumen');
   if (mostrarResumen) mostrarResumen.checked = config.mostrarResumen === true;
 
-  const mostrarTareaUniversal = document.getElementById('config-mostrar-tarea-universal');
-  if (mostrarTareaUniversal) mostrarTareaUniversal.checked = config.mostrarTareaUniversal !== false;
-
   const modoOscuroAuto = document.getElementById('config-modo-oscuro-auto');
   if (modoOscuroAuto) modoOscuroAuto.checked = config.modoOscuroAuto !== false;
 
@@ -1285,19 +980,11 @@ function cargarConfigVisualEnFormulario() {
   const calendarioCitas = document.getElementById('config-calendario-citas');
   if (calendarioCitas) {
     calendarioCitas.value = config.calendarioCitas || 'boton';
-    console.log('📅 Calendario citas configurado como:', calendarioCitas.value);
   }
-
-  const calendarioMostrarCitas = document.getElementById('config-calendario-mostrar-citas');
-  if (calendarioMostrarCitas) calendarioMostrarCitas.checked = config.calendarioMostrarCitas !== false;
-
-  const calendarioMostrarTareas = document.getElementById('config-calendario-mostrar-tareas');
-  if (calendarioMostrarTareas) calendarioMostrarTareas.checked = config.calendarioMostrarTareas !== false;
 
   const columnas = document.getElementById('config-columnas');
   if (columnas) {
     columnas.value = config.columnas || 2;
-    console.log('📐 Columnas configuradas como:', columnas.value);
   }
 
   const frasesMotivacionales = document.getElementById('config-frases-motivacionales');
@@ -1308,7 +995,7 @@ function cargarConfigVisualEnFormulario() {
 }
 
 function cargarConfigFuncionalesEnFormulario() {
-  // Cargar configuración desde variables globales
+  // Cargar configuración DESDE VARIABLES GLOBALES (sincronizadas con Supabase)
   const config = window.configFuncionales || {};
 
   const fechaObligatoria = document.getElementById('config-fecha-obligatoria');
@@ -1348,32 +1035,21 @@ async function guardarConfigFuncionales() {
     notif30Min: document.getElementById('config-notif-30-min')?.checked || false
   };
 
-  // Verificar conectividad
-  const conectado = await probarConexionSupabase();
-  if (!conectado) {
-    mostrarAlertaConectividad('🔴 No se puede guardar la configuración funcional<br><br>⚠️ Sin conexión a la nube', 'error');
-    return;
-  }
-
-  // Guardar DIRECTAMENTE en variables globales (NO localStorage)
+  // Guardar DIRECTAMENTE en variables globales
   window.configFuncionales = config;
 
-  // Guardar en la nube
-  if (typeof guardarConfigEnSupabase === 'function') {
-    const guardado = await guardarConfigEnSupabase();
+  // Guardar en Supabase
+  if (typeof supabasePush === 'function') {
+    const guardado = await supabasePush();
     if (guardado) {
-      mostrarAlerta('✅ Configuración funcional guardada correctamente', 'success');
-      if (typeof registrarAccion === 'function') {
-        registrarAccion('Actualizar configuración funcional', 'Cambios guardados en panel funcional');
-      }
-    } else {
-      mostrarAlerta('⚠️ No se pudo sincronizar con la nube', 'warning');
+      mostrarAlerta('✅ Configuración funcional guardada en Supabase', 'success');
     }
   } else {
-    mostrarAlerta('⚠️ No se pudo sincronizar con la nube', 'warning');
+    mostrarAlerta('⚠️ No se pudo sincronizar con Supabase', 'warning');
   }
 }
 
+// Función que espera a que las listas estén cargadas antes de renderizar
 function esperarYRenderizarListas(intentos = 0, maxIntentos = 20) {
   console.log(`🔍 Intento ${intentos + 1}/${maxIntentos} - Verificando disponibilidad de listas...`);
 
@@ -1400,32 +1076,13 @@ function esperarYRenderizarListas(intentos = 0, maxIntentos = 20) {
   setTimeout(() => esperarYRenderizarListas(intentos + 1, maxIntentos), 200);
 }
 
-async function toggleConfigFloating() {
-  console.log('⚙️ toggleConfigFloating llamada');
-  console.log('🔍 Buscando modal con ID: modal-config');
-
-  const modal = document.getElementById('modal-config');
-  console.log('📦 Modal encontrado:', modal);
-
-  // Pre-cargar configuración desde Supabase ANTES de abrir el modal
-  console.log('📥 Asegurando que configuración esté cargada...');
-  if (typeof asegurarConfiguracionCargada === 'function') {
-    await asegurarConfiguracionCargada();
-  } else {
-    // Fallback: esperar un momento para que Supabase cargue
-    await new Promise(resolve => setTimeout(resolve, 500));
-  }
-
-  console.log('✅ Configuración cargada, abriendo modal...');
+function toggleConfigFloating() {
   abrirModal('modal-config');
 
   // Función auxiliar para forzar el renderizado
   const forzarRenderizado = () => {
-    console.log('🔄 Intentando renderizar listas personalizadas...');
     if (typeof renderizarListasPersonalizadas === 'function') {
       renderizarListasPersonalizadas();
-    } else {
-      console.warn('⚠️ renderizarListasPersonalizadas no disponible');
     }
   };
 
@@ -1444,25 +1101,13 @@ async function toggleConfigFloating() {
     // 2. Cargar configuración en formulario
     cargarConfigVisualEnFormulario();
 
-    // 3. Estrategia de Fuerza Bruta: Renderizar múltiples veces con delays crecientes
-    console.log('🔄 Iniciando renderizado múltiple de listas...');
-    forzarRenderizado(); // Inmediato
+    // 3. Estrategia de Fuerza Bruta: Renderizar múltiples veces
+    forzarRenderizado();
     setTimeout(() => forzarRenderizado(), 100);
     setTimeout(() => forzarRenderizado(), 300);
     setTimeout(() => forzarRenderizado(), 600);
-    setTimeout(() => forzarRenderizado(), 1000);
-
-    // 4. Re-configurar event handlers para asegurar que funcionen
-    setTimeout(() => {
-      console.log('🔧 Re-configurando event handlers de selectores...');
-      if (typeof setupEmojiSelectors === 'function') setupEmojiSelectors();
-      if (typeof setupColorSelectors === 'function') setupColorSelectors();
-    }, 200);
   }, 100);
-
-  console.log('✅ toggleConfigFloating completada');
 }
-
 
 // ========== SISTEMA DE CONTRASEÑAS ENCRIPTADAS ==========
 let contrasenaMaestra = null;
@@ -1958,7 +1603,7 @@ async function guardarNuevaContrasena() {
     cerrarModalNuevaContrasena();
 
     // Mostrar confirmación
-    mostrarModalExito('¡Contraseña guardada!', 'La contraseña se ha guardado y encriptado exitosamente');
+    mostrarModalExito('¡Contraseña guardada!', 'La contraseña se ha guardado y encriptada exitosamente en Supabase');
 
   } catch (error) {
     mostrarModalError('Error al guardar', 'No se pudo guardar la contraseña: ' + error.message);
@@ -2393,11 +2038,13 @@ window.cambiarContrasenaMaestra = cambiarContrasenaMaestra;
 window.cerrarSesionContrasenas = cerrarSesionContrasenas;
 window.actualizarEstadoSeguridadContrasenas = actualizarEstadoSeguridadContrasenas;
 
-// ========== EDITOR DE BASE DE DATOS ==========
+// ========== EDITOR DE BASE DE DATOS SUPABASE ==========
 function abrirEditorBaseDatos() {
-  // Función deshabilitada - usar panel de Supabase
-  mostrarAlerta('❌ Esta función ha sido deshabilitada. Usa la configuración de Supabase para gestionar los datos.', 'error');
-  return;
+  // Verificar si Supabase está inicializado
+  if (!window.supabaseClient) {
+    mostrarAlerta('❌ Supabase no está inicializado. No se puede acceder a la base de datos.', 'error');
+    return;
+  }
 
   const modal = document.createElement('div');
   modal.className = 'modal';
@@ -2406,53 +2053,57 @@ function abrirEditorBaseDatos() {
 
   modal.innerHTML = `
     <div class="modal-content" style="max-width:900px;height:85vh;">
-      <h4>🔧 Editor de Base de Datos</h4>
+      <h4>🔧 Editor de Base de Datos Supabase</h4>
       <p style="font-size:12px;color:#666;margin-bottom:15px;">
-        ⚠️ <strong>Advertencia:</strong> Estás editando directamente la base de datos.
+        ⚠️ <strong>Advertencia:</strong> Estás editando directamente la tabla 'agenda_data' en Supabase.
         Los cambios se aplicarán inmediatamente en la nube.
       </p>
 
       <div style="display:flex;gap:10px;margin-bottom:15px;">
-        <label style="font-weight:bold;align-self:center;">📋 Tabla:</label>
-        <select id="selector-tabla" onchange="cargarTablaDB()" style="flex:1;padding:8px;border-radius:4px;border:1px solid #ddd;">
-          <option value="">Selecciona una tabla...</option>
-          <option value="tareas">📝 Tareas</option>
-          <option value="citas">📅 Citas</option>
-          <option value="notas">📄 Notas</option>
-          <option value="sentimientos">💭 Sentimientos</option>
-          <option value="historial/eliminados">🗑️ Historial Eliminados</option>
-          <option value="config/settings">⚙️ Configuración</option>
-          <option value="personas/asignadas">👥 Personas</option>
-          <option value="log/acciones">📊 Log de Acciones</option>
+        <label style="font-weight:bold;align-self:center;">📋 Colección (ID):</label>
+        <select id="selector-tabla" onchange="cargarTablaSupabase()" style="flex:1;padding:8px;border-radius:4px;border:1px solid #ddd;">
+          <option value="">Selecciona una colección...</option>
+          <option value="tareas">📝 Tareas (tareas)</option>
+          <option value="citas">📅 Citas (citas)</option>
+          <option value="config">⚙️ Configuración (config)</option>
+          <option value="notas">📄 Notas (notas)</option>
+          <option value="sentimientos">💭 Sentimientos (sentimientos)</option>
+          <option value="contrasenas">🔐 Contraseñas (contrasenas)</option>
+          <option value="historial_eliminados">🗑️ Historial Eliminados (historial_eliminados)</option>
+          <option value="historial_tareas">📊 Historial Tareas (historial_tareas)</option>
+          <option value="personas">👥 Personas (personas)</option>
+          <option value="etiquetas">🏷️ Etiquetas (etiquetas)</option>
+          <option value="log">📊 Log (log)</option>
+          <option value="salvados">💾 Backups (salvados)</option>
         </select>
-        <button class="btn-secundario" onclick="cargarTablaDB()" style="padding:8px 12px;">🔄 Cargar</button>
+        <button class="btn-secundario" onclick="cargarTablaSupabase()" style="padding:8px 12px;">🔄 Cargar</button>
       </div>
 
       <div id="info-tabla" style="margin-bottom:15px;padding:8px;background:#f5f5f5;border-radius:4px;display:none;"></div>
 
       <div style="margin-bottom:15px;">
         <textarea
-          id="editor-db-datos"
+          id="editor-supabase-datos"
           style="width:100%;height:400px;font-family:monospace;font-size:12px;border:1px solid #ddd;border-radius:4px;padding:10px;resize:vertical;"
-          placeholder="Selecciona una tabla para comenzar a editar..."
+          placeholder="Selecciona una colección para comenzar a editar..."
           readonly
         ></textarea>
       </div>
 
       <div style="display:flex;gap:10px;margin-bottom:15px;">
-        <button class="btn-secundario" onclick="validarJSONDB()" style="flex:1;">✅ Validar</button>
-        <button class="btn-secundario" onclick="formatearJSONDB()" style="flex:1;">🎨 Formatear</button>
-        <button class="btn-secundario" onclick="restaurarTablaDB()" style="flex:1;">🔄 Restaurar</button>
+        <button class="btn-secundario" onclick="validarJSONSupabase()" style="flex:1;">✅ Validar</button>
+        <button class="btn-secundario" onclick="formatearJSONSupabase()" style="flex:1;">🎨 Formatear</button>
+        <button class="btn-secundario" onclick="restaurarTablaSupabase()" style="flex:1;">🔄 Restaurar Original</button>
       </div>
       <div style="display:flex;gap:10px;margin-bottom:15px;">
-        <button class="btn-secundario" onclick="forzarSincronizacion()" style="flex:1;">⚡ Sincronizar App</button>
+        <button class="btn-secundario" onclick="forzarSincronizacionSupabase()" style="flex:1;">⚡ Sincronizar App</button>
         <button class="btn-secundario" onclick="limpiarDatosLocales()" style="flex:1;">🧹 Limpiar Local</button>
       </div>
 
-      <div id="estado-db" style="margin-bottom:15px;padding:10px;border-radius:4px;display:none;"></div>
+      <div id="estado-supabase" style="margin-bottom:15px;padding:10px;border-radius:4px;display:none;"></div>
 
       <div class="modal-botones">
-        <button id="btn-guardar-db" class="btn-primario" onclick="guardarTablaDB()" disabled>💾 Guardar en la nube</button>
+        <button id="btn-guardar-supabase" class="btn-primario" onclick="guardarTablaSupabase()" disabled>💾 Guardar en Supabase</button>
         <button class="btn-secundario" onclick="cerrarModal('modal-editor-db')">❌ Cerrar</button>
       </div>
     </div>
@@ -2462,8 +2113,8 @@ function abrirEditorBaseDatos() {
   modal.style.display = 'block';
 }
 
-let datosOriginalesDB = null;
-let tablaActualDB = null;
+let datosOriginalesSupabase = null;
+let tablaActualSupabase = null;
 
 async function cargarTablaSupabase() {
   const selector = document.getElementById('selector-tabla');
@@ -2474,8 +2125,8 @@ async function cargarTablaSupabase() {
 
   if (!selector || !textarea) return;
 
-  const tabla = selector.value;
-  if (!tabla) {
+  const idColeccion = selector.value;
+  if (!idColeccion) {
     textarea.value = '';
     textarea.readOnly = true;
     btnGuardar.disabled = true;
@@ -2489,48 +2140,31 @@ async function cargarTablaSupabase() {
   estado.innerHTML = '🔄 Cargando datos de Supabase...';
 
   try {
-    tablaActualSupabase = tabla;
-    const [collection, documento] = tabla.includes('/') ? tabla.split('/') : [tabla, 'data'];
+    tablaActualSupabase = idColeccion;
+    console.log(`🔍 Cargando colección: ${idColeccion}`);
 
-    console.log(`🔍 Cargando: ${collection}/${documento}`);
+    const { data, error } = await window.supabaseClient
+      .from('agenda_data')
+      .select('data')
+      .eq('id', idColeccion)
+      .single();
 
-    const docRef = window.db.collection(collection).doc(documento);
-    const docSnap = await docRef.get();
-
-    let datos = {};
-    if (docSnap.exists) {
-      datos = docSnap.data();
-    } else {
-      console.warn(`⚠️ Documento ${collection}/${documento} no existe`);
-      datos = { mensaje: 'Documento no existe en Supabase' };
+    if (error && error.code !== 'PGRST116') {
+      throw error;
     }
+
+    const datos = data?.data || {};
 
     datosOriginalesSupabase = JSON.parse(JSON.stringify(datos));
     textarea.value = JSON.stringify(datos, null, 2);
     textarea.readOnly = false;
     btnGuardar.disabled = false;
 
-    // Mostrar información de la tabla
-    let infoExtra = '';
-    if (collection === 'citas' && datos.citas) {
-      const citasConFormatos = datos.citas.reduce((acc, cita) => {
-        if (cita.hora && cita.descripcion) acc.nuevas++;
-        else if (cita.nombre) acc.viejas++;
-        else acc.inconsistentes++;
-        return acc;
-      }, { nuevas: 0, viejas: 0, inconsistentes: 0 });
-
-      infoExtra = `<br>🔍 ${datos.citas.length} citas: ${citasConFormatos.viejas} formato viejo, ${citasConFormatos.nuevas} formato nuevo`;
-      if (citasConFormatos.inconsistentes > 0) {
-        infoExtra += `, ⚠️ ${citasConFormatos.inconsistentes} inconsistentes`;
-      }
-    }
-
     info.style.display = 'block';
     info.innerHTML = `
-      📋 <strong>${collection}/${documento}</strong><br>
+      📋 <strong>${idColeccion}</strong><br>
       📊 Tamaño: ${JSON.stringify(datos).length} caracteres<br>
-      🔑 Campos: ${Object.keys(datos).length}${infoExtra}
+      🔑 Campos: ${Object.keys(datos).length}
     `;
 
     estado.style.display = 'block';
@@ -2563,7 +2197,7 @@ function validarJSONSupabase() {
     estado.style.display = 'block';
     estado.style.background = '#e8f5e8';
     estado.style.color = '#2e7d32';
-    estado.innerHTML = `✅ <strong>JSON válido</strong><br>🔑 ${Object.keys(datos).length} campos, ${JSON.stringify(datos).length} caracteres`;
+    estado.innerHTML = `✅ <strong>JSON válido</strong><br>🔑 ${Object.keys(datos).length} campos`;
   } catch (error) {
     estado.style.display = 'block';
     estado.style.background = '#ffe6e6';
@@ -2581,7 +2215,7 @@ function formatearJSONSupabase() {
     textarea.value = JSON.stringify(datos, null, 2);
     mostrarAlerta('🎨 JSON formateado correctamente', 'success');
   } catch (error) {
-    mostrarAlerta('❌ Error: JSON inválido, no se puede formatear', 'error');
+    mostrarAlerta('❌ Error: JSON inválido', 'error');
   }
 }
 
@@ -2596,55 +2230,81 @@ function restaurarTablaSupabase() {
   if (estado) {
     estado.style.display = 'block';
     estado.style.background = '#fff3cd';
-    estado.innerHTML = '🔄 Datos restaurados al estado original de Supabase';
+    estado.innerHTML = '🔄 Datos restaurados al estado original';
   }
-
-  mostrarAlerta('🔄 Datos restaurados desde Supabase', 'info');
 }
 
 async function guardarTablaSupabase() {
-
-  mostrarAlerta('❌ Funcionalidad de edición directa deshabilitada. Usa la configuración de Supabase para gestionar los datos.', 'error');
-  return;
-}
-
-// ========== FUNCIÓN DE SINCRONIZACIÓN FORZADA ==========
-function forzarSincronizacion() {
+  const textarea = document.getElementById('editor-supabase-datos');
   const estado = document.getElementById('estado-supabase');
 
+  if (!textarea || !tablaActualSupabase) {
+    mostrarAlerta('❌ No hay colección seleccionada', 'error');
+    return;
+  }
+
+  try {
+    const nuevosDatos = JSON.parse(textarea.value);
+
+    const confirmacion = confirm(`
+🔥 ¿Guardar cambios en Supabase?
+
+📋 Colección: ${tablaActualSupabase}
+⚠️ Esta acción actualizará directamente la base de datos.
+¿Continuar?`);
+
+    if (!confirmacion) return;
+
+    estado.style.display = 'block';
+    estado.style.background = '#fff3cd';
+    estado.innerHTML = '🔄 Guardando cambios en Supabase...';
+
+    const { error } = await window.supabaseClient
+      .from('agenda_data')
+      .upsert({ id: tablaActualSupabase, data: nuevosDatos }, { onConflict: 'id' });
+
+    if (error) throw error;
+
+    datosOriginalesSupabase = JSON.parse(JSON.stringify(nuevosDatos));
+
+    estado.style.display = 'block';
+    estado.style.background = '#e8f5e8';
+    estado.style.color = '#2e7d32';
+    estado.innerHTML = '✅ Cambios guardados exitosamente en Supabase';
+
+    mostrarAlerta('💾 Colección actualizada en Supabase', 'success');
+
+    // Sincronizar localmente si es necesario
+    if (['tareas', 'citas', 'config'].includes(tablaActualSupabase)) {
+      setTimeout(() => {
+        if (typeof supabasePull === 'function') {
+          supabasePull();
+          mostrarAlerta('🔄 Sincronizando cambios localmente...', 'info');
+        }
+      }, 1500);
+    }
+
+  } catch (error) {
+    console.error('Error guardando en Supabase:', error);
+    estado.style.display = 'block';
+    estado.style.background = '#ffe6e6';
+    estado.style.color = '#d32f2f';
+    estado.innerHTML = `❌ Error guardando: ${error.message}`;
+    mostrarAlerta(`❌ Error: ${error.message}`, 'error');
+  }
+}
+
+function forzarSincronizacionSupabase() {
+  const estado = document.getElementById('estado-supabase');
   if (estado) {
     estado.style.display = 'block';
     estado.style.background = '#fff3cd';
-    estado.innerHTML = '⚡ Forzando sincronización completa desde Supabase...';
+    estado.innerHTML = '⚡ Forzando sincronización...';
   }
 
-  console.log('⚡ Iniciando sincronización forzada...');
-
-  if (typeof extendsClassPull === 'function') {
-    extendsClassPull();
-
-    setTimeout(() => {
-      if (estado) {
-        estado.style.display = 'block';
-        estado.style.background = '#e8f5e8';
-        estado.style.color = '#2e7d32';
-        estado.innerHTML = '✅ Sincronización forzada completada';
-      }
-      mostrarAlerta('⚡ Aplicación sincronizada desde Supabase', 'success');
-
-      // Recargar la tabla actual para mostrar los datos actualizados
-      setTimeout(() => {
-        cargarTablaSupabase();
-      }, 500);
-    }, 2000);
-  } else {
-    if (estado) {
-      estado.style.display = 'block';
-      estado.style.background = '#ffe6e6';
-      estado.style.color = '#d32f2f';
-      estado.innerHTML = '❌ Función de sincronización no disponible';
-    }
-    mostrarAlerta('❌ Error: Función de sincronización no encontrada', 'error');
+  if (typeof supabasePull === 'function') {
+    supabasePull();
+    mostrarAlerta('⚡ Sincronización iniciada', 'success');
   }
 }
 
@@ -2675,12 +2335,6 @@ Después de limpiar, se sincronizará desde Supabase.
 
   // Limpiar appState
   if (window.appState && window.appState.agenda) {
-    console.log('📊 Datos ANTES de limpiar:', {
-      citas: window.appState.agenda.citas ? window.appState.agenda.citas.length : 0,
-      tareas: window.appState.agenda.tareas ? window.appState.agenda.tareas.length : 0,
-      tareas_criticas: window.appState.agenda.tareas_criticas ? window.appState.agenda.tareas_criticas.length : 0
-    });
-
     window.appState.agenda.citas = [];
     window.appState.agenda.tareas = [];
     window.appState.agenda.tareas_criticas = [];
@@ -2693,7 +2347,6 @@ Después de limpiar, se sincronizará desde Supabase.
   // Re-renderizar inmediatamente
   if (typeof renderizar === 'function') {
     renderizar();
-    console.log('🔄 Interfaz re-renderizada después de limpiar');
   }
 
   setTimeout(() => {
@@ -2705,8 +2358,8 @@ Después de limpiar, se sincronizará desde Supabase.
     }
 
     // Forzar sincronización desde Supabase
-    if (typeof extendsClassPull === 'function') {
-      extendsClassPull();
+    if (typeof supabasePull === 'function') {
+      supabasePull();
     }
 
     mostrarAlerta('🧹 Datos locales limpiados y sincronizados', 'success');
@@ -2719,7 +2372,7 @@ window.validarJSONSupabase = validarJSONSupabase;
 window.formatearJSONSupabase = formatearJSONSupabase;
 window.restaurarTablaSupabase = restaurarTablaSupabase;
 window.guardarTablaSupabase = guardarTablaSupabase;
-window.forzarSincronizacion = forzarSincronizacion;
+window.forzarSincronizacionSupabase = forzarSincronizacionSupabase;
 window.limpiarDatosLocales = limpiarDatosLocales;
 
 // ========== LISTAS PERSONALIZADAS ==========
@@ -2734,13 +2387,6 @@ async function agregarListaPersonalizada() {
 
   if (!nombre) {
     mostrarAlerta('❌ Por favor escribe un nombre para la lista', 'error');
-    return;
-  }
-
-  // Verificar conectividad
-  const conectado = await probarConexionSupabase();
-  if (!conectado) {
-    mostrarAlertaConectividad('🔴 No se puede crear la lista<br><br>⚠️ Sin conexión a Supabase', 'error');
     return;
   }
 
@@ -2772,7 +2418,7 @@ async function agregarListaPersonalizada() {
 
   // Actualizar configuración global
   window.configVisual = {
-    ...window.configVisual,
+    ...configVisual,
     listasPersonalizadas: listasPersonalizadas
   };
 
@@ -2784,8 +2430,8 @@ async function agregarListaPersonalizada() {
   document.getElementById('color-lista-personalizada').value = '#667eea';
 
   // Guardar en Supabase
-  if (typeof guardarConfigEnSupabase === 'function') {
-    const guardado = await guardarConfigEnSupabase();
+  if (typeof supabasePush === 'function') {
+    const guardado = await supabasePush();
     if (guardado) {
       console.log('✅ Configuración guardada en Supabase');
       mostrarAlerta(`✅ Lista "${nombre}" creada correctamente`, 'success');
@@ -2807,7 +2453,7 @@ async function agregarListaPersonalizada() {
       mostrarAlerta('❌ Error al guardar en Supabase', 'error');
     }
   } else {
-    mostrarAlerta('⚠️ No se pudo sincronizar con la nube', 'warning');
+    mostrarAlerta('⚠️ No se pudo sincronizar con Supabase', 'warning');
   }
 }
 
@@ -2826,15 +2472,17 @@ function eliminarListaPersonalizada(id) {
 
     // Actualizar configuración global
     window.configVisual = {
-      ...window.configVisual,
+      ...configVisual,
       listasPersonalizadas: nuevasListas
     };
 
     // Re-renderizar
     renderizarListasPersonalizadas();
 
-
-    guardarConfigEnSupabase();
+    // Guardar en Supabase
+    if (typeof supabasePush === 'function') {
+      supabasePush();
+    }
 
     mostrarAlerta(`✅ Lista "${lista.nombre}" eliminada`, 'success');
   }
@@ -3050,7 +2698,7 @@ function limpiarListaPersonalizada(listaId) {
 
   if (confirm(`¿Estás seguro de que quieres eliminar TODAS las tareas de "${lista.nombre}"?`)) {
     lista.tareas = [];
-    guardarConfigEnSupabase();
+    supabasePush();
     renderizarListaPersonalizada(listaId);
     mostrarAlerta(`✅ Todas las tareas de "${lista.nombre}" eliminadas`, 'success');
   }
@@ -3263,12 +2911,12 @@ function guardarSubtareaListaPersonalizada(listaId, tareaIndex, texto) {
 
   // Actualizar estado global
   window.configVisual = {
-    ...window.configVisual,
+    ...configVisual,
     listasPersonalizadas: listas
   };
 
   renderizarListaPersonalizada(listaId);
-  guardarConfigEnSupabase();
+  supabasePush();
 }
 
 function cambiarEstadoSubtareaListaPersonalizada(listaId, tareaIndex, subIndex) {
@@ -3288,9 +2936,9 @@ function cambiarEstadoSubtareaListaPersonalizada(listaId, tareaIndex, subIndex) 
     appState.ui.subtareaSeleccionada = { tipo: 'lista_personalizada', listaId, tareaIndex, subIndex };
 
     // Actualizar estado global
-    window.configVisual = { ...window.configVisual, listasPersonalizadas: listas };
+    window.configVisual = { ...configVisual, listasPersonalizadas: listas };
     renderizarListaPersonalizada(listaId);
-    guardarConfigEnSupabase();
+    supabasePush();
 
     abrirModal('modal-migrar');
     return;
@@ -3315,226 +2963,10 @@ function cambiarEstadoSubtareaListaPersonalizada(listaId, tareaIndex, subIndex) 
   }
 
   // Actualizar estado global
-  window.configVisual = { ...window.configVisual, listasPersonalizadas: listas };
+  window.configVisual = { ...configVisual, listasPersonalizadas: listas };
   renderizarListaPersonalizada(listaId);
-  guardarConfigEnSupabase();
+  supabasePush();
 }
-
-// ========== FUNCIONES DE DASHBOARD Y RESUMEN ==========
-function mostrarDashboardMotivacional() {
-  console.log('📊 Generando dashboard motivacional...');
-
-  // Calcular estadísticas globales
-  const historialTareas = window.historialTareas || [];
-  const historialEliminados = window.historialEliminados || [];
-  const tareasActuales = window.appState?.agenda?.tareas || [];
-  const criticasActuales = window.appState?.agenda?.tareas_criticas || [];
-
-  const totalCompletadas = historialTareas.length;
-  const totalEliminadas = historialEliminados.length;
-  const totalPendientes = tareasActuales.length + criticasActuales.length;
-
-  // Calcular Nivel y XP (Gamificación básica)
-  // Cada tarea completada = 100 XP
-  // Nivel = raíz cuadrada de (XP / 100)
-  const xp = totalCompletadas * 100;
-  const nivel = Math.floor(Math.sqrt(xp / 100)) + 1;
-  const xpParaSiguienteNivel = Math.pow(nivel, 2) * 100;
-  const xpNivelActual = Math.pow(nivel - 1, 2) * 100;
-  const progresoNivel = Math.round(((xp - xpNivelActual) / (xpParaSiguienteNivel - xpNivelActual)) * 100) || 0;
-
-  // Calcular Racha (días consecutivos con al menos 1 tarea completada)
-  // Esto es una aproximación basada en el historial
-  let racha = 0;
-  if (historialTareas.length > 0) {
-    const fechasUnicas = [...new Set(historialTareas.map(t => t.fecha_completado?.split('T')[0]).filter(Boolean))].sort().reverse();
-
-    if (fechasUnicas.length > 0) {
-      const hoy = new Date().toISOString().slice(0, 10);
-      const ayer = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-
-      // Si completó algo hoy o ayer, la racha está viva
-      if (fechasUnicas[0] === hoy || fechasUnicas[0] === ayer) {
-        racha = 1;
-        let fechaActual = new Date(fechasUnicas[0]);
-
-        for (let i = 1; i < fechasUnicas.length; i++) {
-          const fechaAnterior = new Date(fechasUnicas[i]);
-          const diferenciaDias = (fechaActual - fechaAnterior) / (1000 * 60 * 60 * 24);
-
-          if (Math.round(diferenciaDias) === 1) {
-            racha++;
-            fechaActual = fechaAnterior;
-          } else {
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  // Crear modal dinámico
-  const modalId = 'modal-dashboard-motivacional';
-  let modal = document.getElementById(modalId);
-  if (modal) modal.remove();
-
-  modal = document.createElement('div');
-  modal.className = 'modal';
-  modal.id = modalId;
-  modal.style.display = 'block';
-  modal.style.zIndex = '10000';
-
-  modal.innerHTML = `
-    <div class="modal-content" style="max-width: 500px; text-align: center; background: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%);">
-      <div style="position: absolute; top: 10px; right: 15px; cursor: pointer; font-size: 20px;" onclick="document.getElementById('${modalId}').remove()">✕</div>
-      
-      <h2 style="color: #2c3e50; margin-bottom: 5px;">Tu Progreso</h2>
-      <p style="color: #7f8c8d; margin-bottom: 25px;">¡Cada paso cuenta!</p>
-      
-      <!-- Nivel Circular -->
-      <div style="position: relative; width: 120px; height: 120px; margin: 0 auto 20px auto; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-        <div style="position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 8px solid #ecf0f1;"></div>
-        <div style="position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 8px solid transparent; border-top-color: #3498db; border-right-color: ${progresoNivel > 50 ? '#3498db' : 'transparent'}; border-bottom-color: ${progresoNivel > 75 ? '#3498db' : 'transparent'}; border-left-color: ${progresoNivel > 25 ? '#3498db' : 'transparent'}; transform: rotate(-45deg);"></div>
-        <div style="z-index: 2;">
-          <div style="font-size: 12px; color: #95a5a6; text-transform: uppercase; letter-spacing: 1px;">Nivel</div>
-          <div style="font-size: 42px; font-weight: bold; color: #2c3e50; line-height: 1;">${nivel}</div>
-        </div>
-      </div>
-      
-      <div style="margin-bottom: 30px;">
-        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #7f8c8d; margin-bottom: 5px; padding: 0 20px;">
-          <span>XP: ${xp}</span>
-          <span>Siguiente: ${xpParaSiguienteNivel}</span>
-        </div>
-        <div style="height: 8px; background: #dfe6e9; border-radius: 4px; margin: 0 20px; overflow: hidden;">
-          <div style="height: 100%; width: ${progresoNivel}%; background: #3498db; border-radius: 4px;"></div>
-        </div>
-      </div>
-      
-      <!-- Estadísticas Grid -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
-        <div style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-          <div style="font-size: 28px;">🔥</div>
-          <div style="font-size: 24px; font-weight: bold; color: #e74c3c;">${racha}</div>
-          <div style="font-size: 12px; color: #95a5a6;">Días Racha</div>
-        </div>
-        <div style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-          <div style="font-size: 28px;">✅</div>
-          <div style="font-size: 24px; font-weight: bold; color: #2ecc71;">${totalCompletadas}</div>
-          <div style="font-size: 12px; color: #95a5a6;">Total Completadas</div>
-        </div>
-        <div style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-          <div style="font-size: 28px;">📝</div>
-          <div style="font-size: 24px; font-weight: bold; color: #f1c40f;">${totalPendientes}</div>
-          <div style="font-size: 12px; color: #95a5a6;">Pendientes</div>
-        </div>
-        <div style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-          <div style="font-size: 28px;">🗑️</div>
-          <div style="font-size: 24px; font-weight: bold; color: #95a5a6;">${totalEliminadas}</div>
-          <div style="font-size: 12px; color: #95a5a6;">Eliminadas</div>
-        </div>
-      </div>
-      
-      <button class="btn-primario" onclick="document.getElementById('${modalId}').remove()" style="width: 100%; padding: 12px; font-size: 16px;">¡Genial!</button>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-}
-
-function mostrarResumenDiarioManual() {
-  console.log('🌅 Generando resumen diario...');
-
-  const hoy = new Date().toISOString().slice(0, 10);
-  const tareas = window.appState?.agenda?.tareas || [];
-  const criticas = window.appState?.agenda?.tareas_criticas || [];
-  const citas = window.appState?.agenda?.citas || [];
-
-  // Calcular estadísticas de hoy
-  const tareasHoy = tareas.filter(t => t.fecha_fin === hoy || t.fecha_creacion?.startsWith(hoy));
-  const criticasHoy = criticas.filter(t => t.fecha_fin === hoy || t.fecha_creacion?.startsWith(hoy));
-  const citasHoy = citas.filter(c => c.fecha && c.fecha[0] === parseInt(hoy.split('-')[0]) && c.fecha[1] === parseInt(hoy.split('-')[1]) && c.fecha[2] === parseInt(hoy.split('-')[2]));
-
-  // Tareas activas completadas
-  const activasCompletadas = [...tareasHoy, ...criticasHoy].filter(t => t.completada).length;
-
-  // Tareas en historial completadas HOY
-  const historialTareas = window.historialTareas || [];
-  const historialHoy = historialTareas.filter(t => t.fecha_completado?.startsWith(hoy));
-  const historialCompletadasHoy = historialHoy.length;
-
-  const completadas = activasCompletadas + historialCompletadasHoy;
-  const pendientes = [...tareasHoy, ...criticasHoy].filter(t => !t.completada).length;
-  const total = completadas + pendientes;
-  const porcentaje = total > 0 ? Math.round((completadas / total) * 100) : 0;
-  let mensaje = '';
-  let icono = '';
-  if (porcentaje === 100 && total > 0) {
-    mensaje = '¡Increíble! Has completado todo por hoy.';
-    icono = '🏆';
-  } else if (porcentaje >= 75) {
-    mensaje = '¡Vas genial! Ya casi terminas.';
-    icono = '🔥';
-  } else if (porcentaje >= 50) {
-    mensaje = 'Buen progreso, sigue así.';
-    icono = '👍';
-  } else {
-    mensaje = 'Ánimo, tú puedes con todo.';
-    icono = '💪';
-  }
-
-  // Crear modal dinámico
-  const modalId = 'modal-resumen-diario';
-  let modal = document.getElementById(modalId);
-  if (modal) modal.remove();
-
-  modal = document.createElement('div');
-  modal.className = 'modal';
-  modal.id = modalId;
-  modal.style.display = 'block';
-  modal.style.zIndex = '10000';
-
-  modal.innerHTML = `
-    <div class="modal-content" style="max-width: 400px; text-align: center;">
-      <div style="font-size: 40px; margin-bottom: 10px;">${icono}</div>
-      <h3 style="margin: 0 0 15px 0;">Resumen del Día</h3>
-      <p style="color: #666; margin-bottom: 20px;">${mensaje}</p>
-      
-      <div style="display: flex; justify-content: space-around; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 10px;">
-        <div>
-          <div style="font-size: 24px; font-weight: bold; color: #4ecdc4;">${completadas}</div>
-          <div style="font-size: 12px; color: #666;">Completadas</div>
-        </div>
-        <div>
-          <div style="font-size: 24px; font-weight: bold; color: #ff6b6b;">${pendientes}</div>
-          <div style="font-size: 12px; color: #666;">Pendientes</div>
-        </div>
-        <div>
-          <div style="font-size: 24px; font-weight: bold; color: #ffe66d;">${citasHoy.length}</div>
-          <div style="font-size: 12px; color: #666;">Citas</div>
-        </div>
-      </div>
-      
-      <div style="margin-bottom: 20px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; color: #666;">
-          <span>Progreso</span>
-          <span>${porcentaje}%</span>
-        </div>
-        <div style="height: 10px; background: #eee; border-radius: 5px; overflow: hidden;">
-          <div style="height: 100%; width: ${porcentaje}%; background: linear-gradient(90deg, #4ecdc4, #556270); transition: width 0.5s;"></div>
-        </div>
-      </div>
-      
-      <button class="btn-primario" onclick="document.getElementById('${modalId}').remove()" style="width: 100%;">¡A seguir!</button>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-}
-
-// Exponer funciones globalmente
-window.mostrarDashboardMotivacional = mostrarDashboardMotivacional;
-window.mostrarResumenDiarioManual = mostrarResumenDiarioManual;
 
 function abrirEditorSubtareaListaPersonalizada(listaId, tareaIndex, subIndex) {
   const configVisual = window.configVisual || {};
@@ -3603,11 +3035,11 @@ function guardarEdicionSubtareaListaPersonalizada(listaId, tareaIndex, subIndex)
   subtarea.fecha_migrar = fechaMigrar || null;
 
   // Actualizar estado global
-  window.configVisual = { ...window.configVisual, listasPersonalizadas: listas };
+  window.configVisual = { ...configVisual, listasPersonalizadas: listas };
 
   cerrarModal('modal-editor-subtarea-lp');
   renderizarListaPersonalizada(listaId);
-  guardarConfigEnSupabase();
+  supabasePush();
   mostrarAlerta('✅ Subtarea actualizada', 'success');
 }
 
@@ -3634,14 +3066,14 @@ function ejecutarEliminacionSubtareaListaPersonalizada(listaId, tareaIndex, subI
   listas[listaIndex].tareas[tareaIndex].subtareas.splice(subIndex, 1);
 
   // Actualizar estado global
-  window.configVisual = { ...window.configVisual, listasPersonalizadas: listas };
+  window.configVisual = { ...configVisual, listasPersonalizadas: listas };
 
   renderizarListaPersonalizada(listaId);
-  guardarConfigEnSupabase();
+  supabasePush();
   mostrarAlerta('🗑️ Subtarea eliminada', 'info');
 }
 
-function cargarConfigListasPersonalizadas() {
+function cargarConfigVisual() {
   const configVisual = window.configVisual || {};
 
   // Listas Personalizadas - NO crear lista por defecto
@@ -3683,10 +3115,10 @@ function agregarTareaAListaPersonalizada(listaId, texto, fecha = null, etiqueta 
   lista.tareas.push(nuevaTarea);
 
   // Actualizar configuración global
-  window.configVisual = { ...window.configVisual, listasPersonalizadas };
+  window.configVisual = { ...configVisual, listasPersonalizadas };
 
-
-  guardarConfigEnSupabase();
+  // Guardar en Supabase
+  supabasePush();
 
   // Re-renderizar
   renderizarListaPersonalizada(listaId);
@@ -3767,7 +3199,7 @@ function guardarEdicionListaPersonalizada(listaId, index) {
 
   // Actualizar estado global
   window.configVisual = {
-    ...window.configVisual,
+    ...configVisual,
     listasPersonalizadas: listas
   };
 
@@ -3777,7 +3209,7 @@ function guardarEdicionListaPersonalizada(listaId, index) {
 
   // Renderizar y guardar
   renderizarListaPersonalizada(listaId);
-  guardarConfigEnSupabase();
+  supabasePush();
 }
 
 function ejecutarEliminacionTareaListaPersonalizada(listaId, tareaIndex) {
@@ -3807,12 +3239,12 @@ function ejecutarEliminacionTareaListaPersonalizada(listaId, tareaIndex) {
 
   // Actualizar configuración global
   window.configVisual = {
-    ...window.configVisual,
+    ...configVisual,
     listasPersonalizadas
   };
 
-
-  guardarConfigEnSupabase();
+  // Guardar en Supabase
+  supabasePush();
 
   // Renderizar
   renderizarListaPersonalizada(listaId);
@@ -3869,12 +3301,12 @@ function eliminarListaPersonalizada(listaId) {
 
   // Actualizar configuración global
   window.configVisual = {
-    ...window.configVisual,
+    ...configVisual,
     listasPersonalizadas
   };
 
-
-  guardarConfigEnSupabase();
+  // Guardar en Supabase
+  supabasePush();
 
   // Re-renderizar las secciones de listas personalizadas
   if (typeof regenerarSeccionesListasPersonalizadas === 'function') {
@@ -3918,9 +3350,9 @@ function completarTareaListaPersonalizada(listaId, tareaIndex) {
     };
 
     // Actualizar en memoria
-    window.configVisual = { ...window.configVisual, listasPersonalizadas };
+    window.configVisual = { ...configVisual, listasPersonalizadas };
     renderizarListaPersonalizada(listaId);
-    guardarConfigEnSupabase();
+    supabasePush();
 
     // Abrir modal para delegar/reprogramar
     abrirModal('modal-migrar');
@@ -3960,9 +3392,10 @@ function completarTareaListaPersonalizada(listaId, tareaIndex) {
   console.log('🔄 Actualizando y guardando...');
 
   // Actualizar configuración global
-  window.configVisual = { ...window.configVisual, listasPersonalizadas };
+  window.configVisual = { ...configVisual, listasPersonalizadas };
 
-  guardarConfigEnSupabase();
+  // Guardar en Supabase
+  supabasePush();
 
   // Re-renderizar
   renderizarListaPersonalizada(listaId);
@@ -3985,6 +3418,7 @@ window.editarTareaListaPersonalizada = editarTareaListaPersonalizada;
 window.guardarEdicionListaPersonalizada = guardarEdicionListaPersonalizada;
 
 // ========== FUNCIÓN PRINCIPAL PARA RENDERIZAR TODAS LAS LISTAS ==========
+let renderizarListasTimeout = null;
 function renderizarTodasLasListasPersonalizadas() {
   // Debounce para evitar renderizados repetitivos
   if (renderizarListasTimeout) {
@@ -4163,317 +3597,3 @@ window.eliminarSubtareaListaPersonalizada = eliminarSubtareaListaPersonalizada;
 window.abrirModalSubtareaListaPersonalizada = abrirModalSubtareaListaPersonalizada;
 window.guardarSubtareaListaPersonalizada = guardarSubtareaListaPersonalizada;
 window.toggleSubtareaListaPersonalizada = toggleSubtareaListaPersonalizada;
-
-// ========== FUNCIÓN PARA ABRIR CALENDARIO ==========
-
-// Función para abrir calendario con filtros (redirige a función existente)
-function abrirModalCalendarioConFiltros() {
-  // Redirigir a la función de calendario existente
-  if (typeof window.abrirCalendario === 'function') {
-    window.abrirCalendario();
-  } else if (typeof window.abrirCalendarioTareas === 'function') {
-    window.abrirCalendarioTareas();
-  } else {
-    mostrarAlerta('📅 Funcionalidad de calendario no disponible', 'warning');
-    console.log('📅 Intentando abrir calendario...');
-  }
-}
-
-// Hacer funciones disponibles globalmente
-window.abrirModalCalendarioConFiltros = abrirModalCalendarioConFiltros;
-
-// ========== FUNCIONES PARA LISTAS PERSONALIZADAS ==========
-function abrirModalNuevaListaPersonalizada() {
-  // Resetear formulario
-  document.getElementById('nueva-lista-nombre').value = '';
-  document.getElementById('nueva-lista-color').value = '#4ecdc4';
-
-  // Resetear selección de color visual
-  document.querySelectorAll('.color-option').forEach(btn => {
-    btn.style.border = '3px solid transparent';
-  });
-  document.querySelector('.color-option[data-color="#4ecdc4"]').style.border = '3px solid #333';
-
-  abrirModal('modal-nueva-lista');
-}
-
-function crearNuevaListaPersonalizada() {
-  const nombre = document.getElementById('nueva-lista-nombre').value.trim();
-  const color = document.getElementById('nueva-lista-color').value;
-
-  if (!nombre) {
-    mostrarAlerta('❌ Por favor ingresa un nombre para la lista', 'error');
-    return;
-  }
-
-  // Verificar que no existe una lista con el mismo nombre
-  const listasExistentes = window.configVisual?.listasPersonalizadas || [];
-  if (listasExistentes.some(lista => lista.nombre.toLowerCase() === nombre.toLowerCase())) {
-    mostrarAlerta('❌ Ya existe una lista con ese nombre', 'error');
-    return;
-  }
-
-  // Crear nueva lista
-  const nuevaLista = {
-    id: 'lista_' + Date.now(),
-    nombre: nombre,
-    color: color,
-    tareas: [],
-    fechaCreacion: new Date().toISOString(),
-    activa: true
-  };
-
-  // Agregar a la configuración global
-  if (!window.configVisual) {
-    window.configVisual = {};
-  }
-  if (!window.configVisual.listasPersonalizadas) {
-    window.configVisual.listasPersonalizadas = [];
-  }
-
-  window.configVisual.listasPersonalizadas.push(nuevaLista);
-
-  // Guardar en la nube
-  if (typeof guardarConfigEnSupabase === 'function') {
-    guardarConfigEnSupabase();
-  }
-
-  // Regenerar las secciones y renderizar
-  if (typeof regenerarSeccionesListasPersonalizadas === 'function') {
-    regenerarSeccionesListasPersonalizadas();
-  }
-  if (typeof renderizarTodasLasListasPersonalizadas === 'function') {
-    renderizarTodasLasListasPersonalizadas();
-  }
-  if (typeof renderizarListasPersonalizadas === 'function') {
-    renderizarListasPersonalizadas();
-  }
-
-  // Cerrar modal y mostrar éxito
-  cerrarModal('modal-nueva-lista');
-  mostrarAlerta(`✨ Lista "${nombre}" creada exitosamente`, 'success');
-}
-
-// Manejo de selección de colores
-document.addEventListener('DOMContentLoaded', function () {
-  // Esperar un momento para que el DOM esté completamente cargado
-  setTimeout(() => {
-    document.querySelectorAll('.color-option').forEach(btn => {
-      btn.addEventListener('click', function () {
-        const color = this.dataset.color;
-
-        // Actualizar input hidden
-        const colorInput = document.getElementById('nueva-lista-color');
-        if (colorInput) {
-          colorInput.value = color;
-        }
-
-        // Actualizar estilos visuales
-        document.querySelectorAll('.color-option').forEach(b => {
-          b.style.border = '3px solid transparent';
-        });
-        this.style.border = '3px solid #333';
-      });
-    });
-  }, 100);
-});
-
-window.abrirModalNuevaListaPersonalizada = abrirModalNuevaListaPersonalizada;
-window.crearNuevaListaPersonalizada = crearNuevaListaPersonalizada;
-
-// ========== SISTEMA DE ETIQUETAS CON SÍMBOLOS ==========
-
-// Función para obtener etiquetas (basada en el commit estudiado)
-function obtenerEtiquetaInfo(nombre, tipo) {
-  if (!window.etiquetasData) return null;
-  if (!window.etiquetasData[tipo]) return null;
-  return window.etiquetasData[tipo].find(e => e.nombre === nombre);
-}
-
-// Función para crear nueva etiqueta
-function crearNuevaEtiqueta() {
-  const nombre = document.getElementById('nueva-etiqueta-nombre').value.trim();
-  const simbolo = document.getElementById('nueva-etiqueta-simbolo').value;
-  const color = document.getElementById('nueva-etiqueta-color').value;
-
-  if (!nombre) {
-    mostrarAlerta('❌ Por favor ingresa un nombre para la etiqueta', 'error');
-    return;
-  }
-
-  // Inicializar estructura de etiquetas si no existe
-  if (!window.etiquetasData) {
-    window.etiquetasData = {
-      tareas: [],
-      criticas: [],
-      citas: []
-    };
-  }
-
-  // Verificar si ya existe una etiqueta con ese nombre
-  const etiquetaExiste = window.etiquetasData.tareas.some(e => e.nombre.toLowerCase() === nombre.toLowerCase()) ||
-    window.etiquetasData.criticas.some(e => e.nombre.toLowerCase() === nombre.toLowerCase()) ||
-    window.etiquetasData.citas.some(e => e.nombre.toLowerCase() === nombre.toLowerCase());
-
-  if (etiquetaExiste) {
-    mostrarAlerta('❌ Ya existe una etiqueta con ese nombre', 'error');
-    return;
-  }
-
-  // Crear nueva etiqueta
-  const nuevaEtiqueta = {
-    id: 'etiqueta_' + Date.now(),
-    nombre: nombre,
-    simbolo: simbolo,
-    color: color,
-    fechaCreacion: new Date().toISOString()
-  };
-
-  // Agregar a todas las categorías (tareas, críticas, citas)
-  window.etiquetasData.tareas.push(nuevaEtiqueta);
-  window.etiquetasData.criticas.push({ ...nuevaEtiqueta });
-  window.etiquetasData.citas.push({ ...nuevaEtiqueta });
-
-  // Guardar en la nube
-  if (typeof guardarConfigEnSupabase === 'function') {
-    guardarConfigEnSupabase();
-  }
-
-  // Renderizar lista de etiquetas
-  renderizarListaEtiquetas();
-
-  // Limpiar formulario
-  document.getElementById('nueva-etiqueta-nombre').value = '';
-  document.getElementById('nueva-etiqueta-simbolo').value = '⭐';
-  document.getElementById('nueva-etiqueta-color').value = '#4ecdc4';
-
-  // Resetear selecciones visuales
-  document.querySelectorAll('.emoji-option').forEach(btn => btn.style.borderColor = '#ddd');
-  document.querySelector('.emoji-option[data-emoji="⭐"]').style.borderColor = '#4ecdc4';
-
-  document.querySelectorAll('.color-etiqueta-option').forEach(btn => btn.style.border = '2px solid transparent');
-  document.querySelector('.color-etiqueta-option[data-color="#4ecdc4"]').style.border = '2px solid #333';
-
-  mostrarAlerta(`✨ Etiqueta "${simbolo} ${nombre}" creada exitosamente`, 'success');
-}
-
-// Función para renderizar la lista de etiquetas
-function renderizarListaEtiquetas() {
-  const contenedor = document.getElementById('lista-etiquetas-config');
-  if (!contenedor) return;
-
-  if (!window.etiquetasData || !window.etiquetasData.tareas || window.etiquetasData.tareas.length === 0) {
-    contenedor.innerHTML = '<p style="text-align: center; color: #666; font-style: italic; padding: 20px;">No hay etiquetas creadas aún</p>';
-    return;
-  }
-
-  let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">';
-
-  window.etiquetasData.tareas.forEach(etiqueta => {
-    html += `
-      <div class="config-etiqueta-item" style="
-        background: ${etiqueta.color}20;
-        border: 2px solid ${etiqueta.color}40;
-        border-radius: 12px;
-        padding: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        transition: all 0.3s ease;
-      ">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 18px;">${etiqueta.simbolo}</span>
-          <span style="color: ${etiqueta.color}; font-weight: 600; font-size: 14px;">${etiqueta.nombre}</span>
-        </div>
-        <button onclick="eliminarEtiqueta('${etiqueta.id}')" style="
-          background: ${etiqueta.color};
-          color: white;
-          border: none;
-          border-radius: 50%;
-          width: 24px;
-          height: 24px;
-          cursor: pointer;
-          font-size: 12px;
-          transition: all 0.3s ease;
-        ">×</button>
-      </div>
-    `;
-  });
-
-  html += '</div>';
-  contenedor.innerHTML = html;
-}
-
-// Función para eliminar etiqueta
-function eliminarEtiqueta(etiquetaId) {
-  if (!confirm('¿Estás seguro de que quieres eliminar esta etiqueta?')) return;
-
-  // Eliminar de todas las categorías
-  if (window.etiquetasData.tareas) {
-    window.etiquetasData.tareas = window.etiquetasData.tareas.filter(e => e.id !== etiquetaId);
-  }
-  if (window.etiquetasData.criticas) {
-    window.etiquetasData.criticas = window.etiquetasData.criticas.filter(e => e.id !== etiquetaId);
-  }
-  if (window.etiquetasData.citas) {
-    window.etiquetasData.citas = window.etiquetasData.citas.filter(e => e.id !== etiquetaId);
-  }
-
-  // Guardar en la nube
-  if (typeof guardarConfigEnSupabase === 'function') {
-    guardarConfigEnSupabase();
-  }
-
-  // Re-renderizar
-  renderizarListaEtiquetas();
-  mostrarAlerta('🗑️ Etiqueta eliminada', 'info');
-}
-
-// Event listeners para selección de emoji y color
-document.addEventListener('DOMContentLoaded', function () {
-  // Esperar un momento para que el DOM esté completamente cargado
-  setTimeout(() => {
-    // Manejo de selección de emoji
-    document.querySelectorAll('.emoji-option').forEach(btn => {
-      btn.addEventListener('click', function () {
-        const emoji = this.dataset.emoji;
-        document.getElementById('nueva-etiqueta-simbolo').value = emoji;
-
-        // Actualizar estilos visuales
-        document.querySelectorAll('.emoji-option').forEach(b => b.style.borderColor = '#ddd');
-        this.style.borderColor = '#4ecdc4';
-        this.style.borderWidth = '3px';
-      });
-    });
-
-    // Manejo de selección de color para etiquetas
-    document.querySelectorAll('.color-etiqueta-option').forEach(btn => {
-      btn.addEventListener('click', function () {
-        const color = this.dataset.color;
-        document.getElementById('nueva-etiqueta-color').value = color;
-
-        // Actualizar estilos visuales
-        document.querySelectorAll('.color-etiqueta-option').forEach(b => {
-          b.style.border = '2px solid transparent';
-        });
-        this.style.border = '3px solid #333';
-      });
-    });
-
-    // Cargar etiquetas al abrir la pestaña
-    renderizarListaEtiquetas();
-  }, 200);
-});
-
-// Hacer funciones disponibles globalmente
-window.crearNuevaEtiqueta = crearNuevaEtiqueta;
-window.eliminarEtiqueta = eliminarEtiqueta;
-window.obtenerEtiquetaInfo = obtenerEtiquetaInfo;
-window.renderizarListaEtiquetas = renderizarListaEtiquetas;
-
-
-
-
-
-
-

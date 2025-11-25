@@ -964,19 +964,6 @@ window.guardarSentimiento = guardarSentimiento;
 window.aplicarVisibilidadSecciones = aplicarVisibilidadSecciones;
 window.inicializarEtiquetas = inicializarEtiquetas;
 window.cargarEtiquetasEnSelect = cargarEtiquetasEnSelect;
-window.renderizarListaEtiquetas = renderizarListaEtiquetas;
-window.agregarEtiquetaTarea = agregarEtiquetaTarea;
-window.agregarEtiquetaCita = agregarEtiquetaCita;
-window.eliminarEtiqueta = eliminarEtiqueta;
-window.obtenerEtiquetaInfo = obtenerEtiquetaInfo;
-window.moverAHistorial = moverAHistorial;
-window.registrarAccion = registrarAccion;
-window.cargarLog = cargarLog;
-window.limpiarLog = limpiarLog;
-window.exportarLog = exportarLog;
-window.verificarSalvadoDiario = verificarSalvadoDiario;
-window.crearSalvadoDiario = crearSalvadoDiario;
-window.limpiarSalvadosAntiguos = limpiarSalvadosAntiguos;
 window.cargarListaSalvados = cargarListaSalvados;
 window.restaurarSalvado = restaurarSalvado;
 window.aplicarConfiguracionSincronizada = aplicarConfiguracionSincronizada;
@@ -990,5 +977,34 @@ window.mostrarResumenDiario = mostrarResumenDiario;
 window.cerrarResumenDiario = cerrarResumenDiario;
 window.mostrarAlertaConectividad = mostrarAlertaConectividad;
 window.cerrarModalConectividad = cerrarModalConectividad;
+
+// ========== GUARDAR ETIQUETAS ==========
+async function guardarEtiquetas() {
+  console.log('🏷️ Guardando etiquetas en Supabase...');
+
+  // Las etiquetas están en window.etiquetasData
+  const etiquetas = window.etiquetasData || {
+    tareas: [],
+    citas: []
+  };
+
+  try {
+    // Guardar usando supabasePush
+    if (typeof supabasePush === 'function') {
+      await supabasePush();
+      mostrarAlerta('✅ Etiquetas guardadas correctamente', 'success');
+      console.log('✅ Etiquetas guardadas:', etiquetas);
+    } else {
+      console.warn('⚠️ supabasePush no disponible');
+      mostrarAlerta('⚠️ No se pudo guardar - Supabase no disponible', 'error');
+    }
+  } catch (error) {
+    console.error('❌ Error guardando etiquetas:', error);
+    mostrarAlerta('❌ Error al guardar etiquetas: ' + error.message, 'error');
+  }
+}
+
+// Exportar globalmente
+window.guardarEtiquetas = guardarEtiquetas;
 
 console.log('✅ Sincronización simplificada cargada (Supabase only)');

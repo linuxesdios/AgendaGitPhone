@@ -179,7 +179,18 @@ async function crearTablasSupabase() {
       },
       {
         id: 'etiquetas',
-        data: {}
+        data: {
+          tareas: [
+            { nombre: 'trabajo', simbolo: '💼', color: '#3498db' },
+            { nombre: 'ocio', simbolo: '🎮', color: '#9b59b6' },
+            { nombre: 'médicos', simbolo: '🏥', color: '#e74c3c' }
+          ],
+          citas: [
+            { nombre: 'trabajo', simbolo: '💼', color: '#3498db' },
+            { nombre: 'ocio', simbolo: '🎮', color: '#9b59b6' },
+            { nombre: 'médicos', simbolo: '🏥', color: '#e74c3c' }
+          ]
+        }
       },
       {
         id: 'log',

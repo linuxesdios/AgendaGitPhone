@@ -1,6 +1,10 @@
 // ========== VISOR DE HISTORIAL ==========
 
 function abrirVisorHistorial() {
+  if (!window.supabaseClient) {
+    mostrarAlerta('⚠️ Supabase no disponible', 'warning');
+    return;
+  }
 
   // Crear modal de historial
   const modal = document.createElement('div');
@@ -32,20 +36,52 @@ function abrirVisorHistorial() {
   `;
 
   document.body.appendChild(modal);
+  modal.style.display = 'block';
 
-  // Cargar datos iniciales
-  filtrarHistorial();
+  // Cargar historial
+  cargarHistorialCompleto();
+}
+
+function cargarHistorialCompleto() {
+  const contenido = document.getElementById('historial-contenido');
+  if (!contenido) return;
+
+  contenido.innerHTML = '<div style="text-align: center; padding: 20px;">🔄 Cargando historial...</div>';
+
+  try {
+    // Cargar historial desde localStorage
+    const historialTareas = JSON.parse(localStorage.getItem('historial-tareas') || '[]');
+    const historialEliminados = JSON.parse(localStorage.getItem('historial-eliminados') || '[]');
+    const historialSentimientos = JSON.parse(localStorage.getItem('historial-sentimientos') || '[]');
+
+    // Combinar todos los historiales
+    const historialCompleto = [
+      ...historialTareas,
+      ...historialEliminados.map(item => ({
+        ...item.data,
+        fecha: item.fecha_eliminacion ? item.fecha_eliminacion.slice(0, 10) : new Date().toISOString().slice(0, 10),
+        hora: item.fecha_eliminacion ? new Date(item.fecha_eliminacion).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '00:00',
+        texto: item.data.titulo || item.data.texto || item.data.nombre || 'Item eliminado',
+        esCritica: item.tipo === 'tarea_critica'
+      })),
+      ...historialSentimientos.map(item => ({
+        ...item,
+        texto: `Sentimiento: ${item.texto}`,
+        esCritica: false
+      }))
+    ];
+
+    window.historialCompleto = historialCompleto;
+    filtrarHistorial();
+  } catch (error) {
+    console.error('Error cargando historial:', error);
+    contenido.innerHTML = '<div style="text-align: center; padding: 20px; color: #f44336;">❌ Error cargando historial</div>';
+  }
 }
 
 function filtrarHistorial() {
-  const periodoSelect = document.getElementById('historial-periodo');
-  const tipoSelect = document.getElementById('historial-tipo');
-
-  if (!periodoSelect || !tipoSelect) return;
-
-  const periodo = parseInt(periodoSelect.value);
-  const tipo = tipoSelect.value;
-
+  const periodo = parseInt(document.getElementById('historial-periodo')?.value || '30');
+  const tipo = document.getElementById('historial-tipo')?.value || 'todas';
   const historial = window.historialCompleto || [];
 
   // Filtrar por período
@@ -215,7 +251,7 @@ function exportarHistorial() {
 
 // Hacer funciones disponibles globalmente
 window.abrirVisorHistorial = abrirVisorHistorial;
-// window.cargarHistorialCompleto = cargarHistorialCompleto; // Función no implementada
+window.cargarHistorialCompleto = cargarHistorialCompleto;
 window.filtrarHistorial = filtrarHistorial;
 window.mostrarEstadisticasHistorial = mostrarEstadisticasHistorial;
 window.mostrarListaHistorial = mostrarListaHistorial;
