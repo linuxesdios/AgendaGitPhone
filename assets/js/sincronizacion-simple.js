@@ -415,12 +415,22 @@ function agregarEtiquetaTarea() {
     return;
   }
 
-  // Inicializar ambas estructuras de datos
+  // Inicializar ambas estructuras de datos de forma segura
+  if (!window.tareasData) {
+    window.tareasData = {};
+  }
   if (!window.tareasData.etiquetas) {
     window.tareasData.etiquetas = { tareas: [], citas: [] };
   }
+
   if (!window.etiquetasData) {
     window.etiquetasData = { tareas: [], citas: [] };
+  }
+  if (!window.etiquetasData.tareas) {
+    window.etiquetasData.tareas = [];
+  }
+  if (!window.etiquetasData.citas) {
+    window.etiquetasData.citas = [];
   }
 
   const etiqueta = {
@@ -448,12 +458,22 @@ function agregarEtiquetaCita() {
     return;
   }
 
-  // Inicializar ambas estructuras de datos
+  // Inicializar ambas estructuras de datos de forma segura
+  if (!window.tareasData) {
+    window.tareasData = {};
+  }
   if (!window.tareasData.etiquetas) {
     window.tareasData.etiquetas = { tareas: [], citas: [] };
   }
+
   if (!window.etiquetasData) {
     window.etiquetasData = { tareas: [], citas: [] };
+  }
+  if (!window.etiquetasData.tareas) {
+    window.etiquetasData.tareas = [];
+  }
+  if (!window.etiquetasData.citas) {
+    window.etiquetasData.citas = [];
   }
 
   const etiqueta = {
