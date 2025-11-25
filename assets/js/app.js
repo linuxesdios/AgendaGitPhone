@@ -1214,6 +1214,11 @@ function switchTab(tabName) {
       cargarListaPersonas();
     }
   } else if (tabName === 'backups') {
+    // Cargar backups desde Supabase
+    if (typeof cargarListaBackups === 'function') {
+      cargarListaBackups();
+    }
+    // Mantener compatibilidad con salvados antiguos
     if (typeof cargarListaSalvados === 'function') {
       cargarListaSalvados();
     }
@@ -1318,7 +1323,7 @@ function cargarConfigFuncionalesEnFormulario() {
   if (autoMayuscula) autoMayuscula.checked = config.autoMayuscula !== false;
 
   const popupDiario = document.getElementById('config-popup-diario');
-  if (popupDiario) popupDiario.checked = config.popupDiario || false;
+  if (popupDiario) popupDiario.value = config.popupDiario || 'nunca';
 
   const notificacionesActivas = document.getElementById('config-notificaciones-activas');
   if (notificacionesActivas) notificacionesActivas.checked = config.notificacionesActivas || false;
@@ -1338,7 +1343,7 @@ async function guardarConfigFuncionales() {
     fechaObligatoria: document.getElementById('config-fecha-obligatoria')?.checked || false,
     confirmacionBorrar: document.getElementById('config-confirmacion-borrar')?.checked !== false,
     autoMayuscula: document.getElementById('config-auto-mayuscula')?.checked !== false,
-    popupDiario: document.getElementById('config-popup-diario')?.checked || false,
+    popupDiario: document.getElementById('config-popup-diario')?.value || 'nunca',
     notificacionesActivas: document.getElementById('config-notificaciones-activas')?.checked || false,
     notif1Dia: document.getElementById('config-notif-1-dia')?.checked || false,
     notif2Horas: document.getElementById('config-notif-2-horas')?.checked || false,
@@ -1398,6 +1403,10 @@ function toggleConfigFloating() {
     if (typeof window.renderizarListaEtiquetas === 'function') {
       window.renderizarListaEtiquetas('etiquetas-tareas-lista', 'tareas');
       window.renderizarListaEtiquetas('etiquetas-citas-lista', 'citas');
+    }
+    // Cargar lista de backups si está disponible
+    if (typeof cargarListaBackups === 'function') {
+      cargarListaBackups();
     }
   };
 

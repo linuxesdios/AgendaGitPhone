@@ -497,13 +497,8 @@
 
   <!-- Modal de Configuración -->
   <div id="modal-config" class="modal">
-    <div class="modal-content" style="max-width:900px;width:98%;max-height:90vh;overflow-y:auto;overflow-x:hidden;">
-      <div
-        style="position:sticky;top:0;background:white;z-index:10;padding:15px 0 10px 0;border-bottom:1px solid #eee;margin-bottom:15px;">
-        <h4 style="margin:0;padding:0;text-align:center;font-size:18px;">⚙️ Configuración</h4>
-      </div>
-
-      <div class="config-tabs" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:20px;justify-content:center;">
+    <div class="modal-content" style="max-width:900px;width:98%;max-height:90vh;overflow-y:auto;overflow-x:hidden;padding-top:0;">
+      <div class="config-tabs" style="position:sticky;top:0;background:white;z-index:10;display:flex;flex-wrap:wrap;gap:5px;padding:8px 0 8px 0;border-bottom:1px solid #eee;margin-bottom:20px;justify-content:center;">
         <button class="config-tab active" onclick="switchTab('supabase')"
           style="flex:1;min-width:80px;padding:8px 6px;font-size:11px;text-align:center;">☁️ Supabase</button>
         <button class="config-tab" onclick="switchTab('visual')"
@@ -572,9 +567,7 @@
 
           <div style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
             <h4>🛠️ Herramientas de Datos</h4>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-              <button onclick="supabasePush()" class="btn-secundario" style="font-size: 12px;">⬆️ Forzar
-                Subida (Push)</button>
+            <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
               <button onclick="supabasePull()" class="btn-secundario" style="font-size: 12px;">⬇️ Forzar
                 Bajada (Pull)</button>
             </div>
@@ -1216,15 +1209,14 @@
           <div
             style="background:linear-gradient(135deg, #11998e 0%, #38ef7d 100%);color:white;padding:18px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 12px rgba(17,153,142,0.3);">
             <h4 style="margin:0 0 15px 0;color:white;font-size:16px;">🔧 Controles de Backup</h4>
-            <p style="margin:0 0 15px 0;color:rgba(255,255,255,0.9);font-size:13px;">Crea y gestiona copias de seguridad
-              de tus datos</p>
+            <p style="margin:0 0 15px 0;color:rgba(255,255,255,0.9);font-size:13px;">Backups automáticos diarios • Limpieza automática después de 10 días</p>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <button class="btn-primario" onclick="crearSalvadoManual()"
+              <button class="btn-primario" onclick="guardarBackupAutomatico(true)"
                 style="padding:12px 20px;background:rgba(255,255,255,0.9);color:#11998e;border:none;border-radius:6px;font-weight:bold;cursor:pointer;transition:all 0.3s ease;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;">
                 💾 Crear Backup Ahora
               </button>
-              <button class="btn-secundario" onclick="limpiarSalvadosAntiguos()"
+              <button class="btn-secundario" onclick="limpiarBackupsAntiguos(false)"
                 style="padding:12px 20px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:6px;font-weight:bold;cursor:pointer;transition:all 0.3s ease;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;">
                 🗑️ Limpiar Antiguos
               </button>
@@ -1354,7 +1346,7 @@
               </button>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
               <button class="btn-secundario" onclick="restaurarBackup()"
                 style="padding:12px 20px;background:rgba(255,255,255,0.8);color:#2d3748;border:1px solid rgba(45,55,72,0.2);border-radius:6px;font-weight:bold;cursor:pointer;transition:all 0.3s ease;font-size:14px;">
                 📥 Importar JSON
@@ -1362,6 +1354,17 @@
               <button class="btn-secundario" onclick="abrirEditorBaseDatos()"
                 style="padding:12px 20px;background:rgba(255,255,255,0.8);color:#2d3748;border:1px solid rgba(45,55,72,0.2);border-radius:6px;font-weight:bold;cursor:pointer;transition:all 0.3s ease;font-size:14px;">
                 🔧 Editar BD
+              </button>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <button class="btn-secundario" onclick="borrarDatosLocales()"
+                style="padding:12px 20px;background:rgba(255,80,80,0.15);color:#c53030;border:1px solid rgba(197,48,48,0.3);border-radius:6px;font-weight:bold;cursor:pointer;transition:all 0.3s ease;font-size:14px;">
+                🗑️ Borrar Datos Locales
+              </button>
+              <button class="btn-secundario" onclick="borrarDatosNube()"
+                style="padding:12px 20px;background:rgba(255,80,80,0.15);color:#c53030;border:1px solid rgba(197,48,48,0.3);border-radius:6px;font-weight:bold;cursor:pointer;transition:all 0.3s ease;font-size:14px;">
+                🗑️ Borrar Datos en Nube
               </button>
             </div>
           </div>
