@@ -53,15 +53,12 @@ async function initSupabase() {
 
 // ========== FUNCIONES DE INTERFAZ ==========
 function guardarConfigSupabase() {
-  console.log('🔧 FUNCIÓN CORREGIDA: guardarConfigSupabase iniciada');
-  // Verificamos que todos los elementos existan antes de acceder a sus valores
   const urlElement = document.getElementById('supabase-url');
   const keyElement = document.getElementById('supabase-key');
   const serviceKeyElement = document.getElementById('supabase-service-key');
 
   if (!urlElement || !keyElement) {
     alert('⚠️ Error: Formulario de Supabase no encontrado');
-    console.error('Elementos del formulario no encontrados:', { urlElement, keyElement });
     return;
   }
 
@@ -75,6 +72,7 @@ function guardarConfigSupabase() {
   }
 
   saveSupabaseConfig(url, key, serviceKey);
+  console.log('✅ Configuración de Supabase guardada');
   showSupabaseStatus('✅ Configuración guardada correctamente', 'success');
 }
 
@@ -90,7 +88,6 @@ function toggleSupabaseKeyVisibility() {
     toggleButton.textContent = '🙈';
     toggleButton.title = 'Ocultar contraseña';
 
-    // Ocultar automáticamente después de 3 segundos
     setTimeout(() => {
       if (keyInput.type === 'text') {
         keyInput.type = 'password';
@@ -321,9 +318,8 @@ async function supabasePull() {
   }
 
   try {
-    console.log('⚡ ========== SUPABASE PULL ==========');
+    console.log('📥 PULL: Descargando datos de Supabase...');
 
-    // Obtener todas las colecciones en paralelo
     const collections = [
       'tareas', 'citas', 'config', 'notas', 'sentimientos',
       'contrasenas', 'historial_eliminados', 'historial_tareas',
@@ -348,32 +344,39 @@ async function supabasePull() {
     const results = await Promise.all(promises);
 
     // Aplicar datos a las variables globales
-    console.log('📥 Aplicando datos cargados de Supabase:');
     results.forEach(({ collection, data }) => {
-      console.log(`  - ${collection}:`, data);
-
       switch (collection) {
         case 'tareas':
           window.tareasData = data;
           if (data.tareas_criticas) {
             if (!window.appState.agenda) window.appState.agenda = {}; window.appState.agenda.tareas_criticas = data.tareas_criticas;
-            console.log(`    ✅ Tareas críticas cargadas: ${data.tareas_criticas.length}`);
+            console.log(`  ✅ CARGADO: ${data.tareas_criticas.length} tareas críticas`);
           }
           if (data.tareas) {
             if (!window.appState.agenda) window.appState.agenda = {}; window.appState.agenda.tareas = data.tareas;
-            console.log(`    ✅ Tareas normales cargadas: ${data.tareas.length}`);
+            console.log(`  ✅ CARGADO: ${data.tareas.length} tareas normales`);
           }
           if (data.listasPersonalizadas) {
             window.configVisual.listasPersonalizadas = data.listasPersonalizadas;
-            console.log(`    ✅ Listas personalizadas cargadas: ${data.listasPersonalizadas.length}`);
+            console.log(`  ✅ CARGADO: ${data.listasPersonalizadas.length} listas personalizadas`);
           }
           break;
         case 'citas':
-          if (data.citas) { if (!window.appState.agenda) window.appState.agenda = {}; window.appState.agenda.citas = data.citas; }
+          if (data.citas) {
+            if (!window.appState.agenda) window.appState.agenda = {};
+            window.appState.agenda.citas = data.citas;
+            console.log(`  ✅ CARGADO: ${data.citas.length} citas`);
+          }
           break;
         case 'config':
-          if (data.visual) window.configVisual = { ...window.configVisual, ...data.visual };
-          if (data.funcionales) window.configFuncionales = data.funcionales;
+          if (data.visual) {
+            window.configVisual = { ...window.configVisual, ...data.visual };
+            console.log('  ✅ CARGADO: Configuración visual');
+          }
+          if (data.funcionales) {
+            window.configFuncionales = data.funcionales;
+            console.log('  ✅ CARGADO: Configuración funcional');
+          }
           if (data.opciones) window.configOpciones = data.opciones;
           break;
         case 'notas':
@@ -394,21 +397,24 @@ async function supabasePull() {
         case 'personas':
           if (data.lista) {
             window.personasAsignadas = data.lista;
-            // Sincronizar con tareasData.personas para compatibilidad
             if (!window.tareasData) window.tareasData = {};
             window.tareasData.personas = [...data.lista];
-            console.log('👥 Personas cargadas desde Supabase:', data.lista);
+            console.log(`  ✅ CARGADO: ${data.lista.length} personas`);
           }
           break;
         case 'etiquetas':
           window.etiquetasData = data;
-          // Sincronizar con tareasData.etiquetas para compatibilidad
           if (!window.tareasData) window.tareasData = {};
           if (!window.tareasData.etiquetas) window.tareasData.etiquetas = {};
           window.tareasData.etiquetas = data;
+          const totalEtiquetas = (data.tareas?.length || 0) + (data.citas?.length || 0);
+          console.log(`  ✅ CARGADO: ${totalEtiquetas} etiquetas`);
           break;
         case 'log':
-          if (data.acciones) window.logAcciones = data.acciones;
+          if (data.acciones) {
+            window.logAcciones = data.acciones;
+            console.log(`  ✅ CARGADO: ${data.acciones.length} acciones en log`);
+          }
           break;
         case 'salvados':
           window.salvadosData = data;
@@ -416,20 +422,18 @@ async function supabasePull() {
       }
     });
 
-    console.log('✅ Pull de Supabase completado');
+    console.log('✅ PULL completado - Datos sincronizados correctamente');
 
-    // ✅ SINCRONIZAR ESTRUCTURAS DE ETIQUETAS
     if (typeof window.sincronizarEstructurasEtiquetas === 'function') {
       window.sincronizarEstructurasEtiquetas();
     }
 
-    // ✅ APLICAR CONFIGURACIÓN VISUAL INMEDIATAMENTE (sin setTimeout)
-    console.log('🎨 Aplicando configuración visual INMEDIATAMENTE después del pull...');
-
-    // Aplicar configuración visual cargada PRIMERO
     if (typeof window.cargarConfigVisual === 'function') {
-      console.log('🎨 Llamando a cargarConfigVisual()...');
       window.cargarConfigVisual();
+    }
+
+    if (typeof window.cargarConfigFuncionalesEnFormulario === 'function') {
+      window.cargarConfigFuncionalesEnFormulario();
     }
 
     if (typeof window.aplicarVisibilidadSecciones === 'function') {
@@ -450,17 +454,13 @@ async function supabasePull() {
       window.renderizar();
     }
 
-    // Actualizar log si está visible
     if (typeof window.cargarLog === 'function') {
       window.cargarLog();
     }
 
-    console.log('✅ Configuración y renderizado completados');
-
-
     return true;
   } catch (error) {
-    console.error('❌ Error en supabasePull:', error);
+    console.error('❌ Error en PULL:', error);
     return false;
   }
 }
@@ -476,19 +476,8 @@ async function supabasePush(isAutomatic = false) {
   }
 
   try {
-    const logPrefix = isAutomatic ? '🔄 [AUTO-SYNC SUPABASE]' : '💾 [MANUAL SYNC SUPABASE]';
-    console.log(`${logPrefix} Iniciando...`);
-    console.log('🔍 DEBUGGING SINCRONIZACIÓN:');
-    console.log('  - URL Supabase:', getSupabaseConfig().url ? '✅ Configurada' : '❌ Faltante');
-    console.log('  - API Key:', getSupabaseConfig().key ? '✅ Configurada' : '❌ Faltante');
-    console.log('  - Cliente inicializado:', !!window.supabaseClient);
-    console.log('  - Método de sync actual:', window.currentSyncMethod);
-
-    // Preparar datos para sincronización
-    console.log('💾 Preparando datos para Supabase:');
-    console.log('  - Tareas críticas:', window.appState?.agenda?.tareas_criticas?.length || 0);
-    console.log('  - Tareas normales:', window.appState?.agenda?.tareas?.length || 0);
-    console.log('  - Listas personalizadas:', window.configVisual?.listasPersonalizadas?.length || 0);
+    const logPrefix = isAutomatic ? '🔄 AUTO-PUSH' : '💾 PUSH';
+    console.log(`${logPrefix}: Guardando datos en Supabase...`);
 
     const updates = [
       {
@@ -545,63 +534,51 @@ async function supabasePush(isAutomatic = false) {
       }
     ];
 
-    // Hacer upserts (insert o update)
     const promises = updates.map(async ({ id, data }) => {
-      console.log(`  - Guardando ${id}:`, data);
       const result = await window.supabaseClient
         .from('agenda_data')
         .upsert({ id, data }, { onConflict: 'id' });
 
       if (result.error) {
-        console.error(`    ❌ Error guardando ${id}:`, result.error);
+        console.error(`  ❌ Error guardando ${id}:`, result.error);
       } else {
-        console.log(`    ✅ ${id} guardado correctamente`);
+        // Log específico por tipo de dato
+        let detalle = '';
+        if (id === 'tareas') {
+          const criticas = data.tareas_criticas?.length || 0;
+          const normales = data.tareas?.length || 0;
+          const listas = data.listasPersonalizadas?.length || 0;
+          detalle = `(${criticas} críticas, ${normales} normales, ${listas} listas)`;
+        } else if (id === 'citas') {
+          detalle = `(${data.citas?.length || 0} citas)`;
+        } else if (id === 'config') {
+          detalle = '(visual, funcional, opciones)';
+        } else if (id === 'personas') {
+          detalle = `(${data.lista?.length || 0} personas)`;
+        } else if (id === 'etiquetas') {
+          const total = (data.tareas?.length || 0) + (data.citas?.length || 0);
+          detalle = `(${total} etiquetas)`;
+        } else if (id === 'log') {
+          detalle = `(${data.acciones?.length || 0} acciones)`;
+        }
+        console.log(`  ✅ GUARDADO: ${id} ${detalle}`);
       }
       return result;
     });
 
     const results = await Promise.all(promises);
 
-    // Verificar que no haya errores
     const errors = results.filter(r => r.error);
     if (errors.length > 0) {
       console.error('❌ Errores al guardar:', errors);
-      console.error('🔍 DETALLES DE ERRORES:');
-      errors.forEach((result, index) => {
-        console.error(`  Error ${index + 1}:`, {
-          message: result.error.message,
-          details: result.error.details,
-          hint: result.error.hint,
-          code: result.error.code
-        });
-      });
       return false;
     }
 
-    console.log(`${logPrefix} ✅ Completado - ${updates.length} colecciones guardadas`);
-
-    // Verificar que los datos se guardaron correctamente (solo para tareas)
-    if (!isAutomatic) {
-      setTimeout(async () => {
-        try {
-          const { data: verificacion, error } = await window.supabaseClient
-            .from('agenda_data')
-            .select('*')
-            .eq('id', 'tareas')
-            .single();
-
-          if (!error && verificacion) {
-            console.log('🔍 Verificación post-guardado:', verificacion.data);
-          }
-        } catch (e) {
-          console.warn('⚠️ Error en verificación post-guardado:', e);
-        }
-      }, 1000);
-    }
+    console.log(`✅ ${logPrefix} completado - ${updates.length} colecciones sincronizadas`);
 
     return true;
   } catch (error) {
-    console.error('❌ Error en supabasePush:', error);
+    console.error('❌ Error en PUSH:', error);
     return false;
   }
 }
@@ -865,40 +842,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       sentimientos: '',
       contrasenas: []
     };
-    console.log('📝 Variables globales de appState inicializadas');
   }
 
   if (!window.configVisual) {
     window.configVisual = {
       listasPersonalizadas: []
     };
-    console.log('📝 Variables globales de configVisual inicializadas');
   }
 
-  // Cargar configuración guardada
   cargarConfigSupabaseEnFormulario();
 
-  // Cargar método de sincronización guardado
   const savedMethod = localStorage.getItem('syncMethod') || localStorage.getItem('lastSyncMethod') || 'supabase';
-  console.log(`📥 Método guardado en localStorage: ${savedMethod}`);
-
-  // Establecer método actual
   window.currentSyncMethod = savedMethod;
 
-  // Inicializar configuraciones si existen (sin duplicar)
   const configSupabase = getSupabaseConfig();
   if (configSupabase.url && configSupabase.key && !window.supabaseClient) {
     await initSupabase();
-    console.log('⚡ Supabase inicializado en startup');
+    console.log('⚡ Supabase inicializado - Cargando datos...');
 
-    // 🔄 PULL AUTOMÁTICO: Cargar datos desde Supabase
-    console.log('📥 Cargando datos desde Supabase...');
     try {
       await supabasePull();
-      console.log('✅ Datos cargados automáticamente desde Supabase');
 
-      // 🎨 DISPARAR EVENTO para que app.js aplique la configuración
-      console.log('🎨 Disparando evento de configuración cargada...');
       const evento = new CustomEvent('supabaseConfigLoaded', {
         detail: {
           config: window.configVisual,
@@ -906,24 +870,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
       document.dispatchEvent(evento);
-      console.log('✅ Evento supabaseConfigLoaded disparado');
 
-      // 🧹 LIMPIEZA AUTOMÁTICA: Eliminar backups antiguos (>10 días)
-      console.log('🧹 Verificando backups antiguos para limpieza...');
       await limpiarBackupsAntiguos(true);
-
-      // 💾 BACKUP DIARIO AUTOMÁTICO
-      console.log('💾 Verificando backup diario automático...');
       await verificarBackupDiario();
 
     } catch (error) {
       console.warn('⚠️ Error al cargar datos:', error);
     }
   } else {
-    // 🎨 FALLBACK: Si no hay Supabase configurado, disparar evento con valores por defecto
-    console.log('📄 Supabase no configurado, disparando evento con configuración por defecto');
-
-    // 🔔 MOSTRAR AYUDA si no está configurado
     detectarPrimeraVezSupabase();
 
     setTimeout(() => {
@@ -935,17 +889,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
       document.dispatchEvent(evento);
-      console.log('✅ Evento fallback supabaseConfigLoaded disparado');
     }, 100);
   }
 
-  // Esperar un poco para que se cargue la interfaz
   setTimeout(() => {
-    // Activar método seleccionado en la interfaz
     const radioButton = document.querySelector(`input[name="sync-method"][value="${savedMethod}"]`);
     if (radioButton) {
       radioButton.checked = true;
-      console.log(`✅ Radio button marcado: ${savedMethod}`);
     }
 
     // Actualizar interfaz
@@ -1084,10 +1034,9 @@ async function guardarBackupAutomatico(esManual = false) {
   }
 
   try {
-    const logPrefix = esManual ? '💾 [BACKUP MANUAL]' : '🔄 [BACKUP AUTOMÁTICO]';
-    console.log(`${logPrefix} Iniciando...`);
+    const logPrefix = esManual ? '💾 BACKUP MANUAL' : '🔄 BACKUP AUTOMÁTICO';
+    console.log(`${logPrefix}: Creando backup...`);
 
-    // Recopilar TODOS los datos de todas las colecciones
     const collections = [
       'tareas', 'citas', 'config', 'notas', 'sentimientos',
       'contrasenas', 'historial_eliminados', 'historial_tareas',
@@ -1096,7 +1045,6 @@ async function guardarBackupAutomatico(esManual = false) {
 
     const backupData = {};
 
-    // Obtener datos de cada colección
     for (const collection of collections) {
       try {
         const { data, error } = await window.supabaseClient
@@ -1107,13 +1055,10 @@ async function guardarBackupAutomatico(esManual = false) {
 
         if (!error && data) {
           backupData[collection] = data.data;
-          console.log(`  ✅ ${collection} añadido al backup`);
         } else {
           backupData[collection] = {};
-          console.log(`  ⚠️ ${collection} vacío o no encontrado`);
         }
       } catch (err) {
-        console.warn(`  ⚠️ Error obteniendo ${collection}:`, err);
         backupData[collection] = {};
       }
     }
@@ -1132,10 +1077,7 @@ async function guardarBackupAutomatico(esManual = false) {
       });
 
     if (insertError) {
-      // Si la tabla no existe, mostrar instrucciones
       if (insertError.code === 'PGRST116' || insertError.message.includes('does not exist')) {
-        console.error('❌ La tabla agenda_backups no existe');
-
         if (esManual) {
           const shouldCreate = confirm(
             '⚠️ Tabla de Backups No Existe\n\n' +
@@ -1145,7 +1087,6 @@ async function guardarBackupAutomatico(esManual = false) {
 
           if (shouldCreate) {
             await crearTablaBackups();
-            // Reintentar guardar el backup
             return await guardarBackupAutomatico(esManual);
           }
         }
@@ -1155,11 +1096,10 @@ async function guardarBackupAutomatico(esManual = false) {
       throw insertError;
     }
 
-    console.log(`${logPrefix} ✅ Backup creado: ${backupId}`);
+    console.log(`✅ ${logPrefix} creado: ${backupId}`);
 
     if (esManual) {
       alert(`✅ Backup Creado\n\n${backupId}\n\nTodos los datos han sido respaldados correctamente.`);
-      // Actualizar lista de backups si está visible
       if (typeof cargarListaBackups === 'function') {
         cargarListaBackups();
       }

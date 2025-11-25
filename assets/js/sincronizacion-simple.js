@@ -274,15 +274,32 @@ function cargarConfigFuncionales() {
   if (horaResumenEl) horaResumenEl.value = config.horaResumen || '08:00';
   if (salvadoAutomaticoEl) salvadoAutomaticoEl.checked = config.salvadoAutomatico || false;
   if (intervaloGuardadoEl) intervaloGuardadoEl.value = config.intervaloGuardado || 5;
+
+  // Mostrar resumen diario automático según configuración
+  setTimeout(() => mostrarResumenDiario(), 500);
 }
 
 function mostrarResumenDiario() {
   const config = window.configFuncionales || {};
-  if (!config.mostrarResumenDiario) return;
 
-  const horaActual = new Date().toTimeString().slice(0, 5);
-  if (horaActual === config.horaResumen) {
-    console.log('⏰ Mostrando resumen diario');
+  // Usar la configuración correcta del SELECT config-popup-diario
+  const popupDiario = config.popupDiario || 'nunca';
+
+  if (popupDiario === 'nunca') return;
+
+  if (popupDiario === 'siempre') {
+    mostrarResumenDiarioManual();
+    return;
+  }
+
+  if (popupDiario === 'una_vez') {
+    const hoy = new Date().toDateString();
+    const ultimoPopup = localStorage.getItem('ultimoPopupResumenDiario');
+
+    if (ultimoPopup !== hoy) {
+      localStorage.setItem('ultimoPopupResumenDiario', hoy);
+      mostrarResumenDiarioManual();
+    }
   }
 }
 

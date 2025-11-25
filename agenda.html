@@ -670,18 +670,6 @@
               <input type="text" id="config-titulo-input" placeholder="Agenda" onchange="guardarConfigVisualPanel()"
                 style="width:100%;padding:8px 12px;border:none;border-radius:6px;background:rgba(255,255,255,0.95);color:#333;">
             </div>
-
-            <div id="config-columnas-container" style="margin-top:15px;">
-              <label style="color:rgba(255,255,255,0.9);font-weight:500;margin-bottom:8px;display:block;">📐 Diseño de
-                columnas:</label>
-              <select id="config-columnas" onchange="guardarConfigVisualPanel()"
-                style="width:100%;padding:8px 12px;border:none;border-radius:6px;background:rgba(255,255,255,0.95);color:#333;">
-                <option value="2">📱 Dos columnas (recomendado)</option>
-                <option value="1">📄 Una columna (vista simple)</option>
-              </select>
-              <small style="color:rgba(255,255,255,0.8);font-size:11px;display:block;margin-top:4px;">Cambia la
-                distribución de las secciones en la página principal</small>
-            </div>
           </div>
 
           <!-- Sección: Elementos de Interfaz -->
@@ -743,6 +731,18 @@
               </select>
               <small style="color:rgba(255,255,255,0.8);font-size:11px;display:block;margin-top:4px;">Cómo mostrar el
                 calendario en la página principal</small>
+            </div>
+
+            <div id="config-columnas-container" style="margin-top:15px;">
+              <label style="color:rgba(255,255,255,0.9);font-weight:500;margin-bottom:8px;display:block;">📐 Diseño de
+                columnas:</label>
+              <select id="config-columnas" onchange="guardarConfigVisualPanel()"
+                style="width:100%;padding:8px 12px;border:none;border-radius:6px;background:rgba(255,255,255,0.95);color:#333;">
+                <option value="2">📱 Dos columnas (recomendado)</option>
+                <option value="1">📄 Una columna (vista simple)</option>
+              </select>
+              <small style="color:rgba(255,255,255,0.8);font-size:11px;display:block;margin-top:4px;">Cambia la
+                distribución de las secciones en la página principal. En móviles siempre se usa 1 columna.</small>
             </div>
           </div>
 

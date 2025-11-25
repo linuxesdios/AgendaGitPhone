@@ -57,7 +57,7 @@ function getExtendsClassConfig() {
 
 // ========== DETECCIÓN DE DISPOSITIVO ==========
 const isMobile = () => {
-  return window.innerWidth <= 1024 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  return window.innerWidth <= 768 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 };
 
 const isTabletOrMobile = () => {
@@ -414,6 +414,11 @@ function autoResizeTextarea(textarea) {
 
 // ========== AUTO-CAPITALIZE ==========
 function autoCapitalize(input) {
+  const config = window.configFuncionales || {};
+
+  // Solo aplicar si el usuario tiene habilitada la auto-mayúscula
+  if (config.autoMayuscula === false) return;
+
   const cursorPos = input.selectionStart;
   const value = input.value;
 
@@ -426,9 +431,24 @@ function autoCapitalize(input) {
 }
 
 function setupAutoCapitalize() {
-  // Aplicar a todos los inputs de texto y textareas
-  document.querySelectorAll('input[type="text"], textarea, #cita-descripcion').forEach(input => {
-    input.addEventListener('input', () => autoCapitalize(input));
+  const config = window.configFuncionales || {};
+
+  // Obtener todos los inputs de texto y textareas relevantes
+  const inputs = document.querySelectorAll('input[type="text"], textarea, #cita-descripcion');
+
+  inputs.forEach(input => {
+    // Remover event listeners previos (si existen) para evitar duplicados
+    if (input._autoCapitalizeHandler) {
+      input.removeEventListener('input', input._autoCapitalizeHandler);
+      delete input._autoCapitalizeHandler;
+    }
+
+    // Solo agregar event listener si auto-mayúscula está habilitada
+    if (config.autoMayuscula !== false) {
+      const handler = () => autoCapitalize(input);
+      input.addEventListener('input', handler);
+      input._autoCapitalizeHandler = handler; // Guardar referencia para poder remover después
+    }
   });
 }
 
@@ -1313,8 +1333,11 @@ function cargarConfigFuncionalesEnFormulario() {
   // Cargar configuración DESDE VARIABLES GLOBALES (sincronizadas con Supabase)
   const config = window.configFuncionales || {};
 
+  // 🔍 LOG DE DEPURACIÓN: Ver qué se está cargando
+  console.log('🔍 DEBUG - Config funcional cargada desde Supabase:', config);
+
   const fechaObligatoria = document.getElementById('config-fecha-obligatoria');
-  if (fechaObligatoria) fechaObligatoria.checked = config.fechaObligatoria || false;
+  if (fechaObligatoria) fechaObligatoria.checked = config.fechaObligatoria === true;
 
   const confirmacionBorrar = document.getElementById('config-confirmacion-borrar');
   if (confirmacionBorrar) confirmacionBorrar.checked = config.confirmacionBorrar !== false;
@@ -1326,29 +1349,41 @@ function cargarConfigFuncionalesEnFormulario() {
   if (popupDiario) popupDiario.value = config.popupDiario || 'nunca';
 
   const notificacionesActivas = document.getElementById('config-notificaciones-activas');
-  if (notificacionesActivas) notificacionesActivas.checked = config.notificacionesActivas || false;
+  if (notificacionesActivas) notificacionesActivas.checked = config.notificacionesActivas === true;
 
   const notif1Dia = document.getElementById('config-notif-1-dia');
-  if (notif1Dia) notif1Dia.checked = config.notif1Dia || false;
+  if (notif1Dia) notif1Dia.checked = config.notif1Dia === true;
 
   const notif2Horas = document.getElementById('config-notif-2-horas');
-  if (notif2Horas) notif2Horas.checked = config.notif2Horas || false;
+  if (notif2Horas) notif2Horas.checked = config.notif2Horas === true;
 
   const notif30Min = document.getElementById('config-notif-30-min');
-  if (notif30Min) notif30Min.checked = config.notif30Min || false;
+  if (notif30Min) notif30Min.checked = config.notif30Min === true;
 }
 
 async function guardarConfigFuncionales() {
+  const fechaObligatoriaEl = document.getElementById('config-fecha-obligatoria');
+  const confirmacionBorrarEl = document.getElementById('config-confirmacion-borrar');
+  const autoMayusculaEl = document.getElementById('config-auto-mayuscula');
+  const popupDiarioEl = document.getElementById('config-popup-diario');
+  const notificacionesActivasEl = document.getElementById('config-notificaciones-activas');
+  const notif1DiaEl = document.getElementById('config-notif-1-dia');
+  const notif2HorasEl = document.getElementById('config-notif-2-horas');
+  const notif30MinEl = document.getElementById('config-notif-30-min');
+
   const config = {
-    fechaObligatoria: document.getElementById('config-fecha-obligatoria')?.checked || false,
-    confirmacionBorrar: document.getElementById('config-confirmacion-borrar')?.checked !== false,
-    autoMayuscula: document.getElementById('config-auto-mayuscula')?.checked !== false,
-    popupDiario: document.getElementById('config-popup-diario')?.value || 'nunca',
-    notificacionesActivas: document.getElementById('config-notificaciones-activas')?.checked || false,
-    notif1Dia: document.getElementById('config-notif-1-dia')?.checked || false,
-    notif2Horas: document.getElementById('config-notif-2-horas')?.checked || false,
-    notif30Min: document.getElementById('config-notif-30-min')?.checked || false
+    fechaObligatoria: fechaObligatoriaEl ? fechaObligatoriaEl.checked : false,
+    confirmacionBorrar: confirmacionBorrarEl ? confirmacionBorrarEl.checked : true,
+    autoMayuscula: autoMayusculaEl ? autoMayusculaEl.checked : true,
+    popupDiario: popupDiarioEl ? popupDiarioEl.value : 'nunca',
+    notificacionesActivas: notificacionesActivasEl ? notificacionesActivasEl.checked : false,
+    notif1Dia: notif1DiaEl ? notif1DiaEl.checked : false,
+    notif2Horas: notif2HorasEl ? notif2HorasEl.checked : false,
+    notif30Min: notif30MinEl ? notif30MinEl.checked : false
   };
+
+  // 🔍 LOG DE DEPURACIÓN: Ver qué se está guardando
+  console.log('🔍 DEBUG - Config funcional que se va a guardar:', config);
 
   // Guardar DIRECTAMENTE en variables globales
   window.configFuncionales = config;
