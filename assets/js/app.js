@@ -4046,3 +4046,130 @@ window.eliminarSubtareaListaPersonalizada = eliminarSubtareaListaPersonalizada;
 window.abrirModalSubtareaListaPersonalizada = abrirModalSubtareaListaPersonalizada;
 window.guardarSubtareaListaPersonalizada = guardarSubtareaListaPersonalizada;
 window.toggleSubtareaListaPersonalizada = toggleSubtareaListaPersonalizada;
+
+// ========== MODAL DE LISTAS PERSONALIZADAS (NUEVO) ==========
+
+function abrirModalListaPersonalizada() {
+  abrirModal('modal-listas-personalizadas');
+  renderizarListasEnModalPersonalizado();
+}
+
+function insertarEmojiEnInput(inputId, emoji) {
+  const input = document.getElementById(inputId);
+  if (input) {
+    input.value = emoji;
+  }
+}
+
+function renderizarListasEnModalPersonalizado() {
+  const contenedor = document.getElementById('listas-personalizadas-modal-lista');
+  if (!contenedor) return;
+
+  const configVisual = window.configVisual || {};
+  const listas = configVisual.listasPersonalizadas || [];
+
+  if (listas.length === 0) {
+    contenedor.innerHTML = '<p style="color:#999;text-align:center;font-style:italic;">No hay listas personalizadas aún.</p>';
+    return;
+  }
+
+  let html = '';
+  listas.forEach(lista => {
+    html += `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;margin-bottom:5px;background:#fff;border:1px solid #eee;border-radius:4px;border-left:4px solid ${lista.color};">
+        <div>
+          <span style="font-size:18px;margin-right:5px;">${lista.emoji}</span>
+          <strong>${lista.nombre}</strong>
+        </div>
+        <button onclick="eliminarListaDesdeModal('${lista.id}')" style="color:red;border:none;background:none;cursor:pointer;">🗑️</button>
+      </div>
+    `;
+  });
+
+  contenedor.innerHTML = html;
+}
+
+function agregarListaPersonalizadaDesdeModal() {
+  const nombreInput = document.getElementById('nueva-lista-nombre');
+  const emojiInput = document.getElementById('nueva-lista-emoji');
+  const colorInput = document.getElementById('nueva-lista-color');
+
+  const nombre = nombreInput.value.trim();
+  const emoji = emojiInput.value.trim() || '📋';
+  const color = colorInput.value;
+
+  if (!nombre) {
+    alert('Por favor, escribe un nombre para la lista.');
+    return;
+  }
+
+  if (!window.configVisual) window.configVisual = {};
+  if (!window.configVisual.listasPersonalizadas) window.configVisual.listasPersonalizadas = [];
+
+  // Crear ID único
+  const id = 'lista-' + Date.now();
+
+  const nuevaLista = {
+    id: id,
+    nombre: nombre,
+    emoji: emoji,
+    color: color,
+    tipo: 'personalizada',
+    tareas: []
+  };
+
+  window.configVisual.listasPersonalizadas.push(nuevaLista);
+
+  // Limpiar formulario
+  nombreInput.value = '';
+  emojiInput.value = '';
+
+  // Actualizar vista previa
+  renderizarListasEnModalPersonalizado();
+
+  // Feedback visual
+  const btn = document.querySelector('#modal-listas-personalizadas .btn-primario');
+  if (btn) {
+    const originalText = btn.textContent;
+    btn.textContent = '✅ Añadido';
+    setTimeout(() => btn.textContent = originalText, 1000);
+  }
+}
+
+function eliminarListaDesdeModal(id) {
+  if (!confirm('¿Seguro que quieres eliminar esta lista?')) return;
+
+  if (window.configVisual && window.configVisual.listasPersonalizadas) {
+    window.configVisual.listasPersonalizadas = window.configVisual.listasPersonalizadas.filter(l => l.id !== id);
+    renderizarListasEnModalPersonalizado();
+  }
+}
+
+async function guardarYSalirListasPersonalizadas() {
+  console.log('💾 Guardando listas personalizadas...');
+
+  // ⚠️ IMPORTANTE: No usar guardarConfigVisualPanel() si no estamos seguros de que el modal de configuración existe
+  // porque podría resetear otros valores a default.
+
+  // 1. Asegurar que window.configVisual tiene los datos actualizados
+  if (!window.configVisual) window.configVisual = {};
+  // (Las listas ya se agregaron a window.configVisual.listasPersonalizadas en la función agregar...)
+
+  // 2. Guardar directamente en Supabase
+  if (typeof window.supabasePush === 'function') {
+    await window.supabasePush();
+    mostrarAlerta('✅ Listas guardadas correctamente', 'success');
+  } else {
+    console.warn('⚠️ supabasePush no disponible, los cambios solo son locales');
+  }
+
+  // 3. Cerrar modal
+  cerrarModal('modal-listas-personalizadas');
+
+  // 4. Renderizar cambios
+  if (typeof renderizarListasPersonalizadas === 'function') renderizarListasPersonalizadas();
+  if (typeof renderizar === 'function') renderizar();
+
+  // 5. Recargar para asegurar que todo se aplique limpios (opcional, pero seguro)
+  // location.reload(); 
+}
