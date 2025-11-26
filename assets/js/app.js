@@ -3018,16 +3018,22 @@ async function guardarEdicionListaPersonalizada() {
       // Re-renderizar configuración
       renderizarListasPersonalizadas();
 
-      // Regenerar las secciones principales
+      // Regenerar las secciones principales INMEDIATAMENTE
+      console.log('🔄 Regenerando secciones principales con nuevo color...');
+      if (typeof regenerarSeccionesListasPersonalizadas === 'function') {
+        regenerarSeccionesListasPersonalizadas();
+      }
+
+      // Renderizar todas las tareas con un pequeño delay
       setTimeout(() => {
-        console.log('🔄 Regenerando secciones principales...');
-        if (typeof regenerarSeccionesListasPersonalizadas === 'function') {
-          regenerarSeccionesListasPersonalizadas();
-        }
         if (typeof renderizar === 'function') {
           renderizar();
         }
-      }, 500);
+        // Asegurar que las listas personalizadas se renderizan con los nuevos colores
+        if (typeof renderizarTodasLasListasPersonalizadas === 'function') {
+          renderizarTodasLasListasPersonalizadas();
+        }
+      }, 100);
     } else {
       mostrarAlerta('❌ Error al guardar en Supabase', 'error');
     }
