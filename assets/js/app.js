@@ -2899,6 +2899,173 @@ async function agregarListaPersonalizada() {
   }
 }
 
+// Variable global para controlar el modo de edición
+let listaEnEdicion = null;
+
+function editarListaPersonalizada(id) {
+  console.log('✏️ Editando lista:', id);
+
+  const configVisual = window.configVisual || {};
+  const listasPersonalizadas = configVisual.listasPersonalizadas || [];
+
+  // Buscar la lista
+  const lista = listasPersonalizadas.find(l => l.id === id);
+  if (!lista) {
+    mostrarAlerta('❌ No se encontró la lista', 'error');
+    return;
+  }
+
+  // Guardar el ID de la lista en edición
+  listaEnEdicion = id;
+
+  // Rellenar los campos del formulario
+  document.getElementById('nueva-lista-personalizada').value = lista.nombre;
+  document.getElementById('emoji-lista-personalizada').value = lista.emoji;
+  document.getElementById('color-lista-personalizada').value = lista.color;
+
+  // Cambiar el botón para modo edición
+  const botonContainer = document.querySelector('#nueva-lista-personalizada').closest('div[style*="grid-template-columns"]');
+  if (botonContainer) {
+    const boton = botonContainer.querySelector('button');
+    if (boton) {
+      boton.innerHTML = '💾 Guardar Cambios';
+      boton.onclick = guardarEdicionListaPersonalizada;
+      boton.style.background = 'rgba(76, 209, 55, 0.9)';
+
+      // Añadir botón de cancelar si no existe
+      if (!botonContainer.querySelector('.btn-cancelar-edicion')) {
+        const btnCancelar = document.createElement('button');
+        btnCancelar.className = 'btn-cancelar-edicion';
+        btnCancelar.innerHTML = '❌ Cancelar';
+        btnCancelar.onclick = cancelarEdicionListaPersonalizada;
+        btnCancelar.style.cssText = 'padding:8px 16px;background:rgba(255,71,87,0.9);color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;transition:all 0.3s ease;';
+        botonContainer.appendChild(btnCancelar);
+      }
+    }
+  }
+
+  // Scroll al formulario
+  document.getElementById('nueva-lista-personalizada').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  document.getElementById('nueva-lista-personalizada').focus();
+
+  mostrarAlerta(`✏️ Editando lista: ${lista.nombre}`, 'info');
+}
+
+async function guardarEdicionListaPersonalizada() {
+  console.log('💾 Guardando edición de lista:', listaEnEdicion);
+
+  if (!listaEnEdicion) {
+    mostrarAlerta('❌ No hay lista en edición', 'error');
+    return;
+  }
+
+  const nombre = document.getElementById('nueva-lista-personalizada')?.value?.trim();
+  const emoji = document.getElementById('emoji-lista-personalizada')?.value || '📝';
+  const color = document.getElementById('color-lista-personalizada')?.value || '#667eea';
+
+  if (!nombre) {
+    mostrarAlerta('❌ Por favor escribe un nombre para la lista', 'error');
+    return;
+  }
+
+  const configVisual = window.configVisual || {};
+  const listasPersonalizadas = configVisual.listasPersonalizadas || [];
+
+  // Buscar la lista
+  const listaIndex = listasPersonalizadas.findIndex(l => l.id === listaEnEdicion);
+  if (listaIndex === -1) {
+    mostrarAlerta('❌ No se encontró la lista', 'error');
+    cancelarEdicionListaPersonalizada();
+    return;
+  }
+
+  // Verificar si el nuevo nombre ya existe en otra lista
+  const nombreExistente = listasPersonalizadas.find((l, idx) =>
+    idx !== listaIndex && l.nombre.toLowerCase() === nombre.toLowerCase()
+  );
+
+  if (nombreExistente) {
+    mostrarAlerta('❌ Ya existe otra lista con ese nombre', 'error');
+    return;
+  }
+
+  // Actualizar la lista
+  listasPersonalizadas[listaIndex] = {
+    ...listasPersonalizadas[listaIndex],
+    nombre: nombre,
+    emoji: emoji,
+    color: color
+  };
+
+  // Actualizar configuración global
+  window.configVisual = {
+    ...configVisual,
+    listasPersonalizadas: listasPersonalizadas
+  };
+
+  console.log('💾 Lista actualizada:', listasPersonalizadas[listaIndex]);
+
+  // Guardar en Supabase
+  if (typeof supabasePush === 'function') {
+    const guardado = await supabasePush();
+    if (guardado) {
+      console.log('✅ Configuración guardada en Supabase');
+      mostrarAlerta(`✅ Lista "${nombre}" actualizada correctamente`, 'success');
+
+      // Cancelar modo edición
+      cancelarEdicionListaPersonalizada();
+
+      // Re-renderizar configuración
+      renderizarListasPersonalizadas();
+
+      // Regenerar las secciones principales
+      setTimeout(() => {
+        console.log('🔄 Regenerando secciones principales...');
+        if (typeof regenerarSeccionesListasPersonalizadas === 'function') {
+          regenerarSeccionesListasPersonalizadas();
+        }
+        if (typeof renderizar === 'function') {
+          renderizar();
+        }
+      }, 500);
+    } else {
+      mostrarAlerta('❌ Error al guardar en Supabase', 'error');
+    }
+  } else {
+    mostrarAlerta('⚠️ No se pudo sincronizar con Supabase', 'warning');
+    cancelarEdicionListaPersonalizada();
+  }
+}
+
+function cancelarEdicionListaPersonalizada() {
+  console.log('❌ Cancelando edición de lista');
+
+  // Limpiar variable de edición
+  listaEnEdicion = null;
+
+  // Limpiar formulario
+  document.getElementById('nueva-lista-personalizada').value = '';
+  document.getElementById('emoji-lista-personalizada').value = '🏥';
+  document.getElementById('color-lista-personalizada').value = '#667eea';
+
+  // Restaurar botón original
+  const botonContainer = document.querySelector('#nueva-lista-personalizada').closest('div[style*="grid-template-columns"]');
+  if (botonContainer) {
+    const boton = botonContainer.querySelector('button:not(.btn-cancelar-edicion)');
+    if (boton) {
+      boton.innerHTML = '✓ Añadir Lista';
+      boton.onclick = agregarListaPersonalizada;
+      boton.style.background = 'rgba(255,255,255,0.9)';
+    }
+
+    // Eliminar botón de cancelar
+    const btnCancelar = botonContainer.querySelector('.btn-cancelar-edicion');
+    if (btnCancelar) {
+      btnCancelar.remove();
+    }
+  }
+}
+
 function eliminarListaPersonalizada(id) {
   const configVisual = window.configVisual || {};
   const listasPersonalizadas = configVisual.listasPersonalizadas || [];
@@ -2972,10 +3139,13 @@ function renderizarListasPersonalizadas() {
 
     const botonEliminar = esListaObligatoria ?
       '<span style="color:#666;font-size:12px;padding:4px 8px;">🔒 Sistema</span>' :
-      `<button onclick="eliminarListaPersonalizada('${lista.id}')" style="background:#ff4757;color:white;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:12px;" title="Eliminar lista">🗑️</button>`;
+      `<button onclick="event.stopPropagation();eliminarListaPersonalizada('${lista.id}')" style="background:#ff4757;color:white;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:12px;" title="Eliminar lista">🗑️</button>`;
+
+    const cursorStyle = esListaObligatoria ? 'default' : 'pointer';
+    const editFunction = esListaObligatoria ? '' : `onclick="editarListaPersonalizada('${lista.id}')"`;
 
     html += `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:8px;background:rgba(255,255,255,0.7);border-radius:6px;border-left:4px solid ${lista.color};">
+      <div ${editFunction} style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:8px;background:rgba(255,255,255,0.7);border-radius:6px;border-left:4px solid ${lista.color};cursor:${cursorStyle};transition:all 0.2s ease;" onmouseover="if('${esListaObligatoria}'==='false')this.style.background='rgba(255,255,255,0.9)'" onmouseout="this.style.background='rgba(255,255,255,0.7)'">
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="font-size:16px;">${lista.emoji}</span>
           <span style="font-weight:500;color:#333;">${lista.nombre}</span>
@@ -4017,6 +4187,9 @@ function completarTareaListaPersonalizada(listaId, tareaIndex) {
 
 
 window.agregarListaPersonalizada = agregarListaPersonalizada;
+window.editarListaPersonalizada = editarListaPersonalizada;
+window.guardarEdicionListaPersonalizada = guardarEdicionListaPersonalizada;
+window.cancelarEdicionListaPersonalizada = cancelarEdicionListaPersonalizada;
 window.eliminarListaPersonalizada = eliminarListaPersonalizada;
 window.renderizarListasPersonalizadas = renderizarListasPersonalizadas;
 window.regenerarSeccionesListasPersonalizadas = regenerarSeccionesListasPersonalizadas;
