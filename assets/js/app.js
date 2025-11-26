@@ -2,6 +2,21 @@
 function obtenerListasPersonalizadas() {
   // TEMPORALMENTE: usar estructura antigua hasta completar migración
   const listas = window.configVisual?.listasPersonalizadas || [];
+  console.log('🔍 obtenerListasPersonalizadas() llamado. Total listas:', listas.length);
+
+  // Log subtasks for each list for debugging
+  listas.forEach((lista, idx) => {
+    const totalTareas = lista.tareas?.length || 0;
+    const tareasConSubtareas = lista.tareas?.filter(t => t.subtareas && t.subtareas.length > 0).length || 0;
+    console.log(`  📋 Lista ${idx} "${lista.nombre}": ${totalTareas} tareas, ${tareasConSubtareas} con subtareas`);
+
+    lista.tareas?.forEach((tarea, tidx) => {
+      if (tarea.subtareas && tarea.subtareas.length > 0) {
+        console.log(`    ✓ Tarea ${tidx} "${tarea.texto}": ${tarea.subtareas.length} subtareas`);
+      }
+    });
+  });
+
   return listas;
 }
 
@@ -3136,12 +3151,36 @@ function renderizarListaPersonalizada(listaId) {
   const listasPersonalizadas = obtenerListasPersonalizadas();
   const lista = listasPersonalizadas.find(l => l.id === listaId);
 
-  if (!lista) return;
+  console.log('🎨 Renderizando lista:', listaId);
+  console.log('📊 Lista encontrada:', lista ? lista.nombre : 'null');
+  console.log('📋 Tareas en lista:', lista?.tareas?.length || 0);
+
+  // Log subtareas para cada tarea
+  if (lista && lista.tareas) {
+    lista.tareas.forEach((t, idx) => {
+      if (t.subtareas && t.subtareas.length > 0) {
+        console.log(`  ✓ Tarea ${idx} "${t.texto}": ${t.subtareas.length} subtareas`);
+        t.subtareas.forEach((s, sidx) => {
+          console.log(`    ${sidx + 1}. ${s.texto}`);
+        });
+      }
+    });
+  }
+
+  if (!lista) {
+    console.error('❌ Lista no encontrada al renderizar:', listaId);
+    return;
+  }
 
   const contenedor = document.getElementById(`lista-personalizada-${listaId}`);
-  if (!contenedor) return;
+  if (!contenedor) {
+    console.error('❌ Contenedor no encontrado:', `lista-personalizada-${listaId}`);
+    return;
+  }
 
   const tareas = lista.tareas || [];
+  console.log(`📋 Tareas en lista ${lista.nombre}:`, tareas.length);
+
   contenedor.innerHTML = '';
 
   if (tareas.length === 0) {
@@ -3274,6 +3313,7 @@ function renderizarListaPersonalizada(listaId) {
 
     // Renderizar Subtareas (IGUAL QUE EN TAREAS CRÍTICAS Y NORMALES)
     if (tarea.subtareas && tarea.subtareas.length > 0) {
+      console.log(`  📝 Renderizando ${tarea.subtareas.length} subtareas para "${tarea.texto}"`);
       tarea.subtareas.forEach((subtarea, subIndex) => {
         const subDiv = document.createElement('div');
         subDiv.className = 'subtarea-item';
@@ -3385,12 +3425,16 @@ async function guardarSubtareaListaPersonalizada(listaId, tareaIndex, texto) {
   });
 
   console.log('✅ Subtarea añadida. Total subtareas:', tarea.subtareas.length);
+  console.log('📊 Contenido de la tarea actualizada:', JSON.stringify(tarea, null, 2));
 
   // Actualizar estado global
   window.configVisual = {
     ...configVisual,
     listasPersonalizadas: listas
   };
+
+  console.log('🔄 window.configVisual actualizado');
+  console.log('📊 Verificando que se guardó:', window.configVisual.listasPersonalizadas[listaIndex].tareas[tareaIndex].subtareas);
 
   renderizarListaPersonalizada(listaId);
   await guardarJSON(true); // Guardado inmediato
