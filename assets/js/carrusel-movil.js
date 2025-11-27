@@ -274,6 +274,15 @@ function generarPanelesCarrusel() {
     color: '#e74c3c'
   });
 
+  // Panel 2: Citas
+  carruselState.paneles.push({
+    id: 'citas',
+    nombre: 'Citas',
+    icono: '📅',
+    tipo: 'citas',
+    color: '#3498db'
+  });
+
   // Agregar listas personalizadas
   const configVisual = window.configVisual || {};
   const listasPersonalizadas = configVisual.listasPersonalizadas || [];
@@ -336,12 +345,76 @@ function renderizarCarrusel() {
   carruselState.paneles.forEach((panel, index) => {
     if (panel.tipo === 'criticas') {
       renderizarPanelCriticas();
+    } else if (panel.tipo === 'citas') {
+      renderizarPanelCitas();
     } else if (panel.tipo === 'personalizada') {
       renderizarPanelPersonalizado(panel);
     }
   });
 
   actualizarContadoresPaneles();
+}
+
+function renderizarPanelCitas() {
+  const contenido = document.getElementById('contenido-citas');
+  if (!contenido) return;
+
+  const citas = window.appState?.agenda?.citas || [];
+
+  // Filtrar citas futuras y de hoy
+  const citasActuales = citas.filter(cita => {
+    if (!cita.fecha) return true;
+    const fechaCita = new Date(cita.fecha);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    return fechaCita >= hoy;
+  });
+
+  let html = '';
+
+  if (citasActuales.length === 0) {
+    html = `
+      <div style="text-align: center; padding: 40px 20px; color: #666;">
+        <div style="font-size: 60px; margin-bottom: 20px;">📅</div>
+        <h3 style="color: #2d5a27; margin-bottom: 10px;">Sin citas</h3>
+        <p>No tienes citas programadas</p>
+      </div>
+    `;
+  } else {
+    citasActuales
+      .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+      .forEach((cita, index) => {
+        const esHoy = esFechaHoy(cita.fecha);
+        const esUrgente = esHoy || esFechaPasada(cita.fecha);
+        const claseUrgente = esUrgente ? 'style="background: #e3f2fd; border-left: 4px solid #2196f3;"' : '';
+
+        html += `
+          <div class="tarea-carrusel" ${claseUrgente}>
+            <div class="tarea-layout">
+              <div class="tarea-contenido">
+                <div class="tarea-header">
+                  <span class="tarea-urgencia">${esUrgente ? '📅' : '🕐'}</span>
+                  <span class="tarea-titulo">${cita.titulo || 'Cita sin título'}</span>
+                </div>
+                <div class="tarea-meta-grande">
+                  <div class="meta-fecha">📅 ${cita.fecha || 'Sin fecha'}</div>
+                  ${cita.hora ? `<div class="meta-persona">🕐 ${cita.hora}</div>` : ''}
+                  ${cita.lugar ? `<div class="meta-etiqueta">📍 ${cita.lugar}</div>` : ''}
+                </div>
+              </div>
+              <div class="tarea-botones" onclick="event.stopPropagation();">
+                <button onclick="eliminarCita('${cita.id}')" class="btn-borrar-tarea" title="Eliminar cita">🗑️</button>
+                <button onclick="iniciarPomodoroTarea('${cita.id}', 'cita')" class="btn-pomodoro-tarea" title="Preparación para cita">🍅</button>
+                <button onclick="duplicarCita('${cita.id}')" class="btn-subtarea" title="Duplicar cita">📋</button>
+                <button onclick="abrirModalNuevaCita()" class="btn-subtarea" title="Nueva cita">📅</button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+  }
+
+  contenido.innerHTML = html;
 }
 
 function renderizarPanelCriticas() {
@@ -389,6 +462,7 @@ function renderizarPanelCriticas() {
               <button onclick="eliminarTareaCritica('${tarea.id}')" class="btn-borrar-tarea" title="Eliminar tarea">🗑️</button>
               <button onclick="iniciarPomodoroTarea('${tarea.id}', 'critica')" class="btn-pomodoro-tarea" title="Iniciar Pomodoro para esta tarea">🍅</button>
               <button onclick="añadirSubtarea('${tarea.id}', 'critica')" class="btn-subtarea" title="Añadir subtarea">📝</button>
+              <button onclick="abrirModalNuevaCita()" class="btn-subtarea" title="Nueva cita">📅</button>
             </div>
           </div>
         </div>
@@ -447,6 +521,7 @@ function renderizarPanelPersonalizado(panelInfo) {
               <button onclick="eliminarTareaPersonalizada('${panelInfo.id}', ${index})" class="btn-borrar-tarea" title="Eliminar tarea">🗑️</button>
               <button onclick="iniciarPomodoroTarea('${tarea.id || index}', 'personalizada')" class="btn-pomodoro-tarea" title="Iniciar Pomodoro para esta tarea">🍅</button>
               <button onclick="añadirSubtarea('${tarea.id || index}', 'personalizada')" class="btn-subtarea" title="Añadir subtarea">📝</button>
+              <button onclick="abrirModalNuevaCita()" class="btn-subtarea" title="Nueva cita">📅</button>
             </div>
           </div>
         </div>
@@ -790,6 +865,15 @@ function actualizarContadoresPaneles() {
     if (panel.tipo === 'criticas') {
       const tareasCriticas = window.appState?.agenda?.tareas_criticas || [];
       cantidad = tareasCriticas.filter(t => !t.completada).length;
+    } else if (panel.tipo === 'citas') {
+      const citas = window.appState?.agenda?.citas || [];
+      cantidad = citas.filter(cita => {
+        if (!cita.fecha) return true;
+        const fechaCita = new Date(cita.fecha);
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        return fechaCita >= hoy;
+      }).length;
     } else if (panel.tipo === 'personalizada' && panel.lista) {
       const tareas = panel.lista.tareas || [];
       cantidad = tareas.filter(t => !t.completada).length;
@@ -1219,6 +1303,92 @@ function añadirSubtarea(tareaId, tipo) {
   } else {
     mostrarAlerta('❌ No se pudo añadir la subtarea', 'error');
   }
+}
+
+// ==================== FUNCIONES DE CITAS ====================
+
+function eliminarCita(citaId) {
+  if (!confirm('¿Estás seguro de que quieres eliminar esta cita?')) {
+    return;
+  }
+
+  const citas = window.appState?.agenda?.citas || [];
+  const index = citas.findIndex(c => c.id === citaId);
+
+  if (index !== -1) {
+    citas.splice(index, 1);
+
+    if (typeof guardarJSON === 'function') {
+      guardarJSON();
+    }
+
+    mostrarAlerta('🗑️ Cita eliminada', 'success');
+    renderizarPanelCitas();
+    actualizarContadoresPaneles();
+  }
+}
+
+function duplicarCita(citaId) {
+  const citas = window.appState?.agenda?.citas || [];
+  const citaOriginal = citas.find(c => c.id === citaId);
+
+  if (citaOriginal) {
+    const nuevaCita = {
+      ...citaOriginal,
+      id: Date.now().toString(),
+      titulo: citaOriginal.titulo + ' (copia)'
+    };
+
+    citas.push(nuevaCita);
+
+    if (typeof guardarJSON === 'function') {
+      guardarJSON();
+    }
+
+    mostrarAlerta('📋 Cita duplicada', 'success');
+    renderizarPanelCitas();
+    actualizarContadoresPaneles();
+  }
+}
+
+function abrirModalNuevaCita() {
+  // Si existe función de modal de cita, usarla
+  if (typeof abrirModalCita === 'function') {
+    abrirModalCita();
+    return;
+  }
+
+  // Fallback simple con prompt
+  const titulo = prompt('📅 Título de la nueva cita:');
+  if (!titulo || titulo.trim() === '') return;
+
+  const fecha = prompt('📅 Fecha (YYYY-MM-DD):', new Date().toISOString().slice(0, 10));
+  if (!fecha) return;
+
+  const hora = prompt('🕐 Hora (HH:MM) [opcional]:');
+
+  const nuevaCita = {
+    id: Date.now().toString(),
+    titulo: titulo.trim(),
+    fecha: fecha,
+    hora: hora || '',
+    lugar: '',
+    descripcion: ''
+  };
+
+  if (!window.appState.agenda.citas) {
+    window.appState.agenda.citas = [];
+  }
+
+  window.appState.agenda.citas.push(nuevaCita);
+
+  if (typeof guardarJSON === 'function') {
+    guardarJSON();
+  }
+
+  mostrarAlerta(`📅 Cita "${titulo}" creada`, 'success');
+  renderizarPanelCitas();
+  actualizarContadoresPaneles();
 }
 
 console.log('📱 Carrusel móvil TDAH cargado');
