@@ -360,11 +360,50 @@ function renderizarPanelCitas() {
   if (!contenido) return;
 
   const citas = window.appState?.agenda?.citas || [];
+  console.log('🔍 DEBUG: Citas encontradas:', citas);
+
+  // Función auxiliar para procesar fechas (puede ser array [año, mes, día] o string)
+  function procesarFecha(fechaRaw) {
+    if (!fechaRaw) return null;
+
+    // Si es array [año, mes, día]
+    if (Array.isArray(fechaRaw) && fechaRaw.length === 3) {
+      const [año, mes, día] = fechaRaw;
+      return new Date(año, mes - 1, día); // mes-1 porque Date usa 0-11 para meses
+    }
+
+    // Si es string
+    if (typeof fechaRaw === 'string') {
+      return new Date(fechaRaw);
+    }
+
+    return null;
+  }
+
+  // Función auxiliar para formatear fecha para mostrar
+  function formatearFecha(fechaRaw) {
+    if (!fechaRaw) return 'Sin fecha';
+
+    // Si es array [año, mes, día]
+    if (Array.isArray(fechaRaw) && fechaRaw.length === 3) {
+      const [año, mes, día] = fechaRaw;
+      return `${día.toString().padStart(2, '0')}/${mes.toString().padStart(2, '0')}/${año}`;
+    }
+
+    // Si es string, devolverla tal como está
+    if (typeof fechaRaw === 'string') {
+      return fechaRaw;
+    }
+
+    return 'Sin fecha';
+  }
 
   // Filtrar citas futuras y de hoy
   const citasActuales = citas.filter(cita => {
     if (!cita.fecha) return true;
-    const fechaCita = new Date(cita.fecha);
+    const fechaCita = procesarFecha(cita.fecha);
+    if (!fechaCita) return true;
+
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
     return fechaCita >= hoy;
@@ -382,11 +421,30 @@ function renderizarPanelCitas() {
     `;
   } else {
     citasActuales
-      .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+      .sort((a, b) => {
+        const fechaA = procesarFecha(a.fecha);
+        const fechaB = procesarFecha(b.fecha);
+        if (!fechaA && !fechaB) return 0;
+        if (!fechaA) return 1;
+        if (!fechaB) return -1;
+        return fechaA - fechaB;
+      })
       .forEach((cita, index) => {
-        const esHoy = esFechaHoy(cita.fecha);
-        const esUrgente = esHoy || esFechaPasada(cita.fecha);
+        const fechaCita = procesarFecha(cita.fecha);
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        const esHoy = fechaCita && fechaCita.toDateString() === hoy.toDateString();
+        const esUrgente = fechaCita && (esHoy || fechaCita < hoy);
         const claseUrgente = esUrgente ? 'style="background: #e3f2fd; border-left: 4px solid #2196f3;"' : '';
+
+        console.log('🔍 DEBUG: Procesando cita:', {
+          nombre: cita.nombre,
+          fechaOriginal: cita.fecha,
+          fechaProcesada: fechaCita,
+          esHoy,
+          esUrgente
+        });
 
         html += `
           <div class="tarea-carrusel" ${claseUrgente}>
@@ -397,7 +455,7 @@ function renderizarPanelCitas() {
                   <span class="tarea-titulo">${cita.nombre || 'Cita sin título'}</span>
                 </div>
                 <div class="tarea-meta-grande">
-                  <div class="meta-fecha">📅 ${cita.fecha || 'Sin fecha'}</div>
+                  <div class="meta-fecha">📅 ${formatearFecha(cita.fecha)}</div>
                   ${cita.hora ? `<div class="meta-persona">🕐 ${cita.hora}</div>` : ''}
                   ${cita.lugar ? `<div class="meta-etiqueta">📍 ${cita.lugar}</div>` : ''}
                 </div>
@@ -866,7 +924,19 @@ function actualizarContadoresPaneles() {
       const citas = window.appState?.agenda?.citas || [];
       cantidad = citas.filter(cita => {
         if (!cita.fecha) return true;
-        const fechaCita = new Date(cita.fecha);
+        // Usar la misma lógica de procesamiento de fechas
+        const fechaCita = (() => {
+          if (Array.isArray(cita.fecha) && cita.fecha.length === 3) {
+            const [año, mes, día] = cita.fecha;
+            return new Date(año, mes - 1, día);
+          }
+          if (typeof cita.fecha === 'string') {
+            return new Date(cita.fecha);
+          }
+          return null;
+        })();
+
+        if (!fechaCita) return true;
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
         return fechaCita >= hoy;
