@@ -1175,6 +1175,8 @@ async function guardarConfigVisualPanel() {
     horaInicioOscuro: document.getElementById('config-hora-inicio-oscuro')?.value || '20:00',
     horaFinOscuro: document.getElementById('config-hora-fin-oscuro')?.value || '07:00',
     calendarioCitas: document.getElementById('config-calendario-citas')?.value || 'boton',
+    calendarioMostrarCitas: document.getElementById('config-calendario-mostrar-citas')?.checked !== false,
+    calendarioMostrarTareas: document.getElementById('config-calendario-mostrar-tareas')?.checked !== false,
     columnas: parseInt(document.getElementById('config-columnas')?.value) || 2,
     frases: document.getElementById('config-frases-motivacionales')?.value.split('\n').filter(f => f.trim()) || [],
     listasPersonalizadas: (window.configVisual && window.configVisual.listasPersonalizadas) || []
@@ -1346,6 +1348,16 @@ function cargarConfigVisualEnFormulario() {
   const calendarioCitas = document.getElementById('config-calendario-citas');
   if (calendarioCitas) {
     calendarioCitas.value = config.calendarioCitas || 'boton';
+  }
+
+  const calendarioMostrarCitas = document.getElementById('config-calendario-mostrar-citas');
+  if (calendarioMostrarCitas) {
+    calendarioMostrarCitas.checked = config.calendarioMostrarCitas !== false;
+  }
+
+  const calendarioMostrarTareas = document.getElementById('config-calendario-mostrar-tareas');
+  if (calendarioMostrarTareas) {
+    calendarioMostrarTareas.checked = config.calendarioMostrarTareas !== false;
   }
 
   const columnas = document.getElementById('config-columnas');
