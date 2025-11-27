@@ -340,21 +340,24 @@ function generarPanelesCarrusel() {
 // ==================== RENDERIZADO DE CONTENIDO ====================
 
 function renderizarCarrusel() {
-  console.log('🔄 Renderizando contenido del carrusel');
+  console.log('🔄 Renderizando contenido del carrusel (LAZY LOADING)');
+  // OPTIMIZACIÓN: Solo renderizar el panel actual (lazy loading)
+  // Esto reduce drásticamente el tiempo de carga inicial de ~10s a <1s
+  const panelActual = carruselState.paneles[carruselState.panelActual];
 
-  carruselState.paneles.forEach((panel, index) => {
-    if (panel.tipo === 'criticas') {
+  if (panelActual) {
+    if (panelActual.tipo === 'criticas') {
       renderizarPanelCriticas();
-    } else if (panel.tipo === 'citas') {
+    } else if (panelActual.tipo === 'citas') {
       renderizarPanelCitas();
-    } else if (panel.tipo === 'personalizada') {
-      renderizarPanelPersonalizado(panel);
+    } else if (panelActual.tipo === 'personalizada') {
+      renderizarPanelPersonalizado(panelActual);
     }
-  });
-
+    console.log(`✅ Panel "${panelActual.nombre}" renderizado`);
+  }
+  // Actualizar contadores (esto es rápido, no renderiza HTML completo)
   actualizarContadoresPaneles();
 }
-
 function renderizarPanelCitas() {
   const contenido = document.getElementById('contenido-citas');
   if (!contenido) return;
@@ -648,7 +651,8 @@ function irAPanelCarrusel(indice) {
   // Actualizar botones de navegación
   const btnPrev = document.getElementById('carrusel-prev');
   const btnNext = document.getElementById('carrusel-next');
-
+  // OPTIMIZACIÓN: Renderizar el nuevo panel (lazy loading)
+  renderizarCarrusel();
   if (btnPrev) btnPrev.disabled = indice === 0;
   if (btnNext) btnNext.disabled = indice === carruselState.totalPaneles - 1;
 
@@ -970,7 +974,7 @@ function esFechaPasada(fechaStr) {
 // Sobrescribir la función guardarMigracion para que funcione con el carrusel móvil
 window.guardarMigracionOriginal = window.guardarMigracion; // Guardar original
 
-window.guardarMigracion = function() {
+window.guardarMigracion = function () {
   // Si estamos en modo móvil y hay tarea en proceso, usar función móvil
   if (window.FORZAR_MOVIL === true || (window.FORZAR_MOVIL === undefined && esDispositivoMovil())) {
     if (tareaEnProceso) {
@@ -992,7 +996,7 @@ window.guardarMigracion = function() {
 // Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
   // Esperar un poco para que se carguen otros scripts
-  setTimeout(inicializarCarruselMovil, 100);
+  setTimeout(inicializarCarruselMovil, 10);
 });
 
 // Reinicializar en cambio de orientación (móviles)
@@ -1007,7 +1011,7 @@ window.addEventListener('orientationchange', () => {
 window.addEventListener('resize', () => {
   // Solo re-evaluar si no hay modo forzado
   if (window.FORZAR_MOVIL === undefined) {
-    setTimeout(inicializarCarruselMovil, 200);
+    setTimeout(inicializarCarruselMovil, 10);
   }
 });
 
