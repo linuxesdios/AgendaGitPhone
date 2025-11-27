@@ -1247,6 +1247,12 @@ function mostrarDashboardMotivacional() {
     return;
   }
 
+  // Eliminar modal existente si existe (para evitar duplicados)
+  const modalExistente = document.getElementById('modal-dashboard-motivacional');
+  if (modalExistente) {
+    modalExistente.remove();
+  }
+
   // Crear modal de dashboard
   const modal = document.createElement('div');
   modal.className = 'modal';
@@ -1282,6 +1288,12 @@ function mostrarResumenDiarioManual() {
     return;
   }
 
+  // Eliminar modal existente si existe (para evitar duplicados)
+  const modalExistente = document.getElementById('modal-resumen-diario');
+  if (modalExistente) {
+    modalExistente.remove();
+  }
+
   // Crear modal de resumen diario
   const modal = document.createElement('div');
   modal.className = 'modal';
@@ -1289,11 +1301,11 @@ function mostrarResumenDiarioManual() {
   modal.innerHTML = `
     <div class="modal-content dashboard-content" style="max-width: 700px; max-height: 80vh;">
       <h4>🌅 Resumen del Día - ${new Date().toLocaleDateString('es-ES', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })}</h4>
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })}</h4>
       <div id="resumen-contenido" style="max-height: 500px; overflow-y: auto;">
         <div style="text-align: center; padding: 20px;">🔄 Cargando resumen del día...</div>
       </div>
@@ -1367,7 +1379,7 @@ function cargarEstadisticasMotivacionales() {
         return fechaTarea.toDateString() === fecha.toDateString();
       }).length;
 
-      const altura = Math.max(10, (tareasDelDia / Math.max(1, Math.max(...Array.from({length: 7}, (_, j) => {
+      const altura = Math.max(10, (tareasDelDia / Math.max(1, Math.max(...Array.from({ length: 7 }, (_, j) => {
         const f = new Date();
         f.setDate(f.getDate() - j);
         return historialTareas.filter(t => {
@@ -1379,7 +1391,7 @@ function cargarEstadisticasMotivacionales() {
       progresoHtml += `
         <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
           <div style="background: linear-gradient(to top, #4facfe, #00f2fe); width: 100%; height: ${altura}%; border-radius: 4px 4px 0 0; display: flex; align-items: end; justify-content: center; color: white; font-weight: bold; font-size: 12px; padding-bottom: 5px;">${tareasDelDia > 0 ? tareasDelDia : ''}</div>
-          <div style="font-size: 10px; margin-top: 8px; color: #666;">${fecha.toLocaleDateString('es-ES', {weekday: 'short'}).slice(0,3)}</div>
+          <div style="font-size: 10px; margin-top: 8px; color: #666;">${fecha.toLocaleDateString('es-ES', { weekday: 'short' }).slice(0, 3)}</div>
         </div>
       `;
     }
@@ -1389,8 +1401,8 @@ function cargarEstadisticasMotivacionales() {
       const mensaje = tareasUltimos7Dias.length >= 7 ?
         '🎉 ¡Excelente progreso esta semana!' :
         tareasUltimos7Dias.length >= 3 ?
-        '👍 Buen ritmo, ¡sigue así!' :
-        '💪 ¡Cada paso cuenta, continúa!';
+          '👍 Buen ritmo, ¡sigue así!' :
+          '💪 ¡Cada paso cuenta, continúa!';
       progresoHtml += `<div style="text-align: center; margin-top: 15px; color: #4facfe; font-weight: bold;">${mensaje}</div>`;
     }
 
@@ -1418,7 +1430,7 @@ function cargarResumenDelDia() {
     let todasLasTareas = [...tareas, ...tareasCriticas];
     listasPersonalizadas.forEach(lista => {
       if (lista.tareas) {
-        todasLasTareas.push(...lista.tareas.map(t => ({...t, lista: lista.nombre})));
+        todasLasTareas.push(...lista.tareas.map(t => ({ ...t, lista: lista.nombre })));
       }
     });
 
@@ -1440,11 +1452,11 @@ function cargarResumenDelDia() {
       const diasDiferencia = Math.ceil((fechaTarea - hoy) / (1000 * 60 * 60 * 24));
 
       if (diasDiferencia < 0) {
-        tareasAtrasadas.push({...tarea, diasAtrasada: Math.abs(diasDiferencia)});
+        tareasAtrasadas.push({ ...tarea, diasAtrasada: Math.abs(diasDiferencia) });
       } else if (fechaStr === hoyStr) {
         tareasHoy.push(tarea);
       } else if (diasDiferencia <= 7) {
-        tareasProximos7Dias.push({...tarea, diasRestantes: diasDiferencia});
+        tareasProximos7Dias.push({ ...tarea, diasRestantes: diasDiferencia });
       }
     });
 
@@ -1457,7 +1469,7 @@ function cargarResumenDelDia() {
       if (fechaStr === hoyStr) {
         citasHoy.push(cita);
       } else if (diasDiferencia > 0 && diasDiferencia <= 7) {
-        citasProximos7Dias.push({...cita, diasRestantes: diasDiferencia, fechaCita});
+        citasProximos7Dias.push({ ...cita, diasRestantes: diasDiferencia, fechaCita });
       }
     });
 
@@ -1523,18 +1535,28 @@ function cargarResumenDelDia() {
     if (tareasHoy.length > 0 || citasHoy.length > 0) {
       html += `
         <div style="background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-          <h4 style="margin: 0 0 15px 0;">📅 PARA HOY - ${hoy.toLocaleDateString('es-ES', {weekday: 'long', day: 'numeric', month: 'long'})}</h4>
+          <h4 style="margin: 0 0 15px 0;">📅 PARA HOY - ${hoy.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</h4>
       `;
 
       // Citas de hoy
       if (citasHoy.length > 0) {
         html += `<div style="margin-bottom: 15px;"><h5 style="margin: 0 0 10px 0; opacity: 0.9;">🗓️ Citas:</h5>`;
         citasHoy.forEach(cita => {
+          // Extraer hora y descripción del nombre (formato: "HH:MM - Descripción")
+          let hora = '';
+          let descripcion = cita.nombre;
+
+          if (cita.nombre && cita.nombre.includes(' - ')) {
+            const partes = cita.nombre.split(' - ');
+            hora = partes[0];
+            descripcion = partes.slice(1).join(' - ');
+          }
+
           html += `
             <div style="background: rgba(255,255,255,0.1); padding: 10px; margin-bottom: 6px; border-radius: 6px;">
-              <div style="font-weight: bold;">${cita.nombre}</div>
+              <div style="font-weight: bold;">${descripcion}</div>
               ${cita.lugar ? `<div style="font-size: 0.9em; opacity: 0.9;">📍 ${cita.lugar}</div>` : ''}
-                ${cita.hora ? `<div style="font-size: 0.9em; opacity: 0.9;">⏰ ${cita.hora}</div>` : ''}
+              ${hora ? `<div style="font-size: 0.9em; opacity: 0.9;">⏰ ${hora}</div>` : ''}
             </div>
           `;
         });
@@ -1569,12 +1591,12 @@ function cargarResumenDelDia() {
 
       // Combinar y ordenar por fecha
       const proximosItems = [
-        ...citasProximos7Dias.map(c => ({...c, tipo: 'cita', fecha: c.fechaCita})),
-        ...tareasProximos7Dias.map(t => ({...t, tipo: 'tarea', fecha: new Date(t.fecha)}))
+        ...citasProximos7Dias.map(c => ({ ...c, tipo: 'cita', fecha: c.fechaCita })),
+        ...tareasProximos7Dias.map(t => ({ ...t, tipo: 'tarea', fecha: new Date(t.fecha) }))
       ].sort((a, b) => a.fecha - b.fecha);
 
       proximosItems.forEach(item => {
-        const fechaStr = item.fecha.toLocaleDateString('es-ES', {weekday: 'short', day: 'numeric', month: 'short'});
+        const fechaStr = item.fecha.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
         html += `
           <div style="padding: 8px; margin-bottom: 4px; background: white; border-radius: 4px; display: flex; justify-content: between; align-items: center;">
             <div style="flex: 1;">
