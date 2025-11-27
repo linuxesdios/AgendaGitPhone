@@ -102,7 +102,7 @@ function renderCalendar() {
         // Tareas normales
         const tareas = (appState.agenda.tareas || []).filter(tarea => {
           if (!tarea.fecha_fin) return false;
-          return compararFechaConString(fechaStringToArray(tarea.fecha_fin), dateStr);
+          return tarea.fecha_fin === dateStr;
         });
         tareas.forEach(tarea => {
           eventos.push({
@@ -180,7 +180,14 @@ function renderCalendar() {
           }
 
           // Añadir icono según el tipo
-          const icono = evento.tipo === 'cita' ? '📅' : '✅';
+          let icono = '✅';
+          if (evento.tipo === 'cita') {
+            icono = '📅';
+          } else if (evento.tipo === 'critica') {
+            icono = '🚨';
+          } else if (evento.tipo === 'personalizada') {
+            icono = '📋';
+          }
           const textoCorto = descripcion.length > 8 ? descripcion.substring(0, 8) + '...' : descripcion;
           eventDiv.textContent = `${icono} ${textoCorto}`;
           eventsDiv.appendChild(eventDiv);
@@ -1458,6 +1465,7 @@ function renderCalendarioIntegrado() {
   console.log('📅 renderCalendarioIntegrado:', { mostrarCitas, mostrarTareas });
   console.log('🔄 Renderizando calendario integrado. Citas:', appState.agenda.citas.length, 'Tareas:', (appState.agenda.tareas || []).length);
 
+
   grid.innerHTML = '';
   const monthYearEl = document.getElementById('monthYearIntegrado');
   if (monthYearEl) {
@@ -1508,7 +1516,7 @@ function renderCalendarioIntegrado() {
         // Tareas normales
         const tareas = (appState.agenda.tareas || []).filter(tarea => {
           if (!tarea.fecha_fin) return false;
-          return compararFechaConString(fechaStringToArray(tarea.fecha_fin), dateStr);
+          return tarea.fecha_fin === dateStr;
         });
         tareas.forEach(tarea => {
           eventos.push({
@@ -1553,6 +1561,7 @@ function renderCalendarioIntegrado() {
 
       const tieneEventos = eventos.length > 0;
 
+
       if (esHoy && tieneEventos) {
         cell.style.background = '#fff3cd';
         cell.style.border = '2px solid #ffc107';
@@ -1576,7 +1585,14 @@ function renderCalendarioIntegrado() {
           }
 
           // Añadir icono según el tipo
-          const icono = evento.tipo === 'cita' ? '📅' : '✅';
+          let icono = '✅';
+          if (evento.tipo === 'cita') {
+            icono = '📅';
+          } else if (evento.tipo === 'critica') {
+            icono = '🚨';
+          } else if (evento.tipo === 'personalizada') {
+            icono = '📋';
+          }
           eventDiv.textContent = `${icono} ${descripcion}`;
 
           eventDiv.onclick = (e) => {
