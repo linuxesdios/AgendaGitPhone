@@ -99,6 +99,9 @@ function aplicarModoMovil() {
     container.style.maxWidth = '100%';
   }
 
+  // Mostrar indicadores de modo
+  mostrarIndicadorModo('movil');
+
   // Inicializar funcionalidad del carrusel
   generarPanelesCarrusel();
   configurarGestosTouch();
@@ -133,6 +136,60 @@ function aplicarModoDesktop() {
   if (container) {
     container.style.padding = '';
     container.style.maxWidth = '';
+  }
+
+  // Mostrar indicadores de modo
+  mostrarIndicadorModo('desktop');
+}
+
+// ==================== INDICADORES DE MODO ====================
+
+function mostrarIndicadorModo(modo) {
+  // Remover indicador anterior si existe
+  const indicadorAnterior = document.getElementById('indicador-modo');
+  if (indicadorAnterior) {
+    indicadorAnterior.remove();
+  }
+
+  let indicador;
+
+  if (modo === 'movil') {
+    // El indicador móvil ya está en el HTML del carrusel - siempre visible
+    return;
+  } else if (modo === 'desktop') {
+    // Solo mostrar indicador desktop si está en modo forzado (testing)
+    if (window.FORZAR_MOVIL !== false) return;
+
+    // Crear indicador para desktop
+    indicador = document.createElement('div');
+    indicador.id = 'indicador-modo';
+    indicador.style.cssText = `
+      position: fixed;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #2196F3, #1976D2);
+      color: white;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      z-index: 9998;
+      box-shadow: 0 3px 12px rgba(33, 150, 243, 0.3);
+      backdrop-filter: blur(10px);
+    `;
+    indicador.textContent = '🖥️ MODO DESKTOP (Forzado)';
+
+    document.body.appendChild(indicador);
+
+    // Auto-ocultar después de 3 segundos
+    setTimeout(() => {
+      if (indicador && indicador.parentNode) {
+        indicador.style.opacity = '0';
+        indicador.style.transition = 'opacity 0.5s ease';
+        setTimeout(() => indicador.remove(), 500);
+      }
+    }, 3000);
   }
 }
 
