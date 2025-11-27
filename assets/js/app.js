@@ -1175,6 +1175,8 @@ async function guardarConfigVisualPanel() {
     horaInicioOscuro: document.getElementById('config-hora-inicio-oscuro')?.value || '20:00',
     horaFinOscuro: document.getElementById('config-hora-fin-oscuro')?.value || '07:00',
     calendarioCitas: document.getElementById('config-calendario-citas')?.value || 'boton',
+    calendarioMostrarCitas: document.getElementById('config-calendario-mostrar-citas')?.checked !== false,
+    calendarioMostrarTareas: document.getElementById('config-calendario-mostrar-tareas')?.checked !== false,
     columnas: parseInt(document.getElementById('config-columnas')?.value) || 2,
     frases: document.getElementById('config-frases-motivacionales')?.value.split('\n').filter(f => f.trim()) || [],
     listasPersonalizadas: (window.configVisual && window.configVisual.listasPersonalizadas) || []
@@ -1224,6 +1226,81 @@ async function guardarConfigVisualPanel() {
     aplicarConfiguracionColumnas();
     mostrarAlerta('⚠️ No se pudo sincronizar con Supabase', 'warning');
   }
+}
+
+// ========== FUNCIONES PARA MOSTRAR/OCULTAR CITAS Y TAREAS EN CALENDARIO ==========
+async function mostarCitaCalendario() {
+  console.log('📅 Cambiando visibilidad de citas en calendario');
+
+  const checkbox = document.getElementById('config-calendario-mostrar-citas');
+  if (!checkbox) {
+    console.warn('⚠️ No se encontró el checkbox de mostrar citas');
+    return;
+  }
+
+  // Actualizar configuración
+  if (!window.configVisual) {
+    window.configVisual = {};
+  }
+
+  window.configVisual.calendarioMostrarCitas = checkbox.checked;
+  console.log('📅 Mostrar citas en calendario:', checkbox.checked);
+
+  // Guardar en Supabase
+  if (typeof window.supabasePush === 'function') {
+    await window.supabasePush();
+    console.log('💾 Configuración guardada en Supabase');
+  }
+
+  // Re-renderizar calendarios
+  if (typeof renderCalendar === 'function') {
+    renderCalendar();
+  }
+  if (typeof renderCalendarTareas === 'function') {
+    renderCalendarTareas();
+  }
+  if (typeof renderCalendarioIntegrado === 'function') {
+    renderCalendarioIntegrado();
+  }
+
+  mostrarAlerta(checkbox.checked ? '✅ Citas visibles en calendario' : '❌ Citas ocultadas del calendario', 'info');
+}
+
+async function mostarTareaCalendario() {
+  console.log('✅ Cambiando visibilidad de tareas en calendario');
+
+  const checkbox = document.getElementById('config-calendario-mostrar-tareas');
+  if (!checkbox) {
+    console.warn('⚠️ No se encontró el checkbox de mostrar tareas');
+    return;
+  }
+
+  // Actualizar configuración
+  if (!window.configVisual) {
+    window.configVisual = {};
+  }
+
+  window.configVisual.calendarioMostrarTareas = checkbox.checked;
+  console.log('✅ Mostrar tareas en calendario:', checkbox.checked);
+
+  // Guardar en Supabase
+  if (typeof window.supabasePush === 'function') {
+    await window.supabasePush();
+    console.log('💾 Configuración guardada en Supabase');
+  }
+
+  // Re-renderizar calendarios
+  if (typeof renderCalendar === 'function') {
+    renderCalendar();
+  }
+  if (typeof renderCalendarTareas === 'function') {
+    renderCalendarTareas();
+  }
+  if (typeof renderCalendarioIntegrado === 'function') {
+    renderCalendarioIntegrado();
+  }
+
+  mostrarAlerta(checkbox.checked ? '✅ Tareas visibles en calendario' : '❌ Tareas ocultadas del calendario', 'info');
 }
 
 function switchTab(tabName) {
@@ -1346,6 +1423,16 @@ function cargarConfigVisualEnFormulario() {
   const calendarioCitas = document.getElementById('config-calendario-citas');
   if (calendarioCitas) {
     calendarioCitas.value = config.calendarioCitas || 'boton';
+  }
+
+  const calendarioMostrarCitas = document.getElementById('config-calendario-mostrar-citas');
+  if (calendarioMostrarCitas) {
+    calendarioMostrarCitas.checked = config.calendarioMostrarCitas !== false;
+  }
+
+  const calendarioMostrarTareas = document.getElementById('config-calendario-mostrar-tareas');
+  if (calendarioMostrarTareas) {
+    calendarioMostrarTareas.checked = config.calendarioMostrarTareas !== false;
   }
 
   const columnas = document.getElementById('config-columnas');
