@@ -406,7 +406,6 @@ function renderizarPanelCitas() {
                 <button onclick="eliminarCita('${cita.id}')" class="btn-borrar-tarea" title="Eliminar cita">🗑️</button>
                 <button onclick="iniciarPomodoroTarea('${cita.id}', 'cita')" class="btn-pomodoro-tarea" title="Preparación para cita">🍅</button>
                 <button onclick="duplicarCita('${cita.id}')" class="btn-subtarea" title="Duplicar cita">📋</button>
-                <button onclick="abrirModalNuevaCita()" class="btn-subtarea" title="Nueva cita">📅</button>
               </div>
             </div>
           </div>
@@ -462,7 +461,6 @@ function renderizarPanelCriticas() {
               <button onclick="eliminarTareaCritica('${tarea.id}')" class="btn-borrar-tarea" title="Eliminar tarea">🗑️</button>
               <button onclick="iniciarPomodoroTarea('${tarea.id}', 'critica')" class="btn-pomodoro-tarea" title="Iniciar Pomodoro para esta tarea">🍅</button>
               <button onclick="añadirSubtarea('${tarea.id}', 'critica')" class="btn-subtarea" title="Añadir subtarea">📝</button>
-              <button onclick="abrirModalNuevaCita()" class="btn-subtarea" title="Nueva cita">📅</button>
             </div>
           </div>
         </div>
@@ -521,7 +519,6 @@ function renderizarPanelPersonalizado(panelInfo) {
               <button onclick="eliminarTareaPersonalizada('${panelInfo.id}', ${index})" class="btn-borrar-tarea" title="Eliminar tarea">🗑️</button>
               <button onclick="iniciarPomodoroTarea('${tarea.id || index}', 'personalizada')" class="btn-pomodoro-tarea" title="Iniciar Pomodoro para esta tarea">🍅</button>
               <button onclick="añadirSubtarea('${tarea.id || index}', 'personalizada')" class="btn-subtarea" title="Añadir subtarea">📝</button>
-              <button onclick="abrirModalNuevaCita()" class="btn-subtarea" title="Nueva cita">📅</button>
             </div>
           </div>
         </div>
@@ -1198,6 +1195,9 @@ function iniciarPomodoroTarea(tareaId, tipo) {
   if (tipo === 'critica') {
     const tareas = window.appState?.agenda?.tareas_criticas || [];
     tarea = tareas.find(t => t.id === tareaId);
+  } else if (tipo === 'cita') {
+    const citas = window.appState?.agenda?.citas || [];
+    tarea = citas.find(c => c.id === tareaId);
   } else if (tipo === 'personalizada') {
     // Para tareas personalizadas, tareaId podría ser el índice
     const panelActual = carruselState.paneles[carruselState.panelActual];
