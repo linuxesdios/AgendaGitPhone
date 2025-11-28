@@ -1,12 +1,12 @@
 {
-  "name": "🧠 Agenda de Pablo 🚆 - Desktop",
-  "short_name": "Agenda PC",
-  "description": "Agenda personal optimizada para PC con vista de columnas",
-  "start_url": "./agenda.html",
+  "name": "🧠 Agenda de Pablo 🚆 - Móvil",
+  "short_name": "Agenda Móvil",
+  "description": "Agenda personal optimizada para móvil con carrusel",
+  "start_url": "./agenda_cel.html",
   "display": "standalone",
   "background_color": "#a8e6cf",
   "theme_color": "#4ecdc4",
-  "orientation": "any",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%234ecdc4' rx='20'/><text x='90' y='120' font-size='100' text-anchor='middle' fill='white'>🧠</text></svg>",
