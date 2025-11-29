@@ -1,42 +1,28 @@
 // ==================== BOTTOM NAVIGATION (VERSIÓN SIMPLE) ====================
 
-console.log('🚀 bottom-nav.js CARGADO');
-
 // Esperar a que el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('📱 DOMContentLoaded - Iniciando bottom nav');
-
   // Configurar botones de navegación
   const navButtons = document.querySelectorAll('.nav-item');
-  console.log('🔘 Botones encontrados:', navButtons.length);
 
   navButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-      const tab = btn.dataset.tab;
-      console.log('👆 Click en tab:', tab);
-      cambiarTab(tab);
+      cambiarTab(btn.dataset.tab);
     });
   });
 
   // Escuchar evento de Supabase
   window.addEventListener('supabaseDataLoaded', () => {
-    console.log('🎉 Datos de Supabase cargados - Renderizando');
     renderizarTodo();
   });
 
   // Escuchar cuando se guardan datos nuevos (AUTO-PUSH)
   window.addEventListener('supabaseDataSaved', () => {
-    console.log('💾 Datos guardados - Re-renderizando vista móvil');
     renderizarTodo();
   });
 
   // Timeout de seguridad
   setTimeout(() => {
-    console.log('⏰ Timeout - Renderizando datos');
-    console.log('📊 DATOS DISPONIBLES:');
-    console.log('  - Críticas:', window.appState?.agenda?.tareas_criticas?.length || 0);
-    console.log('  - Citas:', window.appState?.agenda?.citas?.length || 0);
-    console.log('  - Listas:', window.configVisual?.listasPersonalizadas?.length || 0);
     renderizarTodo();
   }, 3000);
 
@@ -47,8 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function cambiarTab(tabName) {
-  console.log('🔄 Cambiando a tab:', tabName);
-
   // Actualizar botones
   document.querySelectorAll('.nav-item').forEach(item => {
     item.classList.toggle('active', item.dataset.tab === tabName);
@@ -70,17 +54,10 @@ function cambiarTab(tabName) {
 }
 
 function renderizarTab(tabName) {
-  console.log('🎨 Renderizando tab:', tabName);
-  if (!tabName) {
-    console.warn('⚠️ renderizarTab llamado sin parámetro');
-    return;
-  }
+  if (!tabName) return;
 
   try {
-    if (tabName === 'criticas') {
-      console.log('👉 Llamando renderizarCriticasMovil()');
-      renderizarCriticasMovil();
-    }
+    if (tabName === 'criticas') renderizarCriticasMovil();
     if (tabName === 'citas') renderizarCitasMovil();
     if (tabName === 'listas') renderizarListasMovil();
   } catch (error) {
@@ -89,7 +66,6 @@ function renderizarTab(tabName) {
 }
 
 function renderizarTodo() {
-  console.log('🔄 Renderizando todo');
   renderizarCriticasMovil();
   renderizarCitasMovil();
   renderizarListasMovil();
@@ -97,16 +73,11 @@ function renderizarTodo() {
 
 function renderizarCriticasMovil() {
   try {
-    console.log('🚨 Renderizando críticas - INICIO');
     const container = document.getElementById('lista-criticas-movil');
-    if (!container) {
-      console.error('❌ Contenedor lista-criticas-movil NO encontrado');
-      return;
-    }
+    if (!container) return;
 
     const tareas = window.appState?.agenda?.tareas_criticas || [];
     const activas = tareas.filter(t => !t.completada);
-    console.log('📊 Tareas críticas:', tareas.length, 'Activas:', activas.length);
 
     if (activas.length === 0) {
       container.innerHTML = '<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-text">No hay tareas críticas<br><small>Crea una nueva con el botón +</small></div></div>';
@@ -171,23 +142,16 @@ function renderizarCriticasMovil() {
     container.querySelectorAll('.btn-postpone').forEach(btn => {
       btn.addEventListener('click', () => abrirModalMigrarCritica(btn.dataset.id));
     });
-
-    console.log('✅ Críticas renderizadas:', activas.length);
   } catch (error) {
     console.error('❌ ERROR en renderizarCriticas:', error);
   }
 }
 
 function renderizarCitasMovil() {
-  console.log('📅 Renderizando citas');
   const container = document.getElementById('lista-citas-movil');
-  if (!container) {
-    console.error('❌ Contenedor lista-citas-movil NO encontrado');
-    return;
-  }
+  if (!container) return;
 
   const citas = window.appState?.agenda?.citas || [];
-  console.log('📊 Citas:', citas.length);
 
   if (citas.length === 0) {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">No hay citas<br><small>Crea una nueva con el botón 📅</small></div></div>';
@@ -254,20 +218,13 @@ function renderizarCitasMovil() {
       </div>
     `;
   }).join('');
-
-  console.log('✅ Citas renderizadas');
 }
 
 function renderizarListasMovil() {
-  console.log('📋 Renderizando listas');
   const container = document.getElementById('listas-personalizadas-movil');
-  if (!container) {
-    console.error('❌ Contenedor listas-personalizadas-movil NO encontrado');
-    return;
-  }
+  if (!container) return;
 
   const listas = window.configVisual?.listasPersonalizadas || [];
-  console.log('📊 Listas encontradas:', listas.length);
 
   if (listas.length === 0) {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No hay listas personalizadas<br><small>Crea una en Configuración</small></div></div>';
@@ -359,7 +316,6 @@ function renderizarListasMovil() {
   });
 
   container.innerHTML = html;
-  console.log('✅ Listas renderizadas:', listas.length, 'listas con', totalTareas, 'tareas');
 }
 
 // ==================== FUNCIONES AUXILIARES PARA TAREAS CRÍTICAS ====================
@@ -376,6 +332,7 @@ function completarTareaCritica(id) {
 }
 
 function eliminarTareaCritica(id) {
+  console.log('📤 SUPABASE: Eliminando tarea crítica');
   window.appState.agenda.tareas_criticas = window.appState.agenda.tareas_criticas.filter(t => t.id !== id);
   guardarJSON();
   renderizarCriticasMovil();
@@ -491,6 +448,7 @@ function guardarEdicionCriticaMovil(id) {
     tarea.fecha_fin = fecha || null;
     tarea.etiqueta = etiqueta || null;
 
+    console.log('📤 SUPABASE: Editando tarea crítica');
     guardarJSON();
     renderizarCriticasMovil();
 
@@ -509,6 +467,7 @@ function abrirModalMigrarCritica(id) {
 // ==================== FUNCIONES AUXILIARES PARA CITAS ====================
 
 function eliminarCita(id) {
+  console.log('📤 SUPABASE: Eliminando cita');
   window.appState.agenda.citas = window.appState.agenda.citas.filter(c => c.id != id);
   guardarJSON();
   renderizarCitasMovil();
@@ -613,6 +572,7 @@ function guardarEdicionCitaMovil(id) {
     cita.nombre = nombre;
     cita.etiqueta = etiqueta || null;
 
+    console.log('📤 SUPABASE: Editando cita');
     guardarJSON();
     renderizarCitasMovil();
 
@@ -644,6 +604,7 @@ function eliminarTareaLista(listaId, tareaId) {
   const lista = window.configVisual.listasPersonalizadas.find(l => l.id === listaId);
   if (!lista) return;
 
+  console.log('📤 SUPABASE: Eliminando tarea de lista');
   lista.tareas = lista.tareas.filter(t => t.id != tareaId);
   guardarJSON();
   renderizarListasMovil();
@@ -804,6 +765,7 @@ function guardarEdicionListaMovil(listaId, tareaId) {
     tarea.persona = persona || null;
     tarea.etiqueta = etiqueta || null;
 
+    console.log('📤 SUPABASE: Editando tarea de lista');
     guardarJSON();
     renderizarListasMovil();
 
@@ -819,5 +781,3 @@ function abrirModalMigrarLista(listaId, tareaId) {
   window.tareaActualMigrar = { listaId, tareaId, tipo: 'lista' };
   abrirModal('modal-migrar');
 }
-
-console.log('✅ bottom-nav.js COMPLETAMENTE CARGADO');

@@ -318,7 +318,7 @@ async function supabasePull() {
   }
 
   try {
-    console.log('📥 PULL: Descargando datos de Supabase...');
+    console.log('📥 SUPABASE PULL: Recibiendo datos de la nube...');
 
     const collections = [
       'tareas', 'citas', 'config', 'notas', 'sentimientos',
@@ -350,32 +350,26 @@ async function supabasePull() {
           window.tareasData = data;
           if (data.tareas_criticas) {
             if (!window.appState.agenda) window.appState.agenda = {}; window.appState.agenda.tareas_criticas = data.tareas_criticas;
-            console.log(`  ✅ CARGADO: ${data.tareas_criticas.length} tareas críticas`);
           }
           if (data.tareas) {
             if (!window.appState.agenda) window.appState.agenda = {}; window.appState.agenda.tareas = data.tareas;
-            console.log(`  ✅ CARGADO: ${data.tareas.length} tareas normales`);
           }
           if (data.listasPersonalizadas) {
             window.configVisual.listasPersonalizadas = data.listasPersonalizadas;
-            console.log(`  ✅ CARGADO: ${data.listasPersonalizadas.length} listas personalizadas`);
           }
           break;
         case 'citas':
           if (data.citas) {
             if (!window.appState.agenda) window.appState.agenda = {};
             window.appState.agenda.citas = data.citas;
-            console.log(`  ✅ CARGADO: ${data.citas.length} citas`);
           }
           break;
         case 'config':
           if (data.visual) {
             window.configVisual = { ...window.configVisual, ...data.visual };
-            console.log('  ✅ CARGADO: Configuración visual');
           }
           if (data.funcionales) {
             window.configFuncionales = data.funcionales;
-            console.log('  ✅ CARGADO: Configuración funcional');
           }
           if (data.opciones) window.configOpciones = data.opciones;
           break;
@@ -399,7 +393,6 @@ async function supabasePull() {
             window.personasAsignadas = data.lista;
             if (!window.tareasData) window.tareasData = {};
             window.tareasData.personas = [...data.lista];
-            console.log(`  ✅ CARGADO: ${data.lista.length} personas`);
           }
           break;
         case 'etiquetas':
@@ -407,13 +400,10 @@ async function supabasePull() {
           if (!window.tareasData) window.tareasData = {};
           if (!window.tareasData.etiquetas) window.tareasData.etiquetas = {};
           window.tareasData.etiquetas = data;
-          const totalEtiquetas = (data.tareas?.length || 0) + (data.citas?.length || 0);
-          console.log(`  ✅ CARGADO: ${totalEtiquetas} etiquetas`);
           break;
         case 'log':
           if (data.acciones) {
             window.logAcciones = data.acciones;
-            console.log(`  ✅ CARGADO: ${data.acciones.length} acciones en log`);
           }
           break;
         case 'salvados':
@@ -422,7 +412,7 @@ async function supabasePull() {
       }
     });
 
-    console.log('✅ PULL completado - Datos sincronizados correctamente');
+    console.log('✅ SUPABASE PULL: Datos recibidos correctamente');
 
     if (typeof window.sincronizarEstructurasEtiquetas === 'function') {
       window.sincronizarEstructurasEtiquetas();
@@ -558,8 +548,7 @@ async function supabasePush(isAutomatic = false, skipPullBefore = false, skipCon
   }
 
   try {
-    const logPrefix = isAutomatic ? '🔄 AUTO-PUSH' : '💾 PUSH';
-    console.log(`${logPrefix}: Guardando datos en Supabase...`);
+    console.log(`📤 SUPABASE PUSH: Enviando datos a la nube...`);
 
     // Obtener metadata del dispositivo
     let deviceMetadata = {};
@@ -639,29 +628,6 @@ async function supabasePush(isAutomatic = false, skipPullBefore = false, skipCon
 
       if (result.error) {
         console.error(`  ❌ Error guardando ${id}:`, result.error);
-      } else {
-        // Log específico por tipo de dato
-        let detalle = '';
-        if (id === 'tareas') {
-          const criticas = data.tareas_criticas?.length || 0;
-          const normales = data.tareas?.length || 0;
-          const listas = data.listasPersonalizadas?.length || 0;
-          detalle = `(${criticas} críticas, ${normales} normales, ${listas} listas)`;
-        } else if (id === 'citas') {
-          detalle = `(${data.citas?.length || 0} citas)`;
-        } else if (id === 'config') {
-          detalle = '(visual, funcional, opciones)';
-        } else if (id === 'personas') {
-          detalle = `(${data.lista?.length || 0} personas)`;
-        } else if (id === 'etiquetas') {
-          const total = (data.tareas?.length || 0) + (data.citas?.length || 0);
-          detalle = `(${total} etiquetas)`;
-        } else if (id === 'log') {
-          detalle = `(${data.acciones?.length || 0} acciones)`;
-        } else if (id === '_metadata') {
-          detalle = `(${data._deviceName || 'device info'})`;
-        }
-        if (detalle) console.log(`  ✅ GUARDADO: ${id} ${detalle}`);
       }
       return result;
     });
@@ -674,7 +640,7 @@ async function supabasePush(isAutomatic = false, skipPullBefore = false, skipCon
       return false;
     }
 
-    console.log(`✅ ${logPrefix} completado - ${updates.length} colecciones sincronizadas`);
+    console.log(`✅ SUPABASE PUSH: Datos enviados correctamente`);
 
     // Disparar evento para que la interfaz móvil se actualice
     const evento = new CustomEvent('supabaseDataSaved', {
@@ -1050,12 +1016,9 @@ function guardarConfigEnSupabase() {
 
 // Función wrapper para guardar en Supabase (llamada desde sincronizacion-simple.js)
 function guardarEnSupabaseWrapper() {
-  console.log('🔄 guardarEnSupabaseWrapper() - Sincronizando datos con Supabase...');
-
   // Sincronizar personas antes de guardar
   if (window.tareasData && window.tareasData.personas) {
     window.personasAsignadas = [...window.tareasData.personas];
-    console.log('👥 Personas sincronizadas:', window.personasAsignadas);
   }
 
   return supabasePush();
