@@ -471,7 +471,11 @@
         <span id="current-tab-title">Tareas Críticas</span>
         <span class="tab-badge" id="current-tab-badge">0</span>
       </div>
-      <button onclick="toggleConfigFloating()" style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;" title="Configuración">⚙️</button>
+      <div style="display: flex; gap: 8px;">
+        <button onclick="abrirModalTareaUniversal()" style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;" title="Nueva tarea">➕</button>
+        <button onclick="abrirModal('modal-nueva-cita')" style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;" title="Nueva cita">📅</button>
+        <button onclick="toggleConfigFloating()" style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;" title="Configuración">⚙️</button>
+      </div>
     </div>
 
     <!-- Content Area -->
@@ -515,10 +519,6 @@
         </div>
       </div>
     </div>
-
-    <!-- FAB Buttons -->
-    <button class="fab-button" onclick="abrirModalTareaUniversal()" title="Nueva tarea" style="bottom: 140px;">➕</button>
-    <button class="fab-button" onclick="abrirModal('modal-nueva-cita')" title="Nueva cita" style="bottom: 76px; background: linear-gradient(135deg, #667eea, #764ba2);">📅</button>
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">

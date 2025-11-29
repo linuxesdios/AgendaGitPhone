@@ -107,7 +107,24 @@ function renderizarCriticasMovil() {
       return;
     }
   
-    container.innerHTML = activas.map(t => `
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+  
+    container.innerHTML = activas.map(t => {
+      let alertaHtml = '';
+      if (t.fecha_fin) {
+        const [year, month, day] = t.fecha_fin.split('-').map(Number);
+        const fechaTarea = new Date(year, month - 1, day);
+        fechaTarea.setHours(0, 0, 0, 0);
+        
+        if (fechaTarea < hoy) {
+          alertaHtml = '<div style="background:#ffcdd2;color:#ff1744;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:bold;margin-top:8px;">⚠️⚠️⚠️ Fecha pasada</div>';
+        } else if (fechaTarea.getTime() === hoy.getTime()) {
+          alertaHtml = '<div style="background:#fff9c4;color:#f57f17;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:bold;margin-top:8px;">⚠️ Para hoy</div>';
+        }
+      }
+      
+      return `
       <div class="task-card">
         <div class="task-main">
           <span class="task-icon">🚨</span>
@@ -118,18 +135,30 @@ function renderizarCriticasMovil() {
               ${t.persona ? `<span class="task-meta-item">👤 ${t.persona}</span>` : ''}
               ${t.etiqueta ? `<span class="task-meta-item">🏷️ ${t.etiqueta}</span>` : ''}
             </div>
+            ${alertaHtml}
           </div>
           <div class="task-buttons">
-            <button class="task-btn btn-edit" onclick="editarTareaCritica('${t.id}')" title="Editar">✏️</button>
-            <button class="task-btn btn-delete" onclick="eliminarTareaCritica('${t.id}')" title="Eliminar">🗑️</button>
+            <button class="task-btn btn-edit" data-id="${t.id}" title="Editar">✏️</button>
+            <button class="task-btn btn-delete" data-id="${t.id}" title="Eliminar">🗑️</button>
           </div>
         </div>
         <div class="task-actions">
-          <button class="action-btn btn-complete" onclick="completarTareaCritica('${t.id}')">Completar</button>
-          <button class="action-btn btn-postpone" onclick="abrirModalMigrarCritica('${t.id}')">Posponer</button>
+          <button class="action-btn btn-postpone" data-id="${t.id}" style="width:100%;">Posponer/Delegar</button>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
+    
+    // Agregar event listeners
+    container.querySelectorAll('.btn-edit').forEach(btn => {
+      btn.addEventListener('click', () => editarTareaCritica(btn.dataset.id));
+    });
+    container.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.addEventListener('click', () => eliminarTareaCritica(btn.dataset.id));
+    });
+    container.querySelectorAll('.btn-postpone').forEach(btn => {
+      btn.addEventListener('click', () => abrirModalMigrarCritica(btn.dataset.id));
+    });
   
     console.log('✅ Críticas renderizadas:', activas.length);
   } catch (error) {
@@ -149,17 +178,33 @@ function renderizarCitasMovil() {
   console.log('📊 Citas:', citas.length);
   
   if (citas.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">No hay citas</div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">No hay citas<br><small>Crea una nueva con el botón 📅</small></div></div>';
     return;
   }
   
-  container.innerHTML = citas.map(c => `
-    <div style="background:white;padding:16px;margin-bottom:12px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-      <div style="font-size:16px;font-weight:600;color:#2d5a27;margin-bottom:8px;">📅 ${c.nombre || 'Sin título'}</div>
-      ${c.hora ? `<div style="font-size:13px;color:#666;">⏰ ${c.hora}</div>` : ''}
-      ${c.lugar ? `<div style="font-size:13px;color:#666;">📍 ${c.lugar}</div>` : ''}
-    </div>
-  `).join('');
+  container.innerHTML = citas.map(c => {
+    const fechaStr = Array.isArray(c.fecha) ? `${c.fecha[2]}/${c.fecha[1]}/${c.fecha[0]}` : c.fecha;
+    return `
+      <div class="task-card">
+        <div class="task-main">
+          <span class="task-icon">📅</span>
+          <div class="task-content-area">
+            <div class="task-title">${c.nombre || 'Sin título'}</div>
+            <div class="task-meta">
+              ${fechaStr ? `<span class="task-meta-item">📅 ${fechaStr}</span>` : ''}
+              ${c.hora ? `<span class="task-meta-item">⏰ ${c.hora}</span>` : ''}
+              ${c.lugar ? `<span class="task-meta-item">📍 ${c.lugar}</span>` : ''}
+              ${c.etiqueta ? `<span class="task-meta-item">🏷️ ${c.etiqueta}</span>` : ''}
+            </div>
+          </div>
+          <div class="task-buttons">
+            <button class="task-btn btn-edit" onclick="editarCita('${c.id}')" title="Editar">✏️</button>
+            <button class="task-btn btn-delete" onclick="eliminarCita('${c.id}')" title="Eliminar">🗑️</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
   
   console.log('✅ Citas renderizadas');
 }
@@ -176,9 +221,12 @@ function renderizarListasMovil() {
   console.log('📊 Listas encontradas:', listas.length);
   
   if (listas.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">📋 No hay listas personalizadas</div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No hay listas personalizadas<br><small>Crea una en Configuración</small></div></div>';
     return;
   }
+  
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
   
   let html = '';
   let totalTareas = 0;
@@ -196,11 +244,66 @@ function renderizarListasMovil() {
     `;
     
     activas.forEach(tarea => {
+      let fechaStr = '';
+      let alertaHtml = '';
+      
+      if (tarea.fecha) {
+        if (Array.isArray(tarea.fecha)) {
+          fechaStr = `${tarea.fecha[2]}/${tarea.fecha[1]}/${tarea.fecha[0]}`;
+          const fechaTarea = new Date(tarea.fecha[0], tarea.fecha[1] - 1, tarea.fecha[2]);
+          fechaTarea.setHours(0, 0, 0, 0);
+          
+          if (fechaTarea < hoy) {
+            alertaHtml = '<div style="background:#ffcdd2;color:#ff1744;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:bold;margin-top:8px;">⚠️⚠️⚠️ Fecha pasada</div>';
+          } else if (fechaTarea.getTime() === hoy.getTime()) {
+            alertaHtml = '<div style="background:#fff9c4;color:#f57f17;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:bold;margin-top:8px;">⚠️ Para hoy</div>';
+          }
+        } else if (typeof tarea.fecha === 'string') {
+          fechaStr = tarea.fecha;
+          // Intentar parsear diferentes formatos
+          let fechaTarea;
+          if (tarea.fecha.includes('-')) {
+            const [year, month, day] = tarea.fecha.split('-').map(Number);
+            fechaTarea = new Date(year, month - 1, day);
+          } else if (tarea.fecha.includes('/')) {
+            const parts = tarea.fecha.split('/');
+            if (parts[2]?.length === 4) {
+              fechaTarea = new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+          }
+          
+          if (fechaTarea) {
+            fechaTarea.setHours(0, 0, 0, 0);
+            if (fechaTarea < hoy) {
+              alertaHtml = '<div style="background:#ffcdd2;color:#ff1744;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:bold;margin-top:8px;">⚠️⚠️⚠️ Fecha pasada</div>';
+            } else if (fechaTarea.getTime() === hoy.getTime()) {
+              alertaHtml = '<div style="background:#fff9c4;color:#f57f17;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:bold;margin-top:8px;">⚠️ Para hoy</div>';
+            }
+          }
+        }
+      }
+      
       html += `
-        <div style="background:white;padding:14px;margin-bottom:8px;margin-left:20px;border-radius:8px;border-left:4px solid ${lista.color || '#667eea'};box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-          <div style="font-size:14px;font-weight:500;color:#2d5a27;margin-bottom:4px;">${tarea.texto || 'Sin título'}</div>
-          ${tarea.fecha ? `<div style="font-size:12px;color:#666;">📅 ${tarea.fecha}</div>` : ''}
-          ${tarea.persona ? `<div style="font-size:12px;color:#666;margin-top:2px;">👤 ${tarea.persona}</div>` : ''}
+        <div class="task-card" style="margin-left:20px;border-left:4px solid ${lista.color || '#667eea'};">
+          <div class="task-main">
+            <span class="task-icon">${lista.emoji || '📝'}</span>
+            <div class="task-content-area">
+              <div class="task-title">${tarea.texto || 'Sin título'}</div>
+              <div class="task-meta">
+                ${fechaStr ? `<span class="task-meta-item">📅 ${fechaStr}</span>` : ''}
+                ${tarea.persona ? `<span class="task-meta-item">👤 ${tarea.persona}</span>` : ''}
+                ${tarea.etiqueta ? `<span class="task-meta-item">🏷️ ${tarea.etiqueta}</span>` : ''}
+              </div>
+              ${alertaHtml}
+            </div>
+            <div class="task-buttons">
+              <button class="task-btn btn-edit" onclick="editarTareaLista('${lista.id}', ${tarea.id})" title="Editar">✏️</button>
+              <button class="task-btn btn-delete" onclick="eliminarTareaLista('${lista.id}', ${tarea.id})" title="Eliminar">🗑️</button>
+            </div>
+          </div>
+          <div class="task-actions">
+            <button class="action-btn btn-postpone" onclick="abrirModalMigrarLista('${lista.id}', ${tarea.id})" style="width:100%;">Posponer/Delegar</button>
+          </div>
         </div>
       `;
     });
@@ -247,6 +350,79 @@ function editarTareaCritica(id) {
 
 function abrirModalMigrarCritica(id) {
   window.tareaActualMigrar = { id, tipo: 'critica' };
+  abrirModal('modal-migrar');
+}
+
+// ==================== FUNCIONES AUXILIARES PARA CITAS ====================
+
+function eliminarCita(id) {
+  if (confirm('¿Eliminar esta cita?')) {
+    window.appState.agenda.citas = window.appState.agenda.citas.filter(c => c.id != id);
+    guardarJSON();
+    renderizarCitasMovil();
+    mostrarAlerta('🗑️ Cita eliminada', 'info');
+  }
+}
+
+function editarCita(id) {
+  const cita = window.appState.agenda.citas.find(c => c.id == id);
+  if (!cita) return;
+  
+  const nuevoNombre = prompt('Editar cita:', cita.nombre);
+  if (nuevoNombre && nuevoNombre.trim()) {
+    cita.nombre = nuevoNombre.trim();
+    guardarJSON();
+    renderizarCitasMovil();
+    mostrarAlerta('✏️ Cita actualizada', 'success');
+  }
+}
+
+// ==================== FUNCIONES AUXILIARES PARA LISTAS PERSONALIZADAS ====================
+
+function completarTareaLista(listaId, tareaId) {
+  const lista = window.configVisual.listasPersonalizadas.find(l => l.id === listaId);
+  if (!lista) return;
+  
+  const tarea = lista.tareas.find(t => t.id == tareaId);
+  if (!tarea) return;
+  
+  tarea.completada = true;
+  tarea.fecha_completada = new Date().toISOString();
+  guardarJSON();
+  renderizarListasMovil();
+  mostrarAlerta('✅ Tarea completada', 'success');
+}
+
+function eliminarTareaLista(listaId, tareaId) {
+  if (confirm('¿Eliminar esta tarea?')) {
+    const lista = window.configVisual.listasPersonalizadas.find(l => l.id === listaId);
+    if (!lista) return;
+    
+    lista.tareas = lista.tareas.filter(t => t.id != tareaId);
+    guardarJSON();
+    renderizarListasMovil();
+    mostrarAlerta('🗑️ Tarea eliminada', 'info');
+  }
+}
+
+function editarTareaLista(listaId, tareaId) {
+  const lista = window.configVisual.listasPersonalizadas.find(l => l.id === listaId);
+  if (!lista) return;
+  
+  const tarea = lista.tareas.find(t => t.id == tareaId);
+  if (!tarea) return;
+  
+  const nuevoTexto = prompt('Editar tarea:', tarea.texto);
+  if (nuevoTexto && nuevoTexto.trim()) {
+    tarea.texto = nuevoTexto.trim();
+    guardarJSON();
+    renderizarListasMovil();
+    mostrarAlerta('✏️ Tarea actualizada', 'success');
+  }
+}
+
+function abrirModalMigrarLista(listaId, tareaId) {
+  window.tareaActualMigrar = { listaId, tareaId, tipo: 'lista' };
   abrirModal('modal-migrar');
 }
 
