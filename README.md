@@ -49,23 +49,6 @@ Una aplicación web completa y avanzada para gestión personal y productividad, 
 
 ## 🎨 Características de Interfaz
 
-### 🌓 Temas Personalizables
-- **Modo Oscuro/Claro**: Cambia entre temas según tu preferencia
-- **Modo Automático**: Cambia automáticamente según la hora del día
-- **Colores Vibrantes**: Diseño atractivo y funcional
-
-### 📱 Diseño Responsivo
-- **Mobile-First**: Optimizado para tablets y móviles
-- **Adaptativo**: Se ajusta perfectamente a cualquier tamaño de pantalla
-- **PWA Compatible**: Instálala como aplicación nativa
-
-### ⚡ Rendimiento Optimizado
-- **Carga Rápida**: Optimizaciones para dispositivos de gama baja
-- **Auto-guardado**: Sincronización automática cada 2 segundos
-- **Gestión de Memoria**: Limpieza automática para mejor rendimiento
-
-## 🔥 Funciones Avanzadas
-
 ### ☁️ Sincronización en la Nube
 - **Supabase Integration**: Sincronización automática en tiempo real
 - **Backup Automático**: Tus datos siempre están seguros
