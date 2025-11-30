@@ -1473,32 +1473,76 @@ function cargarConfigFuncionalesEnFormulario() {
     fechaObligatoria: config.fechaObligatoria,
     confirmacionBorrar: config.confirmacionBorrar,
     autoMayuscula: config.autoMayuscula,
-    popupDiario: config.popupDiario
+    popupDiario: config.popupDiario,
+    notificacionesActivas: config.notificacionesActivas,
+    notif1Dia: config.notif1Dia,
+    notif2Horas: config.notif2Horas,
+    notif30Min: config.notif30Min
   });
 
   const fechaObligatoria = document.getElementById('config-fecha-obligatoria');
-  if (fechaObligatoria) fechaObligatoria.checked = config.fechaObligatoria === true;
+  if (fechaObligatoria) {
+    fechaObligatoria.checked = config.fechaObligatoria === true;
+    console.log('✓ Fecha obligatoria:', config.fechaObligatoria, '→', fechaObligatoria.checked);
+  } else {
+    console.warn('⚠️ Elemento config-fecha-obligatoria NO encontrado');
+  }
 
   const confirmacionBorrar = document.getElementById('config-confirmacion-borrar');
-  if (confirmacionBorrar) confirmacionBorrar.checked = config.confirmacionBorrar !== false;
+  if (confirmacionBorrar) {
+    confirmacionBorrar.checked = config.confirmacionBorrar !== false;
+    console.log('✓ Confirmación borrar:', config.confirmacionBorrar, '→', confirmacionBorrar.checked);
+  } else {
+    console.warn('⚠️ Elemento config-confirmacion-borrar NO encontrado');
+  }
 
   const autoMayuscula = document.getElementById('config-auto-mayuscula');
-  if (autoMayuscula) autoMayuscula.checked = config.autoMayuscula !== false;
+  if (autoMayuscula) {
+    autoMayuscula.checked = config.autoMayuscula !== false;
+    console.log('✓ Auto-mayúscula:', config.autoMayuscula, '→', autoMayuscula.checked);
+  } else {
+    console.warn('⚠️ Elemento config-auto-mayuscula NO encontrado');
+  }
 
   const popupDiario = document.getElementById('config-popup-diario');
-  if (popupDiario) popupDiario.value = config.popupDiario || 'nunca';
+  if (popupDiario) {
+    popupDiario.value = config.popupDiario || 'nunca';
+    console.log('✓ Popup diario:', config.popupDiario, '→', popupDiario.value);
+  } else {
+    console.warn('⚠️ Elemento config-popup-diario NO encontrado');
+  }
 
   const notificacionesActivas = document.getElementById('config-notificaciones-activas');
-  if (notificacionesActivas) notificacionesActivas.checked = config.notificacionesActivas === true;
+  if (notificacionesActivas) {
+    notificacionesActivas.checked = config.notificacionesActivas === true;
+    console.log('✓ Notificaciones activas:', config.notificacionesActivas, '→', notificacionesActivas.checked);
+  } else {
+    console.warn('⚠️ Elemento config-notificaciones-activas NO encontrado');
+  }
 
   const notif1Dia = document.getElementById('config-notif-1-dia');
-  if (notif1Dia) notif1Dia.checked = config.notif1Dia === true;
+  if (notif1Dia) {
+    notif1Dia.checked = config.notif1Dia === true;
+    console.log('✓ Notif 1 día:', config.notif1Dia, '→', notif1Dia.checked);
+  } else {
+    console.warn('⚠️ Elemento config-notif-1-dia NO encontrado');
+  }
 
   const notif2Horas = document.getElementById('config-notif-2-horas');
-  if (notif2Horas) notif2Horas.checked = config.notif2Horas === true;
+  if (notif2Horas) {
+    notif2Horas.checked = config.notif2Horas === true;
+    console.log('✓ Notif 2 horas:', config.notif2Horas, '→', notif2Horas.checked);
+  } else {
+    console.warn('⚠️ Elemento config-notif-2-horas NO encontrado');
+  }
 
   const notif30Min = document.getElementById('config-notif-30-min');
-  if (notif30Min) notif30Min.checked = config.notif30Min === true;
+  if (notif30Min) {
+    notif30Min.checked = config.notif30Min === true;
+    console.log('✓ Notif 30 min:', config.notif30Min, '→', notif30Min.checked);
+  } else {
+    console.warn('⚠️ Elemento config-notif-30-min NO encontrado');
+  }
 
   console.log('✅ Config funcional cargada en formulario');
 }
@@ -3054,117 +3098,117 @@ async function guardarEdicionListaPersonalizada() {
       return;
     }
 
-  // Verificar que los elementos existen
-  const nombreElement = document.getElementById('nueva-lista-personalizada');
-  const emojiElement = document.getElementById('emoji-lista-personalizada');
-  const colorElement = document.getElementById('color-lista-personalizada');
+    // Verificar que los elementos existen
+    const nombreElement = document.getElementById('nueva-lista-personalizada');
+    const emojiElement = document.getElementById('emoji-lista-personalizada');
+    const colorElement = document.getElementById('color-lista-personalizada');
 
-  console.log('🔍 Elementos encontrados:', {
-    nombreElement: !!nombreElement,
-    emojiElement: !!emojiElement,
-    colorElement: !!colorElement
-  });
-
-  if (!nombreElement || !emojiElement || !colorElement) {
-    mostrarAlerta('❌ Error: No se encontraron los elementos del formulario', 'error');
-    console.error('❌ Elementos faltantes:', {
-      'nueva-lista-personalizada': !!nombreElement,
-      'emoji-lista-personalizada': !!emojiElement,
-      'color-lista-personalizada': !!colorElement
+    console.log('🔍 Elementos encontrados:', {
+      nombreElement: !!nombreElement,
+      emojiElement: !!emojiElement,
+      colorElement: !!colorElement
     });
-    return;
-  }
 
-  const nombre = nombreElement.value?.trim();
-  const emoji = emojiElement.value || '📝';
-  const color = colorElement.value || '#667eea';
-
-  console.log('📊 Valores leídos del formulario:', { nombre, emoji, color });
-
-  if (!nombre) {
-    mostrarAlerta('❌ Por favor escribe un nombre para la lista', 'error');
-    return;
-  }
-
-  const configVisual = window.configVisual || {};
-  const listasPersonalizadas = configVisual.listasPersonalizadas || [];
-
-  console.log('📋 Listas antes de actualizar:', JSON.parse(JSON.stringify(listasPersonalizadas)));
-
-  // Buscar la lista
-  const listaIndex = listasPersonalizadas.findIndex(l => l.id === listaEnEdicion);
-  if (listaIndex === -1) {
-    mostrarAlerta('❌ No se encontró la lista', 'error');
-    cancelarEdicionListaPersonalizada();
-    return;
-  }
-
-  console.log('🔍 Lista encontrada en índice:', listaIndex, 'Color anterior:', listasPersonalizadas[listaIndex].color);
-
-  // Verificar si el nuevo nombre ya existe en otra lista
-  const nombreExistente = listasPersonalizadas.find((l, idx) =>
-    idx !== listaIndex && l.nombre.toLowerCase() === nombre.toLowerCase()
-  );
-
-  if (nombreExistente) {
-    mostrarAlerta('❌ Ya existe otra lista con ese nombre', 'error');
-    return;
-  }
-
-  // Actualizar la lista
-  listasPersonalizadas[listaIndex] = {
-    ...listasPersonalizadas[listaIndex],
-    nombre: nombre,
-    emoji: emoji,
-    color: color
-  };
-
-  console.log('✏️ Lista después de actualizar:', JSON.parse(JSON.stringify(listasPersonalizadas[listaIndex])));
-
-  // Actualizar configuración global
-  window.configVisual = {
-    ...configVisual,
-    listasPersonalizadas: listasPersonalizadas
-  };
-
-  console.log('💾 window.configVisual.listasPersonalizadas actualizado:', JSON.parse(JSON.stringify(window.configVisual.listasPersonalizadas)));
-
-  // Guardar en Supabase
-  if (typeof supabasePush === 'function') {
-    const guardado = await supabasePush();
-    if (guardado) {
-      console.log('✅ Configuración guardada en Supabase');
-      mostrarAlerta(`✅ Lista "${nombre}" actualizada correctamente`, 'success');
-
-      // Cancelar modo edición
-      cancelarEdicionListaPersonalizada();
-
-      // Re-renderizar configuración
-      renderizarListasPersonalizadas();
-
-      // Regenerar las secciones principales INMEDIATAMENTE
-      console.log('🔄 Regenerando secciones principales con nuevo color...');
-      if (typeof regenerarSeccionesListasPersonalizadas === 'function') {
-        regenerarSeccionesListasPersonalizadas();
-      }
-
-      // Renderizar todas las tareas con un pequeño delay
-      setTimeout(() => {
-        if (typeof renderizar === 'function') {
-          renderizar();
-        }
-        // Asegurar que las listas personalizadas se renderizan con los nuevos colores
-        if (typeof renderizarTodasLasListasPersonalizadas === 'function') {
-          renderizarTodasLasListasPersonalizadas();
-        }
-      }, 100);
-    } else {
-      mostrarAlerta('❌ Error al guardar en Supabase', 'error');
+    if (!nombreElement || !emojiElement || !colorElement) {
+      mostrarAlerta('❌ Error: No se encontraron los elementos del formulario', 'error');
+      console.error('❌ Elementos faltantes:', {
+        'nueva-lista-personalizada': !!nombreElement,
+        'emoji-lista-personalizada': !!emojiElement,
+        'color-lista-personalizada': !!colorElement
+      });
+      return;
     }
-  } else {
-    mostrarAlerta('⚠️ No se pudo sincronizar con Supabase', 'warning');
-    cancelarEdicionListaPersonalizada();
-  }
+
+    const nombre = nombreElement.value?.trim();
+    const emoji = emojiElement.value || '📝';
+    const color = colorElement.value || '#667eea';
+
+    console.log('📊 Valores leídos del formulario:', { nombre, emoji, color });
+
+    if (!nombre) {
+      mostrarAlerta('❌ Por favor escribe un nombre para la lista', 'error');
+      return;
+    }
+
+    const configVisual = window.configVisual || {};
+    const listasPersonalizadas = configVisual.listasPersonalizadas || [];
+
+    console.log('📋 Listas antes de actualizar:', JSON.parse(JSON.stringify(listasPersonalizadas)));
+
+    // Buscar la lista
+    const listaIndex = listasPersonalizadas.findIndex(l => l.id === listaEnEdicion);
+    if (listaIndex === -1) {
+      mostrarAlerta('❌ No se encontró la lista', 'error');
+      cancelarEdicionListaPersonalizada();
+      return;
+    }
+
+    console.log('🔍 Lista encontrada en índice:', listaIndex, 'Color anterior:', listasPersonalizadas[listaIndex].color);
+
+    // Verificar si el nuevo nombre ya existe en otra lista
+    const nombreExistente = listasPersonalizadas.find((l, idx) =>
+      idx !== listaIndex && l.nombre.toLowerCase() === nombre.toLowerCase()
+    );
+
+    if (nombreExistente) {
+      mostrarAlerta('❌ Ya existe otra lista con ese nombre', 'error');
+      return;
+    }
+
+    // Actualizar la lista
+    listasPersonalizadas[listaIndex] = {
+      ...listasPersonalizadas[listaIndex],
+      nombre: nombre,
+      emoji: emoji,
+      color: color
+    };
+
+    console.log('✏️ Lista después de actualizar:', JSON.parse(JSON.stringify(listasPersonalizadas[listaIndex])));
+
+    // Actualizar configuración global
+    window.configVisual = {
+      ...configVisual,
+      listasPersonalizadas: listasPersonalizadas
+    };
+
+    console.log('💾 window.configVisual.listasPersonalizadas actualizado:', JSON.parse(JSON.stringify(window.configVisual.listasPersonalizadas)));
+
+    // Guardar en Supabase
+    if (typeof supabasePush === 'function') {
+      const guardado = await supabasePush();
+      if (guardado) {
+        console.log('✅ Configuración guardada en Supabase');
+        mostrarAlerta(`✅ Lista "${nombre}" actualizada correctamente`, 'success');
+
+        // Cancelar modo edición
+        cancelarEdicionListaPersonalizada();
+
+        // Re-renderizar configuración
+        renderizarListasPersonalizadas();
+
+        // Regenerar las secciones principales INMEDIATAMENTE
+        console.log('🔄 Regenerando secciones principales con nuevo color...');
+        if (typeof regenerarSeccionesListasPersonalizadas === 'function') {
+          regenerarSeccionesListasPersonalizadas();
+        }
+
+        // Renderizar todas las tareas con un pequeño delay
+        setTimeout(() => {
+          if (typeof renderizar === 'function') {
+            renderizar();
+          }
+          // Asegurar que las listas personalizadas se renderizan con los nuevos colores
+          if (typeof renderizarTodasLasListasPersonalizadas === 'function') {
+            renderizarTodasLasListasPersonalizadas();
+          }
+        }, 100);
+      } else {
+        mostrarAlerta('❌ Error al guardar en Supabase', 'error');
+      }
+    } else {
+      mostrarAlerta('⚠️ No se pudo sincronizar con Supabase', 'warning');
+      cancelarEdicionListaPersonalizada();
+    }
   } catch (error) {
     console.error('❌ Error en guardarEdicionListaPersonalizada:', error);
     mostrarAlerta(`❌ Error al guardar: ${error.message}`, 'error');
