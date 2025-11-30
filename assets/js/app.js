@@ -643,13 +643,10 @@ function solicitarPermisoNotificaciones() {
 
 // ========== CONFIGURACIÓN DE COLUMNAS ==========
 function aplicarConfiguracionColumnas() {
-  console.log('📐 APLICANDO CONFIGURACIÓN DE COLUMNAS');
-
   const contenedorDosColumnas = document.querySelector('.contenedor-dos-columnas');
   
   // Si no existe el contenedor (agendaphone.html), salir silenciosamente
   if (!contenedorDosColumnas) {
-    console.log('📱 Contenedor de columnas no encontrado - Probablemente agendaphone.html');
     return;
   }
 
@@ -3345,12 +3342,9 @@ function renderizarListasPersonalizadas() {
 
 // ========== FUNCIONES PARA SECCIONES PRINCIPALES DE LISTAS ==========
 function regenerarSeccionesListasPersonalizadas() {
-  console.log('🔄 REGENERANDO SECCIONES DE LISTAS PERSONALIZADAS');
-
   // Buscar la columna derecha - si no existe (agendaphone), salir silenciosamente
   const columnaDerecha = document.querySelector('.columna-derecha');
   if (!columnaDerecha) {
-    console.log('📱 Columna derecha no encontrada - Probablemente agendaphone.html');
     return;
   }
 
@@ -3506,32 +3500,12 @@ function renderizarListaPersonalizada(listaId) {
   const listasPersonalizadas = obtenerListasPersonalizadas();
   const lista = listasPersonalizadas.find(l => l.id === listaId);
 
-  console.log('🎨 Renderizando lista:', listaId);
-  console.log('📊 Lista encontrada:', lista ? lista.nombre : 'null');
-  console.log('📋 Tareas en lista:', lista?.tareas?.length || 0);
-  console.log('🔍 window.tareasData:', window.tareasData);
-  console.log('🔍 window.configVisual:', window.configVisual);
-
-  // Log subtareas para cada tarea
-  if (lista && lista.tareas) {
-    lista.tareas.forEach((t, idx) => {
-      if (t.subtareas && t.subtareas.length > 0) {
-        console.log(`  ✓ Tarea ${idx} "${t.texto}": ${t.subtareas.length} subtareas`);
-        t.subtareas.forEach((s, sidx) => {
-          console.log(`    ${sidx + 1}. ${s.texto}`);
-        });
-      }
-    });
-  }
-
   if (!lista) {
-    console.error('❌ Lista no encontrada al renderizar:', listaId);
     return;
   }
 
   const contenedor = document.getElementById(`lista-personalizada-${listaId}`);
   if (!contenedor) {
-    console.error('❌ Contenedor no encontrado:', `lista-personalizada-${listaId}`);
     return;
   }
 
