@@ -878,8 +878,21 @@ function editarTarea(index) {
   abrirModal('modal-tarea');
 }
 
-function editarTareaCritica(index) {
-  const tarea = appState.agenda.tareas_criticas[index];
+function editarTareaCritica(indexOrId) {
+  // Encontrar la tarea por  índice o por ID
+  let index = indexOrId;
+  let tarea;
+
+  if (typeof indexOrId === 'string') {
+    // Es un ID, buscar el índice
+    index = appState.agenda.tareas_criticas.findIndex(t => t.id == indexOrId);
+    if (index === -1) {
+      console.warn('⚠️ Tarea crítica no encontrada (posiblemente eliminada)');
+      return;
+    }
+  }
+
+  tarea = appState.agenda.tareas_criticas[index];
   if (!tarea) {
     console.warn('⚠️ Tarea crítica no encontrada (posiblemente eliminada)');
     return;

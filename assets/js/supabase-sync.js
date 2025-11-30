@@ -367,6 +367,10 @@ async function supabasePull() {
         case 'config':
           if (data.visual) {
             window.configVisual = { ...window.configVisual, ...data.visual };
+            // Actualizar título de la pestaña
+            if (data.visual.titulo) {
+              document.title = data.visual.titulo;
+            }
           }
           if (data.funcionales) {
             window.configFuncionales = data.funcionales;
