@@ -1559,6 +1559,7 @@ async function guardarConfigFuncionales() {
   const notif30MinEl = document.getElementById('config-notif-30-min');
 
   const config = {
+    ...window.configFuncionales, // Mantener configuración existente
     fechaObligatoria: fechaObligatoriaEl ? fechaObligatoriaEl.checked : false,
     confirmacionBorrar: confirmacionBorrarEl ? confirmacionBorrarEl.checked : true,
     autoMayuscula: autoMayusculaEl ? autoMayusculaEl.checked : true,
