@@ -1,10 +1,10 @@
 // ========== FUNCIONES HELPER ==========
 function obtenerListasPersonalizadas() {
-  // LEER DESDE tareasData (window.tareasData.listasPersonalizadas)
-  const listas = window.tareasData?.listasPersonalizadas || window.configVisual?.listasPersonalizadas || [];
+  // LEER DESDE tareasData (window.tareasData.listasPersonalizadas) - FUENTE PRINCIPAL
+  const listas = window.tareasData?.listasPersonalizadas || [];
   console.log('🔍 obtenerListasPersonalizadas() llamado. Total listas:', listas.length);
-  console.log('📍 window.tareasData:', window.tareasData);
-  console.log('📍 window.configVisual:', window.configVisual);
+  console.log('📍 window.tareasData.listasPersonalizadas:', window.tareasData?.listasPersonalizadas?.length || 0);
+  console.log('📍 window.configVisual.listasPersonalizadas:', window.configVisual?.listasPersonalizadas?.length || 0);
 
   // Log subtasks for each list for debugging
   listas.forEach((lista, idx) => {
@@ -3350,10 +3350,11 @@ function regenerarSeccionesListasPersonalizadas() {
     seccion.remove();
   });
 
-  const configVisual = window.configVisual || {};
-  const listasPersonalizadas = window.tareasData?.listasPersonalizadas || [];
+  // USAR obtenerListasPersonalizadas() para consistencia
+  const listasPersonalizadas = obtenerListasPersonalizadas();
 
   console.log('📋 Listas a generar:', listasPersonalizadas.length);
+  console.log('📋 Fuente de datos: window.tareasData.listasPersonalizadas');
 
   if (listasPersonalizadas.length === 0) return;
 

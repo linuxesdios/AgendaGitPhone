@@ -468,11 +468,20 @@ async function supabasePull() {
 
     // IMPORTANTE: Renderizar listas personalizadas DESPUÉS de actualizar tareasData
     console.log('🔄 Verificando tareasData antes de renderizar:', window.tareasData?.listasPersonalizadas?.length || 0);
-    if (typeof window.renderizarTodasLasListasPersonalizadas === 'function') {
-      // Pequeño delay para asegurar que tareasData está actualizado
+    
+    // Regenerar secciones HTML primero
+    if (typeof window.regenerarSeccionesListasPersonalizadas === 'function') {
       setTimeout(() => {
-        console.log('🎨 Renderizando listas personalizadas con datos:', window.tareasData?.listasPersonalizadas?.length || 0);
-        window.renderizarTodasLasListasPersonalizadas();
+        console.log('🏗️ Regenerando secciones HTML...');
+        window.regenerarSeccionesListasPersonalizadas();
+        
+        // Luego renderizar el contenido
+        if (typeof window.renderizarTodasLasListasPersonalizadas === 'function') {
+          setTimeout(() => {
+            console.log('🎨 Renderizando contenido de listas con datos:', window.tareasData?.listasPersonalizadas?.length || 0);
+            window.renderizarTodasLasListasPersonalizadas();
+          }, 100);
+        }
       }, 100);
     }
 

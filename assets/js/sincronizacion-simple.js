@@ -16,8 +16,8 @@ function compararFechaConString(fechaArray, fechaString) {
 
 // ========== FUNCIONES HELPER PARA TAREAS Y LISTAS ==========
 function obtenerListasPersonalizadas() {
-  // FIXED: Leer desde window.configVisual en lugar de window.tareasData
-  const listas = window.configVisual?.listasPersonalizadas || [];
+  // LEER DESDE window.tareasData.listasPersonalizadas (FUENTE CORRECTA)
+  const listas = window.tareasData?.listasPersonalizadas || [];
   console.log('🔍 obtenerListasPersonalizadas() llamado desde sincronizacion-simple.js. Total listas:', listas.length);
 
   // Log subtasks for debugging
