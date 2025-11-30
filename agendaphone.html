@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🧠 Agenda de Pablo 🚆</title>
+  <title>Agenda</title>
   <link rel="icon" href="./icon.png">
   <link rel="manifest" href="manifest_movil.json">
   <link rel="apple-touch-icon" href="./icon.png">
@@ -129,8 +129,15 @@
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .bottom-nav {
@@ -470,9 +477,15 @@
         <span class="tab-badge" id="current-tab-badge">0</span>
       </div>
       <div style="display: flex; gap: 8px;">
-        <button onclick="abrirModalTareaUniversal()" style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;" title="Nueva tarea">➕</button>
-        <button onclick="abrirModal('modal-nueva-cita')" style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;" title="Nueva cita">📅</button>
-        <button onclick="toggleConfigFloating()" style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;" title="Configuración">⚙️</button>
+        <button onclick="abrirModalTareaUniversal()"
+          style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;"
+          title="Nueva tarea">➕</button>
+        <button onclick="abrirModal('modal-nueva-cita')"
+          style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;"
+          title="Nueva cita">📅</button>
+        <button onclick="toggleConfigFloating()"
+          style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;"
+          title="Configuración">⚙️</button>
       </div>
     </div>
 
@@ -2028,7 +2041,7 @@
   <script src="assets/js/rendimiento.js"></script>
   <script src="assets/js/compatibility.js"></script>
   <script src="assets/js/restore-backup.js"></script> <!-- TEMPORAL: Para restaurar backup -->
-  
+
   <!-- Service Worker Registration -->
   <script>
     if ('serviceWorker' in navigator) {
