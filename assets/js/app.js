@@ -645,6 +645,14 @@ function solicitarPermisoNotificaciones() {
 function aplicarConfiguracionColumnas() {
   console.log('📐 APLICANDO CONFIGURACIÓN DE COLUMNAS');
 
+  const contenedorDosColumnas = document.querySelector('.contenedor-dos-columnas');
+  
+  // Si no existe el contenedor (agendaphone.html), salir silenciosamente
+  if (!contenedorDosColumnas) {
+    console.log('📱 Contenedor de columnas no encontrado - Probablemente agendaphone.html');
+    return;
+  }
+
   const configVisual = window.configVisual || {};
   let columnas = parseInt(configVisual.columnas) || 2;
 
@@ -655,14 +663,8 @@ function aplicarConfiguracionColumnas() {
   }
 
   console.log('📐 Número de columnas a aplicar:', columnas);
-
-  const contenedorDosColumnas = document.querySelector('.contenedor-dos-columnas');
+  
   const contenedorListasPersonalizadas = document.getElementById('contenedor-listas-personalizadas');
-
-  if (!contenedorDosColumnas) {
-    console.error('❌ No se encontró el contenedor de columnas');
-    return;
-  }
 
   // Aplicar estilos según la configuración
   if (columnas === 1) {
@@ -3345,6 +3347,13 @@ function renderizarListasPersonalizadas() {
 function regenerarSeccionesListasPersonalizadas() {
   console.log('🔄 REGENERANDO SECCIONES DE LISTAS PERSONALIZADAS');
 
+  // Buscar la columna derecha - si no existe (agendaphone), salir silenciosamente
+  const columnaDerecha = document.querySelector('.columna-derecha');
+  if (!columnaDerecha) {
+    console.log('📱 Columna derecha no encontrada - Probablemente agendaphone.html');
+    return;
+  }
+
   // Eliminar secciones existentes de listas personalizadas
   document.querySelectorAll('.seccion-lista-personalizada').forEach(seccion => {
     seccion.remove();
@@ -3357,13 +3366,6 @@ function regenerarSeccionesListasPersonalizadas() {
   console.log('📋 Fuente de datos: window.tareasData.listasPersonalizadas');
 
   if (listasPersonalizadas.length === 0) return;
-
-  // Buscar la columna derecha para insertar las nuevas secciones
-  const columnaDerecha = document.querySelector('.columna-derecha');
-  if (!columnaDerecha) {
-    console.error('❌ No se encontró la columna derecha');
-    return;
-  }
 
   // Generar cada lista personalizada y agregarla AL FINAL de la columna derecha
   listasPersonalizadas.forEach((lista, index) => {
@@ -4587,8 +4589,7 @@ function renderizarListasEnModalPersonalizado() {
   const contenedor = document.getElementById('listas-personalizadas-modal-lista');
   if (!contenedor) return;
 
-  const configVisual = window.configVisual || {};
-  const listas = window.tareasData?.listasPersonalizadas || [];
+  const listas = obtenerListasPersonalizadas();
 
   if (listas.length === 0) {
     contenedor.innerHTML = '<p style="color:#999;text-align:center;font-style:italic;">No hay listas personalizadas aún.</p>';
@@ -4611,7 +4612,7 @@ function renderizarListasEnModalPersonalizado() {
   contenedor.innerHTML = html;
 }
 
-function agregarListaPersonalizadaDesdeModal() {
+async function agregarListaPersonalizadaDesdeModal() {
   const nombreInput = document.getElementById('nueva-lista-nombre');
   const emojiInput = document.getElementById('nueva-lista-emoji');
   const colorInput = document.getElementById('nueva-lista-color');
@@ -4625,14 +4626,12 @@ function agregarListaPersonalizadaDesdeModal() {
     return;
   }
 
-  if (!window.configVisual) window.configVisual = {};
+  // Inicializar tareasData si no existe
+  if (!window.tareasData) window.tareasData = {};
   if (!window.tareasData.listasPersonalizadas) window.tareasData.listasPersonalizadas = [];
 
-  // Crear ID único
-  const id = 'lista-' + Date.now();
-
   const nuevaLista = {
-    id: id,
+    id: 'lista-' + Date.now(),
     nombre: nombre,
     emoji: emoji,
     color: color,
@@ -4641,29 +4640,49 @@ function agregarListaPersonalizadaDesdeModal() {
   };
 
   window.tareasData.listasPersonalizadas.push(nuevaLista);
+  console.log('✅ Lista añadida a tareasData:', nuevaLista);
 
   // Limpiar formulario
   nombreInput.value = '';
   emojiInput.value = '';
 
-  // Actualizar vista previa
+  // Guardar en Supabase
+  if (typeof window.supabasePush === 'function') {
+    await window.supabasePush();
+    mostrarAlerta(`✅ Lista "${nombre}" creada`, 'success');
+  }
+
+  // Actualizar vista previa en modal
   renderizarListasEnModalPersonalizado();
 
-  // Feedback visual
-  const btn = document.querySelector('#modal-listas-personalizadas .btn-primario');
-  if (btn) {
-    const originalText = btn.textContent;
-    btn.textContent = '✅ Añadido';
-    setTimeout(() => btn.textContent = originalText, 1000);
+  // Regenerar secciones en la página principal
+  if (typeof window.regenerarSeccionesListasPersonalizadas === 'function') {
+    window.regenerarSeccionesListasPersonalizadas();
+  }
+  
+  // Renderizar contenido
+  if (typeof window.renderizarTodasLasListasPersonalizadas === 'function') {
+    window.renderizarTodasLasListasPersonalizadas();
   }
 }
 
-function eliminarListaDesdeModal(id) {
+async function eliminarListaDesdeModal(id) {
   if (!confirm('¿Seguro que quieres eliminar esta lista?')) return;
 
-  if (window.configVisual && window.tareasData.listasPersonalizadas) {
+  if (window.tareasData?.listasPersonalizadas) {
     window.tareasData.listasPersonalizadas = window.tareasData.listasPersonalizadas.filter(l => l.id !== id);
+    
+    // Guardar en Supabase
+    if (typeof window.supabasePush === 'function') {
+      await window.supabasePush();
+    }
+    
     renderizarListasEnModalPersonalizado();
+    
+    // Regenerar secciones
+    if (typeof window.regenerarSeccionesListasPersonalizadas === 'function') {
+      window.regenerarSeccionesListasPersonalizadas();
+    }
   }
 }
 
