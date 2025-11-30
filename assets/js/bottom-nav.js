@@ -349,20 +349,18 @@ function renderizarListasMovil() {
 
         contentHtml += `
                     <div style="padding: 12px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; opacity: ${opacity};">
-                        <input type="checkbox" 
-                               ${isCompleted ? 'checked' : ''} 
-                               onchange="toggleTareaListaPersonalizada('${listaActiva.id}', ${tIndex})"
-                               style="width: 18px; height: 18px; accent-color: ${listaActiva.color};">
-                        
-                        <div style="flex: 1; ${textStyle}" onclick="editarTareaListaPersonalizada('${listaActiva.id}', ${tIndex})">
+                        <div style="flex: 1; ${textStyle}">
                             ${tarea.texto}
                             ${tarea.fecha ? `<div style="font-size: 11px; color: #666;">📅 ${tarea.fecha}</div>` : ''}
                         </div>
                         
-                        <button onclick="eliminarTareaListaPersonalizada('${listaActiva.id}', ${tIndex})" 
-                                style="background: none; border: none; color: #ff6b6b; font-size: 16px;">
-                            🗑️
-                        </button>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <button class="task-btn btn-edit" onclick="editarTareaListaPersonalizada('${listaActiva.id}', ${tIndex})" title="Editar" style="width: 36px; height: 36px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1); background: linear-gradient(135deg, #2196F3, #1976D2); color: white; display: flex; align-items: center; justify-content: center;">✏️</button>
+                            <button class="task-btn btn-delete" onclick="eliminarTareaListaPersonalizada('${listaActiva.id}', ${tIndex})" title="Eliminar" style="width: 36px; height: 36px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1); background: linear-gradient(135deg, #ff6b6b, #ee5a52); color: white; display: flex; align-items: center; justify-content: center;">🗑️</button>
+                        </div>
+                    </div>
+                    <div style="padding: 10px 14px; background: rgba(78, 205, 196, 0.05); border-bottom: 1px solid #eee;">
+                        <button class="action-btn btn-postpone" onclick="abrirModalMigrarListaPersonalizada('${listaActiva.id}', ${tIndex})" style="width: 100%; border: none; border-radius: 8px; padding: 8px; font-size: 12px; font-weight: bold; cursor: pointer; background: linear-gradient(135deg, #ff9800, #f57c00); color: white;">Posponer/Delegar</button>
                     </div>
                 `;
       });
@@ -940,5 +938,10 @@ function guardarEdicionListaMovil(listaId, tareaId) {
 
 function abrirModalMigrarLista(listaId, tareaId) {
   window.tareaActualMigrar = { listaId, tareaId, tipo: 'lista' };
+  abrirModal('modal-migrar');
+}
+
+function abrirModalMigrarListaPersonalizada(listaId, tareaIndex) {
+  window.tareaActualMigrar = { listaId, tareaIndex, tipo: 'lista-personalizada' };
   abrirModal('modal-migrar');
 }
