@@ -181,10 +181,10 @@ function renderizarCriticasMovil() {
 
         if (fechaTarea < hoy) {
           cardStyle = 'background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border-left: 4px solid #f44336;';
-          alertaHtml = '<span style="background:#f44336;color:white;padding:4px 8px;border-radius:12px;font-size:13px;font-weight:bold;">⚠️ PASADA</span>';
+          alertaHtml = '<span style="background:#f44336;color:white;padding:4px 8px;border-radius:12px;font-size:13px;font-weight:bold;">⚠️⚠️ PASADA ⚠️⚠️</span>';
         } else if (fechaTarea.getTime() === hoy.getTime()) {
-          cardStyle = 'background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border-left: 4px solid #f44336;';
-          alertaHtml = '<span style="background:#f44336;color:white;padding:4px 8px;border-radius:12px;font-size:10px;font-weight:bold;">⚠️ Hoy</span>';
+          cardStyle = 'background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-left: 4px solid #4caf50;';
+          alertaHtml = '<span style="background:#4caf50;color:white;padding:4px 8px;border-radius:12px;font-size:10px;font-weight:bold;">⚠️ Hoy</span>';
         }
       }
 
@@ -257,10 +257,10 @@ function renderizarCitasMovil() {
         fechaCita.setHours(0, 0, 0, 0);
         if (fechaCita < hoy) {
           cardStyle = 'background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border-left: 4px solid #f44336;';
-          alertaHtml = '<span style="background:#f44336;color:white;padding:4px 8px;border-radius:12px;font-size:13px;font-weight:bold;">⚠️ PASADA</span>';
+          alertaHtml = '<span style="background:#f44336;color:white;padding:4px 8px;border-radius:12px;font-size:13px;font-weight:bold;">⚠️⚠️ PASADA ⚠️⚠️</span>';
         } else if (fechaCita.getTime() === hoy.getTime()) {
-          cardStyle = 'background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border-left: 4px solid #f44336;';
-          alertaHtml = '<span style="background:#f44336;color:white;padding:4px 8px;border-radius:12px;font-size:10px;font-weight:bold;">⚠️ Hoy</span>';
+          cardStyle = 'background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-left: 4px solid #4caf50;';
+          alertaHtml = '<span style="background:#4caf50;color:white;padding:4px 8px;border-radius:12px;font-size:10px;font-weight:bold;">⚠️ Hoy</span>';
         }
       }
     }
@@ -406,11 +406,11 @@ function renderizarListasMovil() {
           if (fechaTarea) {
             fechaTarea.setHours(0, 0, 0, 0);
             if (fechaTarea < hoy) {
-              alertaBadge = '<span style="background:#f44336;color:white;padding:4px 8px;border-radius:12px;font-size:13px;font-weight:bold;">⚠️ PASADA</span>';
+              alertaBadge = '<span style="background:#f44336;color:white;padding:4px 8px;border-radius:12px;font-size:13px;font-weight:bold;">⚠️⚠️ PASADA ⚠️⚠️</span>';
               cardStyle = 'background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);';
             } else if (fechaTarea.getTime() === hoy.getTime()) {
-              alertaBadge = '<span style="background:#f44336;color:white;padding:4px 8px;border-radius:12px;font-size:10px;font-weight:bold;">⚠️ Hoy</span>';
-              cardStyle = 'background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);';
+              alertaBadge = '<span style="background:#4caf50;color:white;padding:4px 8px;border-radius:12px;font-size:10px;font-weight:bold;">⚠️ Hoy</span>';
+              cardStyle = 'background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);';
             }
           }
         }
@@ -1067,11 +1067,11 @@ function renderizarListaPersonalizadaMovil(listaId) {
       if (fechaTarea) {
         fechaTarea.setHours(0, 0, 0, 0);
         if (fechaTarea < hoy) {
-          alertaBadge = '<span style="background:#f44336;color:white;padding:4px 8px;border-radius:12px;font-size:13px;font-weight:bold;">⚠️ PASADA</span>';
+          alertaBadge = '<span style="background:#f44336;color:white;padding:4px 8px;border-radius:12px;font-size:13px;font-weight:bold;">⚠️⚠️ PASADA ⚠️⚠️</span>';
           cardStyle = 'background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);';
         } else if (fechaTarea.getTime() === hoy.getTime()) {
-          alertaBadge = '<span style="background:#f44336;color:white;padding:4px 8px;border-radius:12px;font-size:10px;font-weight:bold;">⚠️ Hoy</span>';
-          cardStyle = 'background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);';
+          alertaBadge = '<span style="background:#4caf50;color:white;padding:4px 8px;border-radius:12px;font-size:10px;font-weight:bold;">⚠️ Hoy</span>';
+          cardStyle = 'background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);';
         }
       }
     }
