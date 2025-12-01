@@ -6,8 +6,8 @@ Esta guía te explicará paso a paso cómo configurar Supabase como base de dato
 
 1. [Crear cuenta en Supabase](#1-crear-cuenta-en-supabase)
 2. [Crear un nuevo proyecto](#2-crear-un-nuevo-proyecto)
-3. [Obtener credenciales](#3-obtener-credenciales-api)
-4. [Crear la tabla en la base de datos](#4-crear-la-tabla-en-la-base-de-datos)
+3. [Crear la tabla en la base de datos](#3-crear-la-tabla-en-la-base-de-datos)
+4. [Obtener credenciales API](#4-obtener-credenciales-api)
 5. [Configurar en la aplicación](#5-configurar-en-la-aplicación)
 6. [Verificar conexión](#6-verificar-conexión)
 
@@ -53,18 +53,305 @@ Esta guía te explicará paso a paso cómo configurar Supabase como base de dato
 
 ---
 
-## 3. Obtener credenciales (API)
+## 3. Crear la tabla en la base de datos
+
+Ahora necesitas crear la estructura de la base de datos donde se guardará toda la información de tu agenda.
+
+### 3.1 Abrir el SQL Editor
+
+1. En el menú lateral izquierdo, haz clic en **"SQL Editor"** (ícono de </>)
+2. Haz clic en **"+ New query"** o **"Nueva consulta"**
+
+### 3.2 Ejecutar el Script SQL
+
+Copia y pega exactamente este código SQL en el editor:
+
+```sql
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 📊 SCRIPT DE INICIALIZACIÓN DE BASE DE DATOS - AGENDA PERSONAL
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Este script crea la estructura de base de datos completa para tu agenda
+-- e incluye datos de ejemplo para que veas cómo funciona el sistema.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- PASO 1: Crear la tabla principal
+-- ─────────────────────────────────────────────────────────────────────────
+-- Esta tabla usará JSONB (JSON binario) para máxima flexibilidad.
+-- Todos los datos se guardan en formato JSON dentro de la columna 'data'.
+
+CREATE TABLE agenda_data (
+  id text PRIMARY KEY,              -- Identificador único (ej: 'tareas', 'citas', 'personas')
+  data jsonb NOT NULL DEFAULT '{}'::jsonb,  -- Datos en formato JSON (flexible)
+  last_updated timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL  -- Fecha de última actualización
+);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- PASO 2: Optimización de rendimiento
+-- ─────────────────────────────────────────────────────────────────────────
+-- Creamos un índice para que las búsquedas por fecha sean más rápidas
+
+CREATE INDEX idx_agenda_data_last_updated ON agenda_data(last_updated);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- PASO 3: Configurar seguridad (RLS - Row Level Security)
+-- ─────────────────────────────────────────────────────────────────────────
+-- Esto permite controlar quién puede leer/escribir datos
+
+ALTER TABLE agenda_data ENABLE ROW LEVEL SECURITY;
+
+-- Política de acceso: Permite lectura y escritura anónima
+-- ⚠️ IMPORTANTE: Para uso personal está bien. En producción considera usar autenticación.
+CREATE POLICY "Permitir acceso completo anónimo" 
+ON agenda_data 
+FOR ALL 
+USING (true) 
+WITH CHECK (true);
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- PASO 4: INSERTAR DATOS DE EJEMPLO
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Estos datos te ayudarán a entender cómo funciona la agenda.
+-- Puedes modificarlos o eliminarlos después desde la aplicación.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+INSERT INTO agenda_data (id, data) VALUES
+
+  -- ┌─────────────────────────────────────────────────────────────────┐
+  -- │ 1️⃣ TAREAS - El corazón de tu agenda                             │
+  -- └─────────────────────────────────────────────────────────────────┘
+  -- Incluye 3 tipos de tareas:
+  --   • tareas_criticas: Tareas urgentes e importantes (3 ejemplos)
+  --   • tareas: Tareas normales (vacío por ahora)
+  --   • listasPersonalizadas: Listas custom (2 ejemplos: Compras y Proyectos)
+  
+  ('tareas', '{
+    "tareas_criticas": [
+      {
+        "id": "critica-1",
+        "texto": "Revisar informe mensual",
+        "completada": false,
+        "archivada": false,
+        "fecha": null,
+        "etiqueta": "trabajo"
+      },
+      {
+        "id": "critica-2",
+        "texto": "Llamar al médico para cita",
+        "completada": false,
+        "archivada": false,
+        "fecha": null,
+        "etiqueta": "médicos"
+      },
+      {
+        "id": "critica-3",
+        "texto": "Preparar presentación del proyecto",
+        "completada": false,
+        "archivada": false,
+        "fecha": null,
+        "etiqueta": "trabajo"
+      }
+    ],
+    "tareas": [],
+    "listasPersonalizadas": [
+      {
+        "id": "lista-1",
+        "nombre": "🛒 Compras",
+        "icono": "🛒",
+        "tareas": [
+          {
+            "id": "compra-1",
+            "texto": "Leche y pan",
+            "completada": false,
+            "archivada": false,
+            "fecha": null,
+            "etiqueta": ""
+          },
+          {
+            "id": "compra-2",
+            "texto": "Frutas y verduras",
+            "completada": false,
+            "archivada": false,
+            "fecha": null,
+            "etiqueta": ""
+          }
+        ]
+      },
+      {
+        "id": "lista-2",
+        "nombre": "💡 Proyectos Personales",
+        "icono": "💡",
+        "tareas": [
+          {
+            "id": "proyecto-1",
+            "texto": "Aprender JavaScript",
+            "completada": false,
+            "archivada": false,
+            "fecha": null,
+            "etiqueta": "ocio"
+          },
+          {
+            "id": "proyecto-2",
+            "texto": "Organizar documentos",
+            "completada": false,
+            "archivada": false,
+            "fecha": null,
+            "etiqueta": ""
+          }
+        ]
+      }
+    ]
+  }'::jsonb),
+  
+  -- ┌─────────────────────────────────────────────────────────────────┐
+  -- │ 2️⃣ CITAS - Eventos con fecha y hora específica                  │
+  -- └─────────────────────────────────────────────────────────────────┘
+  -- Incluye 2 citas de ejemplo para diciembre de 2025
+  
+  ('citas', '{
+    "citas": [
+      {
+        "id": "cita-1",
+        "fecha": "2025-12-05",
+        "hora": "10:00",
+        "descripcion": "Reunión con el equipo",
+        "etiqueta": "trabajo",
+        "recurrente": false
+      },
+      {
+        "id": "cita-2",
+        "fecha": "2025-12-08",
+        "hora": "16:30",
+        "descripcion": "Consulta médica",
+        "etiqueta": "médicos",
+        "recurrente": false
+      }
+    ]
+  }'::jsonb),
+  
+  -- ┌─────────────────────────────────────────────────────────────────┐
+  -- │ 3️⃣ CONFIGURACIÓN - Preferencias de la aplicación                │
+  -- └─────────────────────────────────────────────────────────────────┘
+  -- Inicialmente vacío, se llenará cuando personalices la app
+  
+  ('config', '{"visual": {}, "funcionales": {}, "opciones": {}}'::jsonb),
+  
+  -- ┌─────────────────────────────────────────────────────────────────┐
+  -- │ 4️⃣ NOTAS - Tu bloc de notas personal                            │
+  -- └─────────────────────────────────────────────────────────────────┘
+  -- Incluye un mensaje de bienvenida para orientarte
+  
+  ('notas', '{"notas": "¡Bienvenido a tu agenda! 📝\\n\\nEsta es tu área de notas personales. Puedes usarla para:\\n- Apuntar ideas rápidas\\n- Hacer recordatorios\\n- Anotar pensamientos\\n\\n¡Empieza a organizarte!"}'::jsonb),
+  
+  -- ┌─────────────────────────────────────────────────────────────────┐
+  -- │ 5️⃣ SENTIMIENTOS - Diario emocional (opcional)                   │
+  -- └─────────────────────────────────────────────────────────────────┘
+  
+  ('sentimientos', '{"sentimientos": ""}'::jsonb),
+  
+  -- ┌─────────────────────────────────────────────────────────────────┐
+  -- │ 6️⃣ CONTRASEÑAS - Gestor de contraseñas (opcional)               │
+  -- └─────────────────────────────────────────────────────────────────┘
+  
+  ('contrasenas', '{"lista": []}'::jsonb),
+  
+  -- ┌─────────────────────────────────────────────────────────────────┐
+  -- │ 7️⃣ HISTORIAL - Registro de tareas eliminadas y completadas      │
+  -- └─────────────────────────────────────────────────────────────────┘
+  
+  ('historial_eliminados', '{"items": []}'::jsonb),
+  ('historial_tareas', '{"items": []}'::jsonb),
+  
+  -- ┌─────────────────────────────────────────────────────────────────┐
+  -- │ 8️⃣ PERSONAS - Contactos para delegar tareas                     │
+  -- └─────────────────────────────────────────────────────────────────┘
+  -- Incluye 3 contactos de ejemplo
+  
+  ('personas', '{
+    "lista": [
+      {"nombre": "Ana García", "email": "ana.garcia@ejemplo.com", "telefono": "612345678"},
+      {"nombre": "Carlos Pérez", "email": "carlos.perez@ejemplo.com", "telefono": "687654321"},
+      {"nombre": "María López", "email": "maria.lopez@ejemplo.com", "telefono": "655123456"}
+    ]
+  }'::jsonb),
+  
+  -- ┌─────────────────────────────────────────────────────────────────┐
+  -- │ 9️⃣ ETIQUETAS - Categorías para organizar tareas y citas         │
+  -- └─────────────────────────────────────────────────────────────────┘
+  -- Incluye 3 etiquetas predefinidas: trabajo, ocio, médicos
+  
+  ('etiquetas', '{
+    "tareas": [
+      {"nombre": "trabajo", "simbolo": "💼", "color": "#3498db"},
+      {"nombre": "ocio", "simbolo": "🎮", "color": "#9b59b6"},
+      {"nombre": "médicos", "simbolo": "🏥", "color": "#e74c3c"}
+    ],
+    "citas": [
+      {"nombre": "trabajo", "simbolo": "💼", "color": "#3498db"},
+      {"nombre": "ocio", "simbolo": "🎮", "color": "#9b59b6"},
+      {"nombre": "médicos", "simbolo": "🏥", "color": "#e74c3c"}
+    ]
+  }'::jsonb),
+  
+  -- ┌─────────────────────────────────────────────────────────────────┐
+  -- │ 🔟 LOG - Registro de acciones para debugging                    │
+  -- └─────────────────────────────────────────────────────────────────┘
+  
+  ('log', '{"acciones": []}'::jsonb),
+  
+  -- ┌─────────────────────────────────────────────────────────────────┐
+  -- │ 1️⃣1️⃣ SALVADOS - Copias de seguridad manuales                     │
+  -- └─────────────────────────────────────────────────────────────────┘
+  
+  ('salvados', '{}'::jsonb)
+
+-- Si algún registro ya existe (por ejemplo, si ejecutas esto 2 veces),
+-- no lo sobrescribe gracias a ON CONFLICT
+ON CONFLICT (id) DO NOTHING;
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- ✅ ¡COMPLETADO!
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Tu base de datos está lista con:
+--   ✓ 3 tareas críticas de ejemplo
+--   ✓ 2 listas personalizadas (Compras y Proyectos)
+--   ✓ 2 citas de ejemplo
+--   ✓ 3 contactos de ejemplo
+--   ✓ 3 etiquetas predefinidas
+--   ✓ Mensaje de bienvenida en notas
+--
+-- Ahora puedes conectar tu aplicación y empezar a usar la agenda.
+-- Los datos de ejemplo te ayudarán a entender cómo funciona todo.
+-- ═══════════════════════════════════════════════════════════════════════════
+```
+
+### 3.3 Ejecutar el Script
+
+1. Haz clic en el botón **"Run"** (Ejecutar) o presiona `Ctrl + Enter`
+2. Deberías ver un mensaje de éxito: **"Success. No rows returned"**
+3. Si ves algún error, verifica que copiaste todo el código correctamente
+
+### 3.4 Verificar que la tabla se creó
+
+1. En el menú lateral izquierdo, haz clic en **"Table Editor"** (Editor de tablas)
+2. Deberías ver la tabla **`agenda_data`**
+3. Haz clic en ella para ver los registros iniciales que se insertaron
+4. Verás 12 filas con datos de ejemplo (tareas, citas, personas, etc.)
+
+---
+
+## 4. Obtener credenciales (API)
 
 Una vez que tu proyecto esté listo, necesitas obtener dos cosas importantes:
 
-### 3.1 URL del Proyecto (Project URL)
+### 4.1 URL del Proyecto (Project URL)
 
 1. En el menú lateral izquierdo, haz clic en **"Settings"** (⚙️ Configuración)
 2. Haz clic en **"API"**
 3. Busca la sección **"Project URL"**
 4. Copia la URL que verás (algo como: `https://abcdefgh.supabase.co`)
 
-### 3.2 Anon Public Key (Clave pública)
+### 4.2 Anon Public Key (Clave pública)
 
 1. En la misma página de **Settings > API**
 2. Busca la sección **"Project API keys"**
@@ -80,72 +367,6 @@ Una vez que tu proyecto esté listo, necesitas obtener dos cosas importantes:
 
 ---
 
-## 4. Crear la tabla en la base de datos
-
-Ahora necesitas crear la estructura de la base de datos donde se guardará toda la información de tu agenda.
-
-### 4.1 Abrir el SQL Editor
-
-1. En el menú lateral izquierdo, haz clic en **"SQL Editor"** (ícono de </>)
-2. Haz clic en **"+ New query"** o **"Nueva consulta"**
-
-### 4.2 Ejecutar el Script SQL
-
-Copia y pega exactamente este código SQL en el editor:
-
-```sql
--- Crear la tabla principal para almacenar todos los datos de la agenda
-CREATE TABLE agenda_data (
-  id text PRIMARY KEY,
-  data jsonb NOT NULL DEFAULT '{}'::jsonb,
-  last_updated timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
--- Crear índice para búsquedas más rápidas
-CREATE INDEX idx_agenda_data_last_updated ON agenda_data(last_updated);
-
--- Habilitar Row Level Security (seguridad a nivel de fila)
-ALTER TABLE agenda_data ENABLE ROW LEVEL SECURITY;
-
--- Crear política para permitir lectura y escritura anónima
--- IMPORTANTE: Esto permite acceso completo. Para producción, considera usar autenticación.
-CREATE POLICY "Permitir acceso completo anónimo" 
-ON agenda_data 
-FOR ALL 
-USING (true) 
-WITH CHECK (true);
-
--- Insertar datos iniciales
-INSERT INTO agenda_data (id, data) VALUES
-  ('tareas', '{"tareas_criticas": [], "tareas": [], "listasPersonalizadas": []}'::jsonb),
-  ('citas', '{"citas": []}'::jsonb),
-  ('config', '{"visual": {}, "funcionales": {}, "opciones": {}}'::jsonb),
-  ('notas', '{"notas": ""}'::jsonb),
-  ('sentimientos', '{"sentimientos": ""}'::jsonb),
-  ('contrasenas', '{"lista": []}'::jsonb),
-  ('historial_eliminados', '{"items": []}'::jsonb),
-  ('historial_tareas', '{"items": []}'::jsonb),
-  ('personas', '{"lista": []}'::jsonb),
-  ('etiquetas', '{"tareas": [{"nombre": "trabajo", "simbolo": "💼", "color": "#3498db"}, {"nombre": "ocio", "simbolo": "🎮", "color": "#9b59b6"}, {"nombre": "médicos", "simbolo": "🏥", "color": "#e74c3c"}], "citas": [{"nombre": "trabajo", "simbolo": "💼", "color": "#3498db"}, {"nombre": "ocio", "simbolo": "🎮", "color": "#9b59b6"}, {"nombre": "médicos", "simbolo": "🏥", "color": "#e74c3c"}]}'::jsonb),
-  ('log', '{"acciones": []}'::jsonb),
-  ('salvados', '{}'::jsonb)
-ON CONFLICT (id) DO NOTHING;
-```
-
-### 4.3 Ejecutar el Script
-
-1. Haz clic en el botón **"Run"** (Ejecutar) o presiona `Ctrl + Enter`
-2. Deberías ver un mensaje de éxito: **"Success. No rows returned"**
-3. Si ves algún error, verifica que copiaste todo el código correctamente
-
-### 4.4 Verificar que la tabla se creó
-
-1. En el menú lateral izquierdo, haz clic en **"Table Editor"** (Editor de tablas)
-2. Deberías ver la tabla **`agenda_data`**
-3. Haz clic en ella para ver los registros iniciales que se insertaron
-
----
-
 ## 5. Configurar en la aplicación
 
 Ahora que tienes Supabase configurado, vamos a conectar la aplicación:
@@ -158,9 +379,9 @@ Ahora que tienes Supabase configurado, vamos a conectar la aplicación:
 3. **Ve a la pestaña "Sincronización"**
 
 4. **Completa los campos de Supabase:**
-   - **URL del Proyecto:** Pega la URL que copiaste en el paso 3.1
+   - **URL del Proyecto:** Pega la URL que copiaste en el paso 4.1
      - Ejemplo: `https://abcdefgh.supabase.co`
-   - **Anon Key:** Pega la clave `anon public` que copiaste en el paso 3.2
+   - **Anon Key:** Pega la clave `anon public` que copiaste en el paso 4.2
      - Es el texto muy largo que empieza con `eyJhbGci...`
    - **Service Key (Opcional):** Déjalo vacío (no es necesario para uso normal)
 
@@ -184,11 +405,12 @@ Es importante verificar que todo funciona correctamente:
 2. **Si sale "Primera vez detectada":**
    - Haz clic en **"🛠️ Crear Tablas"**
    - O simplemente haz clic "Sí" en el diálogo que aparece
-   - ⚠️ **Nota:** Si ya creaste las tablas manualmente en el paso 4, ignora este paso
+   - ⚠️ **Nota:** Si ya creaste las tablas manualmente en el paso 3, ignora este paso
 
 3. **Sincronizar datos:**
    - Haz clic en **"📤 Guardar en la Nube"** para subir tus datos locales
    - Haz clic en **"📥 Obtener de la Nube"** para descargar datos
+   - Si ejecutaste el script SQL, verás los datos de ejemplo al hacer "Obtener de la Nube"
 
 4. **Verificar en Supabase:**
    - Vuelve al dashboard de Supabase
@@ -206,6 +428,7 @@ Tu aplicación de Agenda ahora está conectada a Supabase. Los cambios se sincro
 - **Guardado automático:** La aplicación guarda automáticamente cada vez que haces cambios
 - **Sincronización en tiempo real:** Si usas la app en varios dispositivos, se actualiza automáticamente
 - **Sin límites:** Supabase en el plan gratuito es suficiente para uso personal
+- **Datos de ejemplo:** Los datos de ejemplo te ayudarán a entender cómo funciona la agenda
 
 ---
 
@@ -233,7 +456,7 @@ Tu aplicación de Agenda ahora está conectada a Supabase. Los cambios se sincro
 - ✅ Asegúrate de no tener espacios extras al copiar/pegar
 
 ### Error: "Las tablas no existen"
-- ✅ Ejecuta el script SQL del paso 4 nuevamente
+- ✅ Ejecuta el script SQL del paso 3 nuevamente
 - ✅ Verifica en "Table Editor" que existe la tabla `agenda_data`
 
 ### "Error de permisos" o "permission denied"
@@ -259,8 +482,8 @@ Tu aplicación de Agenda ahora está conectada a Supabase. Los cambios se sincro
 
 1. Crear cuenta en https://supabase.com/
 2. Crear nuevo proyecto
-3. Obtener **Project URL** y **Anon Key** desde Settings > API
-4. Ejecutar el **script SQL** en SQL Editor
+3. Ejecutar el **script SQL** en SQL Editor (con datos de ejemplo incluidos)
+4. Obtener **Project URL** y **Anon Key** desde Settings > API
 5. Configurar URL y Key en la aplicación (⚙️ Configuración > Sincronización)
 6. Probar conexión y ¡listo!
 
