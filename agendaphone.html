@@ -92,12 +92,12 @@
     }
 
     .mobile-title {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: bold;
       color: #2d5a27;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .tab-badge {
@@ -476,27 +476,27 @@
         <span id="current-tab-title">Tareas Críticas</span>
         <span class="tab-badge" id="current-tab-badge">0</span>
       </div>
-      <div style="display: flex; gap: 8px;">
+      <div style="display: flex; gap: 4px;">
         <button onclick="abrirModalTareaUniversal()"
-          style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;"
+          style="background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 4px;"
           title="Nueva tarea">➕</button>
         <button onclick="abrirModal('modal-nueva-cita')"
-          style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;"
+          style="background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 4px;"
           title="Nueva cita">📅</button>
         <button onclick="abrirModalListaPersonalizada()"
-          style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;"
+          style="background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 4px;"
           title="Gestionar Listas">📋</button>
         <button onclick="console.log('🔧 Botón pulsado'); toggleConfigFloating();"
-          style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;"
+          style="background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 4px;"
           title="Configuración">⚙️</button>
         <button id="btn-resumen-movil"
-          style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;"
+          style="background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 4px;"
           title="Resumen del Día">🌅</button>
         <button id="btn-pomodoro-movil"
-          style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;"
+          style="background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 4px;"
           title="Pomodoro TDAH">🍅</button>
         <button id="btn-progreso-movil"
-          style="background: transparent; border: none; font-size: 20px; cursor: pointer; padding: 8px;"
+          style="background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 4px;"
           title="Mi Progreso">📊</button>
       </div>
     </div>
@@ -552,27 +552,27 @@
     <div class="modal-content" style="max-width:1000px;width:95%;max-height:90vh;overflow-y:auto;">
       <h4>📅 Calendario</h4>
       <div>
-          <div class="calendar-header">
-            <button id="prevMonth" class="calendar-nav-btn">◀</button>
-            <h3 id="monthYear"></h3>
-            <button id="nextMonth" class="calendar-nav-btn">▶</button>
-          </div>
-          <div class="calendar-weekdays">
-            <div class="calendar-weekday">Lun</div>
-            <div class="calendar-weekday">Mar</div>
-            <div class="calendar-weekday">Mié</div>
-            <div class="calendar-weekday">Jue</div>
-            <div class="calendar-weekday">Vie</div>
-            <div class="calendar-weekday">Sáb</div>
-            <div class="calendar-weekday">Dom</div>
-          </div>
-          <div class="calendar-grid" id="calendarGrid" style="min-height:300px;"></div>
-          <div class="calendar-appointments">
-            <div id="appointmentsList"></div>
-          </div>
+        <div class="calendar-header">
+          <button id="prevMonth" class="calendar-nav-btn">◀</button>
+          <h3 id="monthYear"></h3>
+          <button id="nextMonth" class="calendar-nav-btn">▶</button>
+        </div>
+        <div class="calendar-weekdays">
+          <div class="calendar-weekday">Lun</div>
+          <div class="calendar-weekday">Mar</div>
+          <div class="calendar-weekday">Mié</div>
+          <div class="calendar-weekday">Jue</div>
+          <div class="calendar-weekday">Vie</div>
+          <div class="calendar-weekday">Sáb</div>
+          <div class="calendar-weekday">Dom</div>
+        </div>
+        <div class="calendar-grid" id="calendarGrid" style="min-height:300px;"></div>
+        <div class="calendar-appointments">
+          <div id="appointmentsList"></div>
         </div>
       </div>
     </div>
+  </div>
   </div>
 
   <!-- Modal del Calendario de Tareas -->
