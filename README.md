@@ -234,198 +234,41 @@ WITH CHECK (true);
 -- Puedes modificarlos o eliminarlos después desde la aplicación.
 -- ═══════════════════════════════════════════════════════════════════════════
 
-INSERT INTO agenda_data (id, data) VALUES
+-- Crear la tabla principal para almacenar todos los datos de la agenda
+CREATE TABLE agenda_data (
+  id text PRIMARY KEY,
+  data jsonb NOT NULL DEFAULT '{}'::jsonb,
+  last_updated timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
 
-  -- ┌─────────────────────────────────────────────────────────────────┐
-  -- │ 1️⃣ TAREAS - El corazón de tu agenda                             │
-  -- └─────────────────────────────────────────────────────────────────┘
-  -- Incluye 3 tipos de tareas:
-  --   • tareas_criticas: Tareas urgentes e importantes (3 ejemplos)
-  --   • tareas: Tareas normales (vacío por ahora)
-  --   • listasPersonalizadas: Listas custom (2 ejemplos: Compras y Proyectos)
-  
-  ('tareas', '{
-    "tareas_criticas": [
-      {
-        "id": "critica-1",
-        "texto": "Revisar informe mensual",
-        "completada": false,
-        "archivada": false,
-        "fecha": null,
-        "etiqueta": "trabajo"
-      },
-      {
-        "id": "critica-2",
-        "texto": "Llamar al médico para cita",
-        "completada": false,
-        "archivada": false,
-        "fecha": null,
-        "etiqueta": "médicos"
-      },
-      {
-        "id": "critica-3",
-        "texto": "Preparar presentación del proyecto",
-        "completada": false,
-        "archivada": false,
-        "fecha": null,
-        "etiqueta": "trabajo"
-      }
-    ],
-    "tareas": [],
-    "listasPersonalizadas": [
-      {
-        "id": "lista-1",
-        "nombre": "🛒 Compras",
-        "icono": "🛒",
-        "tareas": [
-          {
-            "id": "compra-1",
-            "texto": "Leche y pan",
-            "completada": false,
-            "archivada": false,
-            "fecha": null,
-            "etiqueta": ""
-          },
-          {
-            "id": "compra-2",
-            "texto": "Frutas y verduras",
-            "completada": false,
-            "archivada": false,
-            "fecha": null,
-            "etiqueta": ""
-          }
-        ]
-      },
-      {
-        "id": "lista-2",
-        "nombre": "💡 Proyectos Personales",
-        "icono": "💡",
-        "tareas": [
-          {
-            "id": "proyecto-1",
-            "texto": "Aprender JavaScript",
-            "completada": false,
-            "archivada": false,
-            "fecha": null,
-            "etiqueta": "ocio"
-          },
-          {
-            "id": "proyecto-2",
-            "texto": "Organizar documentos",
-            "completada": false,
-            "archivada": false,
-            "fecha": null,
-            "etiqueta": ""
-          }
-        ]
-      }
-    ]
-  }'::jsonb),
-  
-  -- ┌─────────────────────────────────────────────────────────────────┐
-  -- │ 2️⃣ CITAS - Eventos con fecha y hora específica                  │
-  -- └─────────────────────────────────────────────────────────────────┘
-  -- Incluye 2 citas de ejemplo para diciembre de 2025
-  
-  ('citas', '{
-    "citas": [
-      {
-        "id": "cita-1",
-        "fecha": "2025-12-05",
-        "hora": "10:00",
-        "descripcion": "Reunión con el equipo",
-        "etiqueta": "trabajo",
-        "recurrente": false
-      },
-      {
-        "id": "cita-2",
-        "fecha": "2025-12-08",
-        "hora": "16:30",
-        "descripcion": "Consulta médica",
-        "etiqueta": "médicos",
-        "recurrente": false
-      }
-    ]
-  }'::jsonb),
-  
-  -- ┌─────────────────────────────────────────────────────────────────┐
-  -- │ 3️⃣ CONFIGURACIÓN - Preferencias de la aplicación                │
-  -- └─────────────────────────────────────────────────────────────────┘
-  -- Inicialmente vacío, se llenará cuando personalices la app
-  
+-- Crear índice para búsquedas más rápidas
+CREATE INDEX idx_agenda_data_last_updated ON agenda_data(last_updated);
+
+-- Habilitar Row Level Security (seguridad a nivel de fila)
+ALTER TABLE agenda_data ENABLE ROW LEVEL SECURITY;
+
+-- Crear política para permitir lectura y escritura anónima
+-- IMPORTANTE: Esto permite acceso completo. Para producción, considera usar autenticación.
+CREATE POLICY "Permitir acceso completo anónimo" 
+ON agenda_data 
+FOR ALL 
+USING (true) 
+WITH CHECK (true);
+
+-- Insertar datos iniciales
+INSERT INTO agenda_data (id, data) VALUES
+  ('tareas', '{"tareas_criticas": [], "tareas": [], "listasPersonalizadas": []}'::jsonb),
+  ('citas', '{"citas": []}'::jsonb),
   ('config', '{"visual": {}, "funcionales": {}, "opciones": {}}'::jsonb),
-  
-  -- ┌─────────────────────────────────────────────────────────────────┐
-  -- │ 4️⃣ NOTAS - Tu bloc de notas personal                            │
-  -- └─────────────────────────────────────────────────────────────────┘
-  -- Incluye un mensaje de bienvenida para orientarte
-  
-  ('notas', '{"notas": "¡Bienvenido a tu agenda! 📝\\n\\nEsta es tu área de notas personales. Puedes usarla para:\\n- Apuntar ideas rápidas\\n- Hacer recordatorios\\n- Anotar pensamientos\\n\\n¡Empieza a organizarte!"}'::jsonb),
-  
-  -- ┌─────────────────────────────────────────────────────────────────┐
-  -- │ 5️⃣ SENTIMIENTOS - Diario emocional (opcional)                   │
-  -- └─────────────────────────────────────────────────────────────────┘
-  
+  ('notas', '{"notas": ""}'::jsonb),
   ('sentimientos', '{"sentimientos": ""}'::jsonb),
-  
-  -- ┌─────────────────────────────────────────────────────────────────┐
-  -- │ 6️⃣ CONTRASEÑAS - Gestor de contraseñas (opcional)               │
-  -- └─────────────────────────────────────────────────────────────────┘
-  
   ('contrasenas', '{"lista": []}'::jsonb),
-  
-  -- ┌─────────────────────────────────────────────────────────────────┐
-  -- │ 7️⃣ HISTORIAL - Registro de tareas eliminadas y completadas      │
-  -- └─────────────────────────────────────────────────────────────────┘
-  
   ('historial_eliminados', '{"items": []}'::jsonb),
   ('historial_tareas', '{"items": []}'::jsonb),
-  
-  -- ┌─────────────────────────────────────────────────────────────────┐
-  -- │ 8️⃣ PERSONAS - Contactos para delegar tareas                     │
-  -- └─────────────────────────────────────────────────────────────────┘
-  -- Incluye 3 contactos de ejemplo
-  
-  ('personas', '{
-    "lista": [
-      {"nombre": "Ana García", "email": "ana.garcia@ejemplo.com", "telefono": "612345678"},
-      {"nombre": "Carlos Pérez", "email": "carlos.perez@ejemplo.com", "telefono": "687654321"},
-      {"nombre": "María López", "email": "maria.lopez@ejemplo.com", "telefono": "655123456"}
-    ]
-  }'::jsonb),
-  
-  -- ┌─────────────────────────────────────────────────────────────────┐
-  -- │ 9️⃣ ETIQUETAS - Categorías para organizar tareas y citas         │
-  -- └─────────────────────────────────────────────────────────────────┘
-  -- Incluye 3 etiquetas predefinidas: trabajo, ocio, médicos
-  
-  ('etiquetas', '{
-    "tareas": [
-      {"nombre": "trabajo", "simbolo": "💼", "color": "#3498db"},
-      {"nombre": "ocio", "simbolo": "🎮", "color": "#9b59b6"},
-      {"nombre": "médicos", "simbolo": "🏥", "color": "#e74c3c"}
-    ],
-    "citas": [
-      {"nombre": "trabajo", "simbolo": "💼", "color": "#3498db"},
-      {"nombre": "ocio", "simbolo": "🎮", "color": "#9b59b6"},
-      {"nombre": "médicos", "simbolo": "🏥", "color": "#e74c3c"}
-    ]
-  }'::jsonb),
-  
-  -- ┌─────────────────────────────────────────────────────────────────┐
-  -- │ 🔟 LOG - Registro de acciones para debugging                    │
-  -- └─────────────────────────────────────────────────────────────────┘
-  
+  ('personas', '{"lista": []}'::jsonb),
+  ('etiquetas', '{"tareas": [{"nombre": "trabajo", "simbolo": "💼", "color": "#3498db"}, {"nombre": "ocio", "simbolo": "🎮", "color": "#9b59b6"}, {"nombre": "médicos", "simbolo": "🏥", "color": "#e74c3c"}], "citas": [{"nombre": "trabajo", "simbolo": "💼", "color": "#3498db"}, {"nombre": "ocio", "simbolo": "🎮", "color": "#9b59b6"}, {"nombre": "médicos", "simbolo": "🏥", "color": "#e74c3c"}]}'::jsonb),
   ('log', '{"acciones": []}'::jsonb),
-  
-  -- ┌─────────────────────────────────────────────────────────────────┐
-  -- │ 1️⃣1️⃣ SALVADOS - Copias de seguridad manuales                     │
-  -- └─────────────────────────────────────────────────────────────────┘
-  
   ('salvados', '{}'::jsonb)
-
--- Si algún registro ya existe (por ejemplo, si ejecutas esto 2 veces),
--- no lo sobrescribe gracias a ON CONFLICT
 ON CONFLICT (id) DO NOTHING;
 
 -- ═══════════════════════════════════════════════════════════════════════════
