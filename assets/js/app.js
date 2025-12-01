@@ -756,10 +756,9 @@ function asegurarListaPorHacerComoPersonalizada() {
     listaPorHacer.tareas = tareasExistentes.map(tarea => ({
       texto: tarea.texto || tarea.titulo || 'Tarea sin descripción',
       fecha: tarea.fecha_fin || tarea.fecha || null,
-      estado: tarea.completada ? 'completada' : (tarea.estado || 'pendiente'),
+      estado: tarea.estado || 'pendiente',
       etiqueta: tarea.etiqueta || null,
       fechaCreacion: tarea.fecha_creacion || new Date().toISOString(),
-      fechaCompletada: tarea.fechaCompletada || null,
       id: tarea.id || Date.now().toString() + Math.random()
     }));
 

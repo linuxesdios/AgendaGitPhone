@@ -261,71 +261,70 @@ function renderizarCriticas() {
       alerta.title = '¡Vence hoy!';
       div.appendChild(alerta);
     }
-  }
 
     // Drag & Drop / Touch - solo si NO está deshabilitado
     if (!sinTactil) {
-    div.draggable = !(typeof isMobile === 'function' && isMobile());
-    div.dataset.tipo = 'critica';
-    div.dataset.index = realIndex;
+      div.draggable = !(typeof isMobile === 'function' && isMobile());
+      div.dataset.tipo = 'critica';
+      div.dataset.index = realIndex;
 
-    // Eventos touch para móvil
-    if (typeof isMobile === 'function' && isMobile()) {
-      div.addEventListener('touchstart', handleTouchStart, { passive: false });
-      div.addEventListener('touchmove', handleTouchMove, { passive: false });
-      div.addEventListener('touchend', handleTouchEnd, { passive: false });
-    } else {
-      div.addEventListener('dragstart', handleDragStart);
-      div.addEventListener('dragend', handleDragEnd);
-    }
-  }
-
-  lista.appendChild(div);
-
-  // Renderizar subtareas si existen
-  if (tarea.subtareas && tarea.subtareas.length > 0) {
-    tarea.subtareas.forEach((subtarea, subIndex) => {
-      const subDiv = document.createElement('div');
-      subDiv.className = 'subtarea-item';
-      if (subtarea.completada) subDiv.classList.add('subtarea-completada');
-
-      const subSimbolo = document.createElement('span');
-      subSimbolo.className = 'subtarea-simbolo';
-      subSimbolo.textContent = obtenerSimboloSubtarea(subtarea);
-      subSimbolo.onclick = () => cambiarEstadoSubtareaCritica(realIndex, subIndex);
-
-      const subTexto = document.createElement('div');
-      subTexto.className = 'subtarea-texto';
-      subTexto.style.cursor = 'pointer';
-      let contenidoSub = subtarea.texto;
-      if (subtarea.persona || subtarea.fecha_migrar) {
-        contenidoSub += ' <span style="font-size: 11px; color: #9c27b0;">→ ';
-        if (subtarea.persona) {
-          contenidoSub += `<span style="background: #e3f2fd; color: #1976d2; padding: 2px 6px; border-radius: 3px; font-size: 10px;">👤 ${escapeHtml(subtarea.persona)}</span>`;
-        }
-        if (subtarea.fecha_migrar) {
-          contenidoSub += `<span style="background: #ffe5e5; color: #666; padding: 2px 6px; border-radius: 3px; font-size: 10px;">📅 ${subtarea.fecha_migrar}</span>`;
-        }
-        contenidoSub += '</span>';
+      // Eventos touch para móvil
+      if (typeof isMobile === 'function' && isMobile()) {
+        div.addEventListener('touchstart', handleTouchStart, { passive: false });
+        div.addEventListener('touchmove', handleTouchMove, { passive: false });
+        div.addEventListener('touchend', handleTouchEnd, { passive: false });
+      } else {
+        div.addEventListener('dragstart', handleDragStart);
+        div.addEventListener('dragend', handleDragEnd);
       }
-      subTexto.innerHTML = contenidoSub;
-      subTexto.onclick = () => abrirEditorSubtarea(realIndex, subIndex, 'critica');
+    }
 
-      const btnBorrarSub = document.createElement('button');
-      btnBorrarSub.className = 'btn-borrar-subtarea';
-      btnBorrarSub.textContent = '🗑️';
-      btnBorrarSub.onclick = (e) => {
-        e.stopPropagation();
-        eliminarSubtareaCritica(realIndex, subIndex);
-      };
+    lista.appendChild(div);
 
-      subDiv.appendChild(subSimbolo);
-      subDiv.appendChild(subTexto);
-      subDiv.appendChild(btnBorrarSub);
-      lista.appendChild(subDiv);
-    });
-  }
-});
+    // Renderizar subtareas si existen
+    if (tarea.subtareas && tarea.subtareas.length > 0) {
+      tarea.subtareas.forEach((subtarea, subIndex) => {
+        const subDiv = document.createElement('div');
+        subDiv.className = 'subtarea-item';
+        if (subtarea.completada) subDiv.classList.add('subtarea-completada');
+
+        const subSimbolo = document.createElement('span');
+        subSimbolo.className = 'subtarea-simbolo';
+        subSimbolo.textContent = obtenerSimboloSubtarea(subtarea);
+        subSimbolo.onclick = () => cambiarEstadoSubtareaCritica(realIndex, subIndex);
+
+        const subTexto = document.createElement('div');
+        subTexto.className = 'subtarea-texto';
+        subTexto.style.cursor = 'pointer';
+        let contenidoSub = subtarea.texto;
+        if (subtarea.persona || subtarea.fecha_migrar) {
+          contenidoSub += ' <span style="font-size: 11px; color: #9c27b0;">→ ';
+          if (subtarea.persona) {
+            contenidoSub += `<span style="background: #e3f2fd; color: #1976d2; padding: 2px 6px; border-radius: 3px; font-size: 10px;">👤 ${escapeHtml(subtarea.persona)}</span>`;
+          }
+          if (subtarea.fecha_migrar) {
+            contenidoSub += `<span style="background: #ffe5e5; color: #666; padding: 2px 6px; border-radius: 3px; font-size: 10px;">📅 ${subtarea.fecha_migrar}</span>`;
+          }
+          contenidoSub += '</span>';
+        }
+        subTexto.innerHTML = contenidoSub;
+        subTexto.onclick = () => abrirEditorSubtarea(realIndex, subIndex, 'critica');
+
+        const btnBorrarSub = document.createElement('button');
+        btnBorrarSub.className = 'btn-borrar-subtarea';
+        btnBorrarSub.textContent = '🗑️';
+        btnBorrarSub.onclick = (e) => {
+          e.stopPropagation();
+          eliminarSubtareaCritica(realIndex, subIndex);
+        };
+
+        subDiv.appendChild(subSimbolo);
+        subDiv.appendChild(subTexto);
+        subDiv.appendChild(btnBorrarSub);
+        lista.appendChild(subDiv);
+      });
+    }
+  });
 }
 
 function renderizarTareas() {
@@ -472,71 +471,70 @@ function renderizarTareas() {
       alerta.title = esFechaHoy(tarea.fecha_fin) ? '¡Vence hoy!' : '¡Programada para hoy!';
       div.appendChild(alerta);
     }
-  }
 
     // Drag & Drop / Touch - solo si NO está deshabilitado
     if (!sinTactil) {
-    div.draggable = !(typeof isMobile === 'function' && isMobile());
-    div.dataset.tipo = 'tarea';
-    div.dataset.index = realIndex;
+      div.draggable = !(typeof isMobile === 'function' && isMobile());
+      div.dataset.tipo = 'tarea';
+      div.dataset.index = realIndex;
 
-    // Eventos touch para móvil
-    if (typeof isMobile === 'function' && isMobile()) {
-      div.addEventListener('touchstart', handleTouchStart, { passive: false });
-      div.addEventListener('touchmove', handleTouchMove, { passive: false });
-      div.addEventListener('touchend', handleTouchEnd, { passive: false });
-    } else {
-      div.addEventListener('dragstart', handleDragStart);
-      div.addEventListener('dragend', handleDragEnd);
-    }
-  }
-
-  lista.appendChild(div);
-
-  // Renderizar subtareas si existen
-  if (tarea.subtareas && tarea.subtareas.length > 0) {
-    tarea.subtareas.forEach((subtarea, subIndex) => {
-      const subDiv = document.createElement('div');
-      subDiv.className = 'subtarea-item';
-      if (subtarea.completada) subDiv.classList.add('subtarea-completada');
-
-      const subSimbolo = document.createElement('span');
-      subSimbolo.className = 'subtarea-simbolo';
-      subSimbolo.textContent = obtenerSimboloSubtarea(subtarea);
-      subSimbolo.onclick = () => cambiarEstadoSubtarea(realIndex, subIndex);
-
-      const subTexto = document.createElement('div');
-      subTexto.className = 'subtarea-texto';
-      subTexto.style.cursor = 'pointer';
-      let contenidoSub = subtarea.texto;
-      if (subtarea.persona || subtarea.fecha_migrar) {
-        contenidoSub += ' <span style="font-size: 11px; color: #9c27b0;">→ ';
-        if (subtarea.persona) {
-          contenidoSub += `<span style="background: #e3f2fd; color: #1976d2; padding: 2px 6px; border-radius: 3px; font-size: 10px;">👤 ${escapeHtml(subtarea.persona)}</span>`;
-        }
-        if (subtarea.fecha_migrar) {
-          contenidoSub += `<span style="background: #ffe5e5; color: #666; padding: 2px 6px; border-radius: 3px; font-size: 10px;">📅 ${subtarea.fecha_migrar}</span>`;
-        }
-        contenidoSub += '</span>';
+      // Eventos touch para móvil
+      if (typeof isMobile === 'function' && isMobile()) {
+        div.addEventListener('touchstart', handleTouchStart, { passive: false });
+        div.addEventListener('touchmove', handleTouchMove, { passive: false });
+        div.addEventListener('touchend', handleTouchEnd, { passive: false });
+      } else {
+        div.addEventListener('dragstart', handleDragStart);
+        div.addEventListener('dragend', handleDragEnd);
       }
-      subTexto.innerHTML = contenidoSub;
-      subTexto.onclick = () => abrirEditorSubtarea(realIndex, subIndex, 'tarea');
+    }
 
-      const btnBorrarSub = document.createElement('button');
-      btnBorrarSub.className = 'btn-borrar-subtarea';
-      btnBorrarSub.textContent = '🗑️';
-      btnBorrarSub.onclick = (e) => {
-        e.stopPropagation();
-        eliminarSubtarea(realIndex, subIndex);
-      };
+    lista.appendChild(div);
 
-      subDiv.appendChild(subSimbolo);
-      subDiv.appendChild(subTexto);
-      subDiv.appendChild(btnBorrarSub);
-      lista.appendChild(subDiv);
-    });
-  }
-});
+    // Renderizar subtareas si existen
+    if (tarea.subtareas && tarea.subtareas.length > 0) {
+      tarea.subtareas.forEach((subtarea, subIndex) => {
+        const subDiv = document.createElement('div');
+        subDiv.className = 'subtarea-item';
+        if (subtarea.completada) subDiv.classList.add('subtarea-completada');
+
+        const subSimbolo = document.createElement('span');
+        subSimbolo.className = 'subtarea-simbolo';
+        subSimbolo.textContent = obtenerSimboloSubtarea(subtarea);
+        subSimbolo.onclick = () => cambiarEstadoSubtarea(realIndex, subIndex);
+
+        const subTexto = document.createElement('div');
+        subTexto.className = 'subtarea-texto';
+        subTexto.style.cursor = 'pointer';
+        let contenidoSub = subtarea.texto;
+        if (subtarea.persona || subtarea.fecha_migrar) {
+          contenidoSub += ' <span style="font-size: 11px; color: #9c27b0;">→ ';
+          if (subtarea.persona) {
+            contenidoSub += `<span style="background: #e3f2fd; color: #1976d2; padding: 2px 6px; border-radius: 3px; font-size: 10px;">👤 ${escapeHtml(subtarea.persona)}</span>`;
+          }
+          if (subtarea.fecha_migrar) {
+            contenidoSub += `<span style="background: #ffe5e5; color: #666; padding: 2px 6px; border-radius: 3px; font-size: 10px;">📅 ${subtarea.fecha_migrar}</span>`;
+          }
+          contenidoSub += '</span>';
+        }
+        subTexto.innerHTML = contenidoSub;
+        subTexto.onclick = () => abrirEditorSubtarea(realIndex, subIndex, 'tarea');
+
+        const btnBorrarSub = document.createElement('button');
+        btnBorrarSub.className = 'btn-borrar-subtarea';
+        btnBorrarSub.textContent = '🗑️';
+        btnBorrarSub.onclick = (e) => {
+          e.stopPropagation();
+          eliminarSubtarea(realIndex, subIndex);
+        };
+
+        subDiv.appendChild(subSimbolo);
+        subDiv.appendChild(subTexto);
+        subDiv.appendChild(btnBorrarSub);
+        lista.appendChild(subDiv);
+      });
+    }
+  });
 }
 
 // ========== CAMBIAR ESTADO DE TAREAS ==========
@@ -727,7 +725,6 @@ async function agregarTareaCritica() {
       razon: '',
       fecha_fin: fecha,
       etiqueta: etiqueta || null,
-      completada: false,
       estado: 'pendiente',
       fecha_creacion: new Date().toISOString()
     };
@@ -856,7 +853,6 @@ async function agregarTarea() {
       texto,
       fecha_fin: fecha,
       etiqueta: etiqueta || null,
-      completada: false,
       estado: 'pendiente',
       fecha_creacion: new Date().toISOString()
     };
@@ -1258,29 +1254,7 @@ function manejarSeleccionPersona() {
   }
 }
 
-subtarea.estado = 'completada';
-subtarea.completada = true;
-guardarSubtareaCompletada(subtarea, true);
-mostrarCelebracion();
-    } else {
-  subtarea.estado = 'programada';
-  subtarea.completada = false;
-}
-  } else if (subtarea.estado === 'programada') {
-  subtarea.estado = 'completada';
-  subtarea.completada = true;
-  guardarSubtareaCompletada(subtarea, true);
-  mostrarCelebracion();
-} else {
-  subtarea.estado = 'pendiente';
-  subtarea.completada = false;
-  delete subtarea.persona;
-  delete subtarea.fecha_migrar;
-}
 
-renderizar();
-guardarJSON(true);
-}
 
 function cambiarEstadoSubtarea(tareaIndex, subIndex) {
   const subtarea = appState.agenda.tareas[tareaIndex].subtareas[subIndex];

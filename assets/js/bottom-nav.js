@@ -109,7 +109,7 @@ function cambiarTab(tabName) {
   if (tabName === 'criticas') {
     icon = '🚨';
     title = 'Tareas Críticas';
-    count = (window.appState?.agenda?.tareas_criticas || []).filter(t => !t.completada).length;
+    count = (window.appState?.agenda?.tareas_criticas || []).length;
   } else if (tabName === 'citas') {
     icon = '📅';
     title = 'Citas';
@@ -165,7 +165,7 @@ function renderizarCriticasMovil() {
     if (!container) return;
 
     const tareas = window.appState?.agenda?.tareas_criticas || [];
-    const activas = tareas.filter(t => !t.completada);
+    const activas = tareas;
 
     if (activas.length === 0) {
       container.innerHTML = '<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-text">No hay tareas críticas<br><small>Crea una nueva con el botón +</small></div></div>';
@@ -462,16 +462,7 @@ window.cambiarListaActiva = function (id) {
 
 // ==================== FUNCIONES AUXILIARES PARA TAREAS CRÍTICAS ====================
 
-function completarTareaCritica(id) {
-  const tarea = window.appState.agenda.tareas_criticas.find(t => t.id === id);
-  if (!tarea) return;
 
-  tarea.completada = true;
-  tarea.fecha_completada = new Date().toISOString();
-  guardarJSON();
-  renderizarCriticasMovil();
-  mostrarAlerta('✅ Tarea completada', 'success');
-}
 
 function eliminarTareaCritica(id) {
   console.log('📤 SUPABASE: Eliminando tarea crítica');
@@ -828,19 +819,7 @@ function guardarEdicionCitaMovil(id) {
 
 // ==================== FUNCIONES AUXILIARES PARA LISTAS PERSONALIZADAS ====================
 
-function completarTareaLista(listaId, tareaId) {
-  const lista = window.tareasData.listasPersonalizadas.find(l => l.id === listaId);
-  if (!lista) return;
 
-  const tarea = lista.tareas.find(t => t.id == tareaId);
-  if (!tarea) return;
-
-  tarea.completada = true;
-  tarea.fecha_completada = new Date().toISOString();
-  guardarJSON();
-  renderizarListasMovil();
-  mostrarAlerta('✅ Tarea completada', 'success');
-}
 
 function eliminarTareaLista(listaId, tareaId) {
   const lista = window.tareasData.listasPersonalizadas.find(l => l.id === listaId);

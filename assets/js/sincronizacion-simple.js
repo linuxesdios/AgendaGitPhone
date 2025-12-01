@@ -1402,7 +1402,7 @@ function cargarResumenDelDia() {
 
     // Procesar tareas
     todasLasTareas.forEach(tarea => {
-      if (tarea.estado === 'completada') return; // Saltar tareas completadas
+      // Las tareas completadas ya no están en la lista, así que no es necesario filtrar
 
       const fechaTarea = tarea.fecha ? new Date(tarea.fecha) : null;
       if (!fechaTarea) return;
