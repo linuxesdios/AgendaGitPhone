@@ -4708,3 +4708,34 @@ async function guardarYSalirListasPersonalizadas() {
   // 5. Recargar para asegurar que todo se aplique limpios (opcional, pero seguro)
   // location.reload(); 
 }
+
+window.abrirModalListaPersonalizada = abrirModalListaPersonalizada;
+window.agregarListaPersonalizadaDesdeModal = agregarListaPersonalizadaDesdeModal;
+window.eliminarListaDesdeModal = eliminarListaDesdeModal;
+window.guardarYSalirListasPersonalizadas = guardarYSalirListasPersonalizadas;
+window.insertarEmojiEnInput = insertarEmojiEnInput;
+window.renderizarListasEnModalPersonalizado = renderizarListasEnModalPersonalizado;
+
+// ========== STUBS PARA FUNCIONES QUE SE CARGAN DESPUÉS ==========
+// Estas funciones se sobrescribirán cuando sincronizacion-simple.js se cargue
+if (!window.mostrarDashboardMotivacional) {
+  window.mostrarDashboardMotivacional = function() {
+    console.log('⏳ Esperando a que se cargue sincronizacion-simple.js...');
+    setTimeout(() => {
+      if (typeof window.mostrarDashboardMotivacional === 'function') {
+        window.mostrarDashboardMotivacional();
+      }
+    }, 500);
+  };
+}
+
+if (!window.mostrarResumenDiarioManual) {
+  window.mostrarResumenDiarioManual = function() {
+    console.log('⏳ Esperando a que se cargue sincronizacion-simple.js...');
+    setTimeout(() => {
+      if (typeof window.mostrarResumenDiarioManual === 'function') {
+        window.mostrarResumenDiarioManual();
+      }
+    }, 500);
+  };
+}

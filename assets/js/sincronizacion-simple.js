@@ -1654,3 +1654,38 @@ window.cargarResumenDelDia = cargarResumenDelDia;
 window.exportarResumenDiario = exportarResumenDiario;
 
 console.log('✅ Sincronización simplificada cargada (Supabase only)');
+
+// Exportar funciones faltantes
+window.mostrarDashboardMotivacional = mostrarDashboardMotivacional;
+window.mostrarResumenDiarioManual = mostrarResumenDiarioManual;
+
+// Agregar event listeners cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => {
+  const btnResumen = document.getElementById('btn-resumen-movil');
+  const btnPomodoro = document.getElementById('btn-pomodoro-movil');
+  const btnProgreso = document.getElementById('btn-progreso-movil');
+
+  if (btnResumen) {
+    btnResumen.addEventListener('click', () => {
+      if (typeof mostrarResumenDiarioManual === 'function') {
+        mostrarResumenDiarioManual();
+      }
+    });
+  }
+
+  if (btnPomodoro) {
+    btnPomodoro.addEventListener('click', () => {
+      if (typeof iniciarPomodoro === 'function') {
+        iniciarPomodoro();
+      }
+    });
+  }
+
+  if (btnProgreso) {
+    btnProgreso.addEventListener('click', () => {
+      if (typeof mostrarDashboardMotivacional === 'function') {
+        mostrarDashboardMotivacional();
+      }
+    });
+  }
+});
