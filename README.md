@@ -1,132 +1,13 @@
-# 🗄️ Agenda Personal - Configuración de Supabase
+# 🗄️ Configuración de Supabase para Agenda
 
-Tu agenda digital tipo **Bullet Journal** para gestionar tareas, citas y tu día a día desde cualquier dispositivo.
-
----
-
-## 📖 ¿Qué es esta Agenda?
-
-### 📓 Inspirada en Bullet Journal
-
-Esta es una **agenda digital tipo Bullet Journal**, el sistema de organización personal que combina flexibilidad y estructura. A diferencia de las agendas tradicionales, aquí tienes:
-
-- **📝 Tareas Críticas**: Lo más urgente e importante del día
-- **📅 Citas**: Eventos con fecha y hora específica
-- **📋 Listas Personalizadas**: Crea tus propias categorías (Compras, Proyectos, Ideas, etc.)
-- **🏷️ Etiquetas**: Organiza por contextos (trabajo, ocio, médicos, etc.)
-
-### ✨ Funcionalidades Principales
-
-#### 1. **Gestión de Tareas** 🚨
-- Crea tareas críticas con prioridad alta
-- Asigna fechas límite y personas responsables
-- Marca como completadas o elimínalas
-- Pospón o delega tareas a otras personas
-- Etiqueta por categorías (trabajo 💼, ocio 🎮, médicos 🏥)
-
-#### 2. **Agenda de Citas** 📅
-- Programa citas con fecha y hora
-- Añade ubicación y descripción
-- Etiqueta tus eventos
-- Recibe alertas cuando una cita está pasada o es hoy
-
-#### 3. **Listas Personalizadas (Tablas)** 📋
-Crea todas las listas que necesites:
-- 🛒 **Lista de Compras**
-- 💡 **Proyectos Personales**
-- 📚 **Libros por leer**
-- 🏋️ **Rutina de ejercicio**
-- Y cualquier otra categoría que imagines
-
-Cada lista tiene:
-- Icono personalizable (emoji)
-- Color distintivo
-- Sus propias tareas independientes
-
-#### 4. **Sistema de Etiquetas** 🏷️
-Organiza todo con etiquetas visuales:
-- 💼 Trabajo
-- 🎮 Ocio
-- 🏥 Médicos
-- ➕ Crea las tuyas propias
-
-#### 5. **Copias de Seguridad Automáticas** 💾
-- **Cada día se guarda una copia automática** de todos tus datos
-- Nunca perderás información importante
-- Puedes restaurar versiones anteriores cuando quieras
-
-#### 6. **Otras Funcionalidades** 🎯
-- 🍅 **Pomodoro TDAH**: Temporizador de concentración
-- 📊 **Dashboard de Progreso**: Visualiza tus logros
-- 🌅 **Resumen Diario**: Vista general de tu día
-- 📝 **Notas Personales**: Bloc de notas integrado
-- 🔐 **Gestor de Contraseñas**: Con encriptación AES-256
-
----
-
-## 💡 ¿Cómo funciona?
-
-### 🚀 Supabase: Tu Base de Datos en la Nube
-
-**Supabase** es una base de datos ultrarrápida en la nube que te permite guardar y sincronizar tus datos desde cualquier dispositivo. Piensa en ella como un "almacén personal en Internet" donde tu agenda guarda toda la información de forma segura.
-
-#### 📤 Envío de Datos (PUSH)
-
-Cuando creas o modificas una tarea, la aplicación envía los datos a Supabase en formato JSON:
-
-```json
-{
-  "id": "tareas",
-  "data": {
-    "tareas_criticas": [
-      {
-        "id": "critica-1",
-        "titulo": "Revisar informe mensual",
-        "completada": false,
-        "fecha_fin": "2025-12-05",
-        "etiqueta": "trabajo"
-      }
-    ]
-  }
-}
-```
-
-#### 📥 Recepción de Datos (PULL)
-
-Cuando abres la aplicación en otro dispositivo, Supabase te devuelve todos tus datos actualizados:
-
-```json
-{
-  "tareas_criticas": [...],
-  "citas": [...],
-  "listasPersonalizadas": [...]
-}
-```
-
-### 🖥️ Las Dos Aplicaciones
-
-Este proyecto incluye **dos versiones** de la agenda, ambas usan la misma base de datos en Supabase:
-
-1. **`agenda.html`** - **Versión Escritorio** 📊
-   - Diseñada para pantallas grandes (PC, laptop, tablet horizontal)
-   - Vista completa con múltiples columnas
-   - Interfaz con todos los controles visibles
-
-2. **`agendaphone.html`** - **Versión Móvil** 📱
-   - Optimizada para teléfonos y pantallas pequeñas
-   - Navegación por pestañas en la parte inferior
-   - Diseño táctil con botones grandes
-
-**✨ Sincronización Automática:** Cualquier cambio que hagas en una aplicación se sincroniza automáticamente con la otra. ¡Crea una tarea en el móvil y aparecerá instantáneamente en tu PC!
-
----
+Esta guía te explicará paso a paso cómo configurar Supabase como base de datos para tu aplicación de Agenda.
 
 ## 📋 Índice
 
 1. [Crear cuenta en Supabase](#1-crear-cuenta-en-supabase)
 2. [Crear un nuevo proyecto](#2-crear-un-nuevo-proyecto)
-3. [Crear la tabla en la base de datos](#3-crear-la-tabla-en-la-base-de-datos)
-4. [Obtener credenciales API](#4-obtener-credenciales-api)
+3. [Obtener credenciales](#3-obtener-credenciales-api)
+4. [Crear la tabla en la base de datos](#4-crear-la-tabla-en-la-base-de-datos)
 5. [Configurar en la aplicación](#5-configurar-en-la-aplicación)
 6. [Verificar conexión](#6-verificar-conexión)
 
@@ -172,16 +53,43 @@ Este proyecto incluye **dos versiones** de la agenda, ambas usan la misma base d
 
 ---
 
-## 3. Crear la tabla en la base de datos
+## 3. Obtener credenciales (API)
+
+Una vez que tu proyecto esté listo, necesitas obtener dos cosas importantes:
+
+### 3.1 URL del Proyecto (Project URL)
+
+1. En el menú lateral izquierdo, haz clic en **"Settings"** (⚙️ Configuración)
+2. Haz clic en **"API"**
+3. Busca la sección **"Project URL"**
+4. Copia la URL que verás (algo como: `https://abcdefgh.supabase.co`)
+
+### 3.2 Anon Public Key (Clave pública)
+
+1. En la misma página de **Settings > API**
+2. Busca la sección **"Project API keys"**
+3. Encontrarás dos claves:
+   - **`anon` `public`** ← **Esta es la que necesitas**
+   - **`service_role` `secret`** ← No uses esta (es para el servidor)
+
+4. **Copia la clave `anon public`**
+   - Tiene un formato similar a: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+   - Es una cadena muy larga (varios cientos de caracteres)
+
+> **📝 Nota:** La clave `anon public` es segura para usar en el navegador. No compartas la clave `service_role`.
+
+---
+
+## 4. Crear la tabla en la base de datos
 
 Ahora necesitas crear la estructura de la base de datos donde se guardará toda la información de tu agenda.
 
-### 3.1 Abrir el SQL Editor
+### 4.1 Abrir el SQL Editor
 
 1. En el menú lateral izquierdo, haz clic en **"SQL Editor"** (ícono de </>)
 2. Haz clic en **"+ New query"** o **"Nueva consulta"**
 
-### 3.2 Ejecutar el Script SQL
+### 4.2 Ejecutar el Script SQL
 
 Copia y pega exactamente este código SQL en el editor:
 
@@ -287,45 +195,17 @@ ON CONFLICT (id) DO NOTHING;
 -- ═══════════════════════════════════════════════════════════════════════════
 ```
 
-### 3.3 Ejecutar el Script
+### 4.3 Ejecutar el Script
 
 1. Haz clic en el botón **"Run"** (Ejecutar) o presiona `Ctrl + Enter`
 2. Deberías ver un mensaje de éxito: **"Success. No rows returned"**
 3. Si ves algún error, verifica que copiaste todo el código correctamente
 
-### 3.4 Verificar que la tabla se creó
+### 4.4 Verificar que la tabla se creó
 
 1. En el menú lateral izquierdo, haz clic en **"Table Editor"** (Editor de tablas)
 2. Deberías ver la tabla **`agenda_data`**
 3. Haz clic en ella para ver los registros iniciales que se insertaron
-4. Verás 12 filas con datos de ejemplo (tareas, citas, personas, etc.)
-
----
-
-## 4. Obtener credenciales (API)
-
-Una vez que tu proyecto esté listo, necesitas obtener dos cosas importantes:
-
-### 4.1 URL del Proyecto (Project URL)
-
-1. En el menú lateral izquierdo, haz clic en **"Settings"** (⚙️ Configuración)
-2. Haz clic en **"API"**
-3. Busca la sección **"Project URL"**
-4. Copia la URL que verás (algo como: `https://abcdefgh.supabase.co`)
-
-### 4.2 Anon Public Key (Clave pública)
-
-1. En la misma página de **Settings > API**
-2. Busca la sección **"Project API keys"**
-3. Encontrarás dos claves:
-   - **`anon` `public`** ← **Esta es la que necesitas**
-   - **`service_role` `secret`** ← No uses esta (es para el servidor)
-
-4. **Copia la clave `anon public`**
-   - Tiene un formato similar a: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
-   - Es una cadena muy larga (varios cientos de caracteres)
-
-> **📝 Nota:** La clave `anon public` es segura para usar en el navegador. No compartas la clave `service_role`.
 
 ---
 
@@ -341,9 +221,9 @@ Ahora que tienes Supabase configurado, vamos a conectar la aplicación:
 3. **Ve a la pestaña "Sincronización"**
 
 4. **Completa los campos de Supabase:**
-   - **URL del Proyecto:** Pega la URL que copiaste en el paso 4.1
+   - **URL del Proyecto:** Pega la URL que copiaste en el paso 3.1
      - Ejemplo: `https://abcdefgh.supabase.co`
-   - **Anon Key:** Pega la clave `anon public` que copiaste en el paso 4.2
+   - **Anon Key:** Pega la clave `anon public` que copiaste en el paso 3.2
      - Es el texto muy largo que empieza con `eyJhbGci...`
    - **Service Key (Opcional):** Déjalo vacío (no es necesario para uso normal)
 
@@ -367,12 +247,11 @@ Es importante verificar que todo funciona correctamente:
 2. **Si sale "Primera vez detectada":**
    - Haz clic en **"🛠️ Crear Tablas"**
    - O simplemente haz clic "Sí" en el diálogo que aparece
-   - ⚠️ **Nota:** Si ya creaste las tablas manualmente en el paso 3, ignora este paso
+   - ⚠️ **Nota:** Si ya creaste las tablas manualmente en el paso 4, ignora este paso
 
 3. **Sincronizar datos:**
    - Haz clic en **"📤 Guardar en la Nube"** para subir tus datos locales
    - Haz clic en **"📥 Obtener de la Nube"** para descargar datos
-   - Si ejecutaste el script SQL, verás los datos de ejemplo al hacer "Obtener de la Nube"
 
 4. **Verificar en Supabase:**
    - Vuelve al dashboard de Supabase
@@ -390,7 +269,6 @@ Tu aplicación de Agenda ahora está conectada a Supabase. Los cambios se sincro
 - **Guardado automático:** La aplicación guarda automáticamente cada vez que haces cambios
 - **Sincronización en tiempo real:** Si usas la app en varios dispositivos, se actualiza automáticamente
 - **Sin límites:** Supabase en el plan gratuito es suficiente para uso personal
-- **Datos de ejemplo:** Los datos de ejemplo te ayudarán a entender cómo funciona la agenda
 
 ---
 
@@ -418,7 +296,7 @@ Tu aplicación de Agenda ahora está conectada a Supabase. Los cambios se sincro
 - ✅ Asegúrate de no tener espacios extras al copiar/pegar
 
 ### Error: "Las tablas no existen"
-- ✅ Ejecuta el script SQL del paso 3 nuevamente
+- ✅ Ejecuta el script SQL del paso 4 nuevamente
 - ✅ Verifica en "Table Editor" que existe la tabla `agenda_data`
 
 ### "Error de permisos" o "permission denied"
@@ -444,8 +322,8 @@ Tu aplicación de Agenda ahora está conectada a Supabase. Los cambios se sincro
 
 1. Crear cuenta en https://supabase.com/
 2. Crear nuevo proyecto
-3. Ejecutar el **script SQL** en SQL Editor (con datos de ejemplo incluidos)
-4. Obtener **Project URL** y **Anon Key** desde Settings > API
+3. Obtener **Project URL** y **Anon Key** desde Settings > API
+4. Ejecutar el **script SQL** en SQL Editor
 5. Configurar URL y Key en la aplicación (⚙️ Configuración > Sincronización)
 6. Probar conexión y ¡listo!
 
