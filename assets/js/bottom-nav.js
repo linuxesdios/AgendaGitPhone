@@ -41,8 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let touchEndX = 0;
   let touchEndY = 0;
 
-  // tabsOrder se genera dinámicamente ahora
-
   document.addEventListener('touchstart', e => {
     touchStartX = e.changedTouches[0].screenX;
     touchStartY = e.changedTouches[0].screenY;
@@ -63,6 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const currentTab = document.querySelector('.nav-item.active')?.dataset.tab;
       if (!currentTab) return;
 
+      // Generar orden de tabs dinámicamente
+      const tabsOrder = obtenerOrdenTabs();
       const currentIndex = tabsOrder.indexOf(currentTab);
       if (currentIndex === -1) return;
 
@@ -76,6 +76,14 @@ document.addEventListener('DOMContentLoaded', () => {
         cambiarTab(tabsOrder[nextIndex]);
       }
     }
+  }
+
+  // Función para obtener el orden actual de las tabs
+  function obtenerOrdenTabs() {
+    const tabs = ['criticas', 'citas'];
+    const listas = window.tareasData?.listasPersonalizadas || [];
+    listas.forEach(lista => tabs.push(lista.id));
+    return tabs;
   }
 });
 
