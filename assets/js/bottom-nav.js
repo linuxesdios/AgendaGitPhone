@@ -101,11 +101,11 @@ function cambiarTab(tabName) {
   // Actualizar header
   const listas = window.tareasData?.listasPersonalizadas || [];
   const listaActual = listas.find(l => l.id === tabName);
-  
+
   let icon = '🚨';
   let title = 'Tareas Críticas';
   let count = 0;
-  
+
   if (tabName === 'criticas') {
     icon = '🚨';
     title = 'Tareas Críticas';
@@ -152,7 +152,7 @@ function renderizarTodo() {
   renderizarCriticasMovil();
   renderizarCitasMovil();
   renderizarBottomNav();
-  
+
   // Re-renderizar la tab activa
   const activeTab = document.querySelector('.nav-item.active')?.dataset.tab;
   if (activeTab) renderizarTab(activeTab);
@@ -198,21 +198,23 @@ function renderizarCriticasMovil() {
 
       return `
       <div class="task-card" style="${cardStyle}">
-        <div class="task-main">
-          <span class="task-icon">🚨</span>
-          <div class="task-content-area">
-            <div class="task-title">${t.titulo || 'Sin título'}</div>
-            <div class="task-meta">
-              ${fechaFormateada ? `<span class="task-meta-item">📅 ${fechaFormateada}</span>` : ''}
-              ${t.persona ? `<span class="task-meta-item">👤 ${t.persona}</span>` : ''}
-              ${t.etiqueta ? `<span class="task-meta-item">🏷️ ${t.etiqueta}</span>` : ''}
+        <div class="task-main" style="flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: flex-start; gap: 12px; width: 100%;">
+            <span class="task-icon">${'🚨'}</span>
+            <div class="task-content-area">
+              <div class="task-title">${t.titulo || 'Sin título'}</div>
             </div>
           </div>
-          ${alertaHtml}
-          <div style="display: flex; flex-direction: row; gap: 6px;">
-            <button class="task-btn btn-edit" onclick="editarTareaCritica('${t.id}')" title="Editar">✏️</button>
-            <button class="task-btn btn-delete" onclick="eliminarTareaCritica('${t.id}')" title="Eliminar">🗑️</button>
-            <button class="task-btn btn-postpone" onclick="abrirModalMigrarCritica('${t.id}')" title="Posponer/Delegar" style="background: linear-gradient(135deg, #ff9800, #f57c00);">⏰</button>
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; width: 100%; padding-left: 34px;">
+            ${fechaFormateada ? `<span class="task-meta-item">📅 ${fechaFormateada}</span>` : ''}
+            ${t.persona ? `<span class="task-meta-item">👤 ${t.persona}</span>` : ''}
+            ${t.etiqueta ? `<span class="task-meta-item">🏷️ ${t.etiqueta}</span>` : ''}
+            ${alertaHtml}
+            <div style="display: flex; gap: 6px; margin-left: auto;">
+              <button class="task-btn btn-edit" onclick="editarTareaCritica('${t.id}')" title="Editar">✏️</button>
+              <button class="task-btn btn-delete" onclick="eliminarTareaCritica('${t.id}')" title="Eliminar">🗑️</button>
+              <button class="task-btn btn-postpone" onclick="abrirModalMigrarCritica('${t.id}')" title="Posponer/Delegar" style="background: linear-gradient(135deg, #ff9800, #f57c00);">⏰</button>
+            </div>
           </div>
         </div>
       </div>
@@ -275,22 +277,24 @@ function renderizarCitasMovil() {
 
     return `
       <div class="task-card" style="${cardStyle}">
-        <div class="task-main">
-          <span class="task-icon">📅</span>
-          <div class="task-content-area">
-            <div class="task-title">${c.nombre || 'Sin título'}</div>
-            <div class="task-meta">
-              ${fechaStr ? `<span class="task-meta-item">📅 ${fechaStr}</span>` : ''}
-              ${c.hora ? `<span class="task-meta-item">⏰ ${c.hora}</span>` : ''}
-              ${c.lugar ? `<span class="task-meta-item">📍 ${c.lugar}</span>` : ''}
-              ${c.etiqueta ? `<span class="task-meta-item">🏷️ ${c.etiqueta}</span>` : ''}
+        <div class="task-main" style="flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: flex-start; gap: 12px; width: 100%;">
+            <span class="task-icon">${'📅'}</span>
+            <div class="task-content-area">
+              <div class="task-title">${c.nombre || 'Sin título'}</div>
             </div>
           </div>
-          ${alertaHtml}
-          <div style="display: flex; flex-direction: row; gap: 6px;">
-            <button class="task-btn btn-edit" onclick="editarCita('${c.id}')" title="Editar">✏️</button>
-            <button class="task-btn btn-delete" onclick="eliminarCita('${c.id}')" title="Eliminar">🗑️</button>
-            <button class="task-btn btn-postpone" onclick="abrirModalMigrarCita('${c.id}')" title="Posponer" style="background: linear-gradient(135deg, #ff9800, #f57c00);">⏰</button>
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; width: 100%; padding-left: 34px;">
+            ${fechaStr ? `<span class="task-meta-item">📅 ${fechaStr}</span>` : ''}
+            ${c.hora ? `<span class="task-meta-item">⏰ ${c.hora}</span>` : ''}
+            ${c.lugar ? `<span class="task-meta-item">📍 ${c.lugar}</span>` : ''}
+            ${c.etiqueta ? `<span class="task-meta-item">🏷️ ${c.etiqueta}</span>` : ''}
+            ${alertaHtml}
+            <div style="display: flex; gap: 6px; margin-left: auto;">
+              <button class="task-btn btn-edit" onclick="editarCita('${c.id}')" title="Editar">✏️</button>
+              <button class="task-btn btn-delete" onclick="eliminarCita('${c.id}')" title="Eliminar">🗑️</button>
+              <button class="task-btn btn-postpone" onclick="abrirModalMigrarCita('${c.id}')" title="Posponer" style="background: linear-gradient(135deg, #ff9800, #f57c00);">⏰</button>
+            </div>
           </div>
         </div>
       </div>
@@ -390,15 +394,15 @@ function renderizarListasMovil() {
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
       const añoActual = hoy.getFullYear();
-      
+
       tareas.forEach((tarea, tIndex) => {
         const textStyle = 'color: #333;';
         const opacity = '1';
-        
+
         let fechaFormateada = '';
         let alertaBadge = '';
         let cardStyle = '';
-        
+
         if (tarea.fecha) {
           let fechaTarea;
           if (Array.isArray(tarea.fecha)) {
@@ -410,7 +414,7 @@ function renderizarListasMovil() {
             fechaFormateada = year !== añoActual ? `${day}/${month}/${year}` : `${day}/${month}`;
             fechaTarea = new Date(year, month - 1, day);
           }
-          
+
           if (fechaTarea) {
             fechaTarea.setHours(0, 0, 0, 0);
             if (fechaTarea < hoy) {
@@ -424,19 +428,21 @@ function renderizarListasMovil() {
         }
 
         contentHtml += `
-                    <div style="padding: 12px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; opacity: ${opacity}; ${cardStyle}">
-                        <span class="task-icon" style="font-size: 20px;">${listaActiva.emoji || '📋'}</span>
-                        <div style="flex: 1; ${textStyle}">
-                            ${tarea.texto}
-                            ${fechaFormateada ? `<div style="font-size: 11px; color: #666;">📅 ${fechaFormateada}</div>` : ''}
+                    <div style="padding: 12px; border-bottom: 1px solid #eee; opacity: ${opacity}; ${cardStyle}">
+                        <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px;">
+                            <span class="task-icon" style="font-size: 20px; flex-shrink: 0;">${listaActiva.emoji || '📋'}</span>
+                            <div style="flex: 1; ${textStyle}">
+                                ${tarea.texto}
+                            </div>
                         </div>
-                        
-                        ${alertaBadge}
-                        
-                        <div style="display: flex; flex-direction: row; gap: 6px;">
-                            <button class="task-btn btn-edit" onclick="editarTareaListaPersonalizada('${listaActiva.id}', ${tIndex})" title="Editar" style="width: 36px; height: 36px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1); background: linear-gradient(135deg, #2196F3, #1976D2); color: white; display: flex; align-items: center; justify-content: center;">✏️</button>
-                            <button class="task-btn btn-delete" onclick="eliminarTareaListaPersonalizada('${listaActiva.id}', ${tIndex})" title="Eliminar" style="width: 36px; height: 36px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1); background: linear-gradient(135deg, #ff6b6b, #ee5a52); color: white; display: flex; align-items: center; justify-content: center;">🗑️</button>
-                            <button class="task-btn btn-postpone" onclick="abrirModalMigrarListaPersonalizada('${listaActiva.id}', ${tIndex})" title="Posponer/Delegar" style="width: 36px; height: 36px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1); background: linear-gradient(135deg, #ff9800, #f57c00); color: white; display: flex; align-items: center; justify-content: center;">⏰</button>
+                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-left: 30px;">
+                            ${fechaFormateada ? `<span class="task-meta-item" style="display: inline-flex; align-items: center; gap: 4px; background: rgba(78, 205, 196, 0.08); padding: 4px 8px; border-radius: 6px; font-size: 11px; color: #666;">📅 ${fechaFormateada}</span>` : ''}
+                            ${alertaBadge}
+                            <div style="display: flex; gap: 6px; margin-left: auto;">
+                                <button class="task-btn btn-edit" onclick="editarTareaListaPersonalizada('${listaActiva.id}', ${tIndex})" title="Editar" style="width: 36px; height: 36px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1); background: linear-gradient(135deg, #2196F3, #1976D2); color: white; display: flex; align-items: center; justify-content: center;">✏️</button>
+                                <button class="task-btn btn-delete" onclick="eliminarTareaListaPersonalizada('${listaActiva.id}', ${tIndex})" title="Eliminar" style="width: 36px; height: 36px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1); background: linear-gradient(135deg, #ff6b6b, #ee5a52); color: white; display: flex; align-items: center; justify-content: center;">🗑️</button>
+                                <button class="task-btn btn-postpone" onclick="abrirModalMigrarListaPersonalizada('${listaActiva.id}', ${tIndex})" title="Posponer/Delegar" style="width: 36px; height: 36px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1); background: linear-gradient(135deg, #ff9800, #f57c00); color: white; display: flex; align-items: center; justify-content: center;">⏰</button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1035,7 +1041,7 @@ function renderizarListaPersonalizadaMovil(listaId) {
 
   const listas = window.tareasData?.listasPersonalizadas || [];
   const lista = listas.find(l => l.id === listaId);
-  
+
   if (!lista) {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Lista no encontrada</div></div>';
     return;
@@ -1055,11 +1061,11 @@ function renderizarListaPersonalizadaMovil(listaId) {
   container.innerHTML = tareas.map((tarea, tIndex) => {
     const textStyle = 'color: #333;';
     const opacity = '1';
-    
+
     let fechaFormateada = '';
     let alertaBadge = '';
     let cardStyle = '';
-    
+
     if (tarea.fecha) {
       let fechaTarea;
       if (Array.isArray(tarea.fecha)) {
@@ -1071,7 +1077,7 @@ function renderizarListaPersonalizadaMovil(listaId) {
         fechaFormateada = year !== añoActual ? `${day}/${month}/${year}` : `${day}/${month}`;
         fechaTarea = new Date(year, month - 1, day);
       }
-      
+
       if (fechaTarea) {
         fechaTarea.setHours(0, 0, 0, 0);
         if (fechaTarea < hoy) {
@@ -1114,7 +1120,7 @@ function renderizarBottomNav() {
   if (!bottomNav) return;
 
   const listas = window.tareasData?.listasPersonalizadas || [];
-  
+
   let navHtml = `
     <button class="nav-item active" data-tab="criticas">
       <span class="nav-icon">🚨</span>
@@ -1161,7 +1167,7 @@ function renderizarBottomNav() {
 
   // Mantener tabs existentes
   const existingTabs = ['tab-criticas', 'tab-citas'];
-  
+
   // Añadir tabs para listas personalizadas
   listas.forEach(lista => {
     if (!document.getElementById(`tab-${lista.id}`)) {

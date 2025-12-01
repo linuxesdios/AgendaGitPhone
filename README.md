@@ -1,6 +1,125 @@
-# 🗄️ Configuración de Supabase para Agenda
+# 🗄️ Agenda Personal - Configuración de Supabase
 
-Esta guía te explicará paso a paso cómo configurar Supabase como base de datos para tu aplicación de Agenda.
+Tu agenda digital tipo **Bullet Journal** para gestionar tareas, citas y tu día a día desde cualquier dispositivo.
+
+---
+
+## 📖 ¿Qué es esta Agenda?
+
+### 📓 Inspirada en Bullet Journal
+
+Esta es una **agenda digital tipo Bullet Journal**, el sistema de organización personal que combina flexibilidad y estructura. A diferencia de las agendas tradicionales, aquí tienes:
+
+- **📝 Tareas Críticas**: Lo más urgente e importante del día
+- **📅 Citas**: Eventos con fecha y hora específica
+- **📋 Listas Personalizadas**: Crea tus propias categorías (Compras, Proyectos, Ideas, etc.)
+- **🏷️ Etiquetas**: Organiza por contextos (trabajo, ocio, médicos, etc.)
+
+### ✨ Funcionalidades Principales
+
+#### 1. **Gestión de Tareas** 🚨
+- Crea tareas críticas con prioridad alta
+- Asigna fechas límite y personas responsables
+- Marca como completadas o elimínalas
+- Pospón o delega tareas a otras personas
+- Etiqueta por categorías (trabajo 💼, ocio 🎮, médicos 🏥)
+
+#### 2. **Agenda de Citas** 📅
+- Programa citas con fecha y hora
+- Añade ubicación y descripción
+- Etiqueta tus eventos
+- Recibe alertas cuando una cita está pasada o es hoy
+
+#### 3. **Listas Personalizadas (Tablas)** 📋
+Crea todas las listas que necesites:
+- 🛒 **Lista de Compras**
+- 💡 **Proyectos Personales**
+- 📚 **Libros por leer**
+- 🏋️ **Rutina de ejercicio**
+- Y cualquier otra categoría que imagines
+
+Cada lista tiene:
+- Icono personalizable (emoji)
+- Color distintivo
+- Sus propias tareas independientes
+
+#### 4. **Sistema de Etiquetas** 🏷️
+Organiza todo con etiquetas visuales:
+- 💼 Trabajo
+- 🎮 Ocio
+- 🏥 Médicos
+- ➕ Crea las tuyas propias
+
+#### 5. **Copias de Seguridad Automáticas** 💾
+- **Cada día se guarda una copia automática** de todos tus datos
+- Nunca perderás información importante
+- Puedes restaurar versiones anteriores cuando quieras
+
+#### 6. **Otras Funcionalidades** 🎯
+- 🍅 **Pomodoro TDAH**: Temporizador de concentración
+- 📊 **Dashboard de Progreso**: Visualiza tus logros
+- 🌅 **Resumen Diario**: Vista general de tu día
+- 📝 **Notas Personales**: Bloc de notas integrado
+- 🔐 **Gestor de Contraseñas**: Con encriptación AES-256
+
+---
+
+## 💡 ¿Cómo funciona?
+
+### 🚀 Supabase: Tu Base de Datos en la Nube
+
+**Supabase** es una base de datos ultrarrápida en la nube que te permite guardar y sincronizar tus datos desde cualquier dispositivo. Piensa en ella como un "almacén personal en Internet" donde tu agenda guarda toda la información de forma segura.
+
+#### 📤 Envío de Datos (PUSH)
+
+Cuando creas o modificas una tarea, la aplicación envía los datos a Supabase en formato JSON:
+
+```json
+{
+  "id": "tareas",
+  "data": {
+    "tareas_criticas": [
+      {
+        "id": "critica-1",
+        "titulo": "Revisar informe mensual",
+        "completada": false,
+        "fecha_fin": "2025-12-05",
+        "etiqueta": "trabajo"
+      }
+    ]
+  }
+}
+```
+
+#### 📥 Recepción de Datos (PULL)
+
+Cuando abres la aplicación en otro dispositivo, Supabase te devuelve todos tus datos actualizados:
+
+```json
+{
+  "tareas_criticas": [...],
+  "citas": [...],
+  "listasPersonalizadas": [...]
+}
+```
+
+### 🖥️ Las Dos Aplicaciones
+
+Este proyecto incluye **dos versiones** de la agenda, ambas usan la misma base de datos en Supabase:
+
+1. **`agenda.html`** - **Versión Escritorio** 📊
+   - Diseñada para pantallas grandes (PC, laptop, tablet horizontal)
+   - Vista completa con múltiples columnas
+   - Interfaz con todos los controles visibles
+
+2. **`agendaphone.html`** - **Versión Móvil** 📱
+   - Optimizada para teléfonos y pantallas pequeñas
+   - Navegación por pestañas en la parte inferior
+   - Diseño táctil con botones grandes
+
+**✨ Sincronización Automática:** Cualquier cambio que hagas en una aplicación se sincroniza automáticamente con la otra. ¡Crea una tarea en el móvil y aparecerá instantáneamente en tu PC!
+
+---
 
 ## 📋 Índice
 
