@@ -1130,6 +1130,14 @@ function renderizarBottomNav() {
     `;
   });
 
+  navHtml += `
+    <button class="nav-item" onclick="abrirCalendario(); event.stopPropagation();">
+      <span class="nav-icon">🗓️</span>
+      <span class="nav-label">Calendario</span>
+      <span class="nav-indicator"></span>
+    </button>
+  `;
+
   bottomNav.innerHTML = navHtml;
 
   // Re-asignar eventos

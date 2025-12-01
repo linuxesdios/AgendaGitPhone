@@ -111,15 +111,17 @@ setTimeout(() => {
   if (funcionesFaltantes.length > 0) {
     console.warn('⚠️ Funciones faltantes:', funcionesFaltantes);
     
-    // Crear funciones stub para evitar errores
+    // Crear funciones stub para evitar errores SOLO si no existen
     funcionesFaltantes.forEach(func => {
       window[func] = function() {
         console.error(`❌ Función ${func} no está implementada`);
-        mostrarAlerta(`Error: Función ${func} no disponible`, 'error');
+        if (typeof mostrarAlerta === 'function') {
+          mostrarAlerta(`Error: Función ${func} no disponible`, 'error');
+        }
       };
     });
   }
-}, 1000);
+}, 3000);
 
 // ========== FUNCIONES DE RESPALDO ==========
 // Funciones de respaldo en caso de que no se carguen los módulos principales

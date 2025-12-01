@@ -132,13 +132,24 @@ function renderCalendar() {
         listasPersonalizadas.forEach(lista => {
           if (lista && lista.tareas && Array.isArray(lista.tareas)) {
             lista.tareas.forEach(tarea => {
-              if (tarea && tarea.fecha === dateStr) {
-                eventos.push({
-                  ...tarea,
-                  tipo: 'personalizada',
-                  nombre: tarea.texto,
-                  color: lista.color || '#9b59b6'
-                });
+              if (tarea && tarea.fecha) {
+                // Manejar fecha como array o string
+                let fechaTarea = '';
+                if (Array.isArray(tarea.fecha)) {
+                  const [year, month, day] = tarea.fecha;
+                  fechaTarea = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                } else if (typeof tarea.fecha === 'string') {
+                  fechaTarea = tarea.fecha;
+                }
+                
+                if (fechaTarea === dateStr) {
+                  eventos.push({
+                    ...tarea,
+                    tipo: 'personalizada',
+                    nombre: tarea.texto,
+                    color: lista.color || '#9b59b6'
+                  });
+                }
               }
             });
           }
@@ -1556,17 +1567,28 @@ function renderCalendarioIntegrado() {
         });
 
         // Tareas de listas personalizadas
-        const listasPersonalizadas = config.listasPersonalizadas || [];
+        const listasPersonalizadas = window.tareasData?.listasPersonalizadas || [];
         listasPersonalizadas.forEach(lista => {
           if (lista && lista.tareas && Array.isArray(lista.tareas)) {
             lista.tareas.forEach(tarea => {
-              if (tarea && tarea.fecha === dateStr) {
-                eventos.push({
-                  ...tarea,
-                  tipo: 'personalizada',
-                  nombre: tarea.texto,
-                  color: lista.color || '#9b59b6'
-                });
+              if (tarea && tarea.fecha) {
+                // Manejar fecha como array o string
+                let fechaTarea = '';
+                if (Array.isArray(tarea.fecha)) {
+                  const [year, month, day] = tarea.fecha;
+                  fechaTarea = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                } else if (typeof tarea.fecha === 'string') {
+                  fechaTarea = tarea.fecha;
+                }
+                
+                if (fechaTarea === dateStr) {
+                  eventos.push({
+                    ...tarea,
+                    tipo: 'personalizada',
+                    nombre: tarea.texto,
+                    color: lista.color || '#9b59b6'
+                  });
+                }
               }
             });
           }
